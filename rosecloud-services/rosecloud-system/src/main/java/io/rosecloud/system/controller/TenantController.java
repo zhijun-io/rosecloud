@@ -30,9 +30,8 @@ public class TenantController {
     }
 
     @PostMapping("/{id}/open")
-    public ApiResponse<Void> open(@PathVariable Long id) {
-        tenantService.open(id);
-        return ApiResponse.ok();
+    public ApiResponse<Long> open(@PathVariable Long id) {
+        return ApiResponse.ok(tenantService.open(id));
     }
 
     @PostMapping("/{id}/disable")

@@ -57,3 +57,19 @@ ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
 INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
 (29,3,1),(30,3,7)
 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- Task center menus (under 系统管理). Tenant admins get list+retry for own tasks.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, perms, icon, sort, status, visible, deleted) VALUES
+(31, 2,  '任务中心', 1, 'task', 'system/task/index', 'system:task:list',  'task',     6, 1, 1, 0),
+(32, 31, '任务重试', 2, NULL,  NULL,                  'system:task:retry', NULL,       1, 1, 1, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- platform-admin: full task center.
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(31, 1, 31), (32, 1, 32)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- tenant-admin: view + retry own tenant tasks (limited operational access).
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(33, 2, 31), (34, 2, 32)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);

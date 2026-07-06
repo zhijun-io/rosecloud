@@ -1,41 +1,37 @@
 package io.rosecloud.system.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.starter.audit.AuditLog;
-import io.rosecloud.system.domain.Role;
-import io.rosecloud.system.domain.RoleRepository;
+import io.rosecloud.system.domain.TaskTypes;
 import io.rosecloud.system.domain.Tenant;
-import io.rosecloud.system.domain.TenantAdminCredentials;
 import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.service.TaskService;
 import io.rosecloud.system.service.TenantService;
-import io.rosecloud.system.service.UserService;
+import io.rosecloud.system.service.dto.TaskCreateRequest;
 import io.rosecloud.system.service.dto.TenantApplyRequest;
+import io.rosecloud.system.task.TenantProvisioningPayload;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class TenantServiceImpl implements TenantService {
 
-    /** Platform-level role granted to each tenant's first admin on open. */
-    private static final String TENANT_ADMIN_ROLE_CODE = "tenant-admin";
-
     private final TenantRepository tenantRepository;
-    private final RoleRepository roleRepository;
-    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final TaskService taskService;
+    private final ObjectMapper objectMapper;
 
-    public TenantServiceImpl(TenantRepository tenantRepository, RoleRepository roleRepository,
-                             UserService userService, PasswordEncoder passwordEncoder) {
+    public TenantServiceImpl(TenantRepository tenantRepository, PasswordEncoder passwordEncoder,
+                             TaskService taskService, ObjectMapper objectMapper) {
         this.tenantRepository = tenantRepository;
-        this.roleRepository = roleRepository;
-        this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.taskService = taskService;
+        this.objectMapper = objectMapper;
     }
 
     @AuditLog(action = "tenant-apply", description = "申请租户")
@@ -51,16 +47,22 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
     }
 
+    /**
+     * Dispatches tenant provisioning as an async task (main line of the task
+     * center). Returns the task id so the caller can track progress; the tenant
+     * stays {@link TenantStatus#PENDING} until provisioning succeeds, then the
+     * {@link io.rosecloud.system.service.TenantProvisioner} enables it.
+     */
     @AuditLog(action = "tenant-open", description = "开通租户")
-    @Transactional
     @Override
-    public void open(Long id) {
+    public Long open(Long id) {
         Tenant tenant = load(id);
         if (tenant.status() != TenantStatus.PENDING) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
-        provisionAdmin(id);
-        tenantRepository.updateStatus(id, TenantStatus.ENABLED);
+        String payload = writePayload(new TenantProvisioningPayload(id));
+        return taskService.create(new TaskCreateRequest("开通租户-" + tenant.name(),
+                TaskTypes.TENANT_PROVISIONING, payload, id));
     }
 
     @AuditLog(action = "tenant-disable", description = "停用租户")
@@ -88,18 +90,12 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.page(current, size, keyword);
     }
 
-    private void provisionAdmin(Long tenantId) {
-        TenantAdminCredentials creds = tenantRepository.findAdminCredentials(tenantId).orElse(null);
-        if (creds == null || creds.username() == null || creds.username().isBlank()
-                || creds.passwordHash() == null) {
-            return;
+    private String writePayload(TenantProvisioningPayload payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("failed to serialize task payload", e);
         }
-        Role tenantAdminRole = roleRepository.findByCode(TENANT_ADMIN_ROLE_CODE)
-                .orElseThrow(() -> new BizException(SystemErrorCode.ROLE_NOT_FOUND));
-        Long userId = userService.createWithHash(creds.username(), creds.passwordHash(),
-                creds.username(), tenantId);
-        userService.assignRoles(userId, List.of(tenantAdminRole.id()));
-        tenantRepository.clearAdminPassword(tenantId);
     }
 
     private Tenant load(Long id) {

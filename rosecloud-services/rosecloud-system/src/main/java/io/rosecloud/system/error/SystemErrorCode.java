@@ -15,7 +15,11 @@ public enum SystemErrorCode implements ErrorCode {
     MENU_HAS_CHILDREN("SYSA008", "存在子菜单，无法删除"),
     ROLE_NOT_FOUND("SYSA009", "角色不存在"),
     CONFIG_KEY_EXISTS("SYSA010", "参数键已存在"),
-    CONFIG_NOT_FOUND("SYSA011", "参数配置不存在");
+    CONFIG_NOT_FOUND("SYSA011", "参数配置不存在"),
+    TASK_NOT_FOUND("SYSA012", "任务不存在"),
+    TASK_HANDLER_NOT_FOUND("SYSA013", "未找到任务处理器"),
+    TASK_STATUS_INVALID("SYSA014", "任务当前状态不允许该操作"),
+    TASK_RETRY_EXCEEDED("SYSA015", "任务重试次数已达上限");
 
     private final String code;
     private final String message;

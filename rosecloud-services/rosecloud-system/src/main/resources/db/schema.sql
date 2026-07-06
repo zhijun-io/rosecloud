@@ -144,3 +144,28 @@ CREATE TABLE IF NOT EXISTS sys_config (
   PRIMARY KEY (id),
   UNIQUE KEY uk_config_key (config_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='参数配置表';
+
+-- Task center: async tasks (tenant lifecycle main line, notice auxiliary).
+-- status: 0待执行 1执行中 2成功 3失败. tenant_id scopes visibility (null = platform).
+CREATE TABLE IF NOT EXISTS sys_task (
+  id           BIGINT       NOT NULL                   COMMENT '主键',
+  name         VARCHAR(128) NOT NULL                   COMMENT '任务名称',
+  type         VARCHAR(64)  NOT NULL                   COMMENT '任务类型(对应 TaskHandler.type)',
+  status       TINYINT      NOT NULL DEFAULT 0         COMMENT '状态:0待执行 1执行中 2成功 3失败',
+  tenant_id    BIGINT       DEFAULT NULL               COMMENT '租户ID(平台任务为空)',
+  payload      TEXT         DEFAULT NULL               COMMENT '任务参数(JSON)',
+  result       TEXT         DEFAULT NULL               COMMENT '执行结果',
+  error        TEXT         DEFAULT NULL               COMMENT '失败原因',
+  retry_count  INT          NOT NULL DEFAULT 0         COMMENT '已重试次数',
+  max_retry    INT          NOT NULL DEFAULT 3         COMMENT '最大重试次数',
+  started_at   DATETIME     DEFAULT NULL               COMMENT '开始执行时间',
+  finished_at  DATETIME     DEFAULT NULL               COMMENT '完成时间',
+  create_time  DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time  DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by    BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by    BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted      TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_type_status (type, status),
+  KEY idx_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务表';

@@ -8,7 +8,7 @@ public interface TenantService {
 
     Long apply(TenantApplyRequest request);
 
-    void open(Long id);
+    Long open(Long id);
 
     void disable(Long id);
 
