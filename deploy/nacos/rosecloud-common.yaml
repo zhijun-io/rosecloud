@@ -9,3 +9,8 @@ spring:
     url: '${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}'
     username: ${MYSQL_USER:rosecloud}
     password: ${MYSQL_PASSWORD:rosecloud123}
+
+# 链路标识：网关生成 X-Trace-Id 并透传，服务写入 MDC traceId，日志按需带出
+logging:
+  pattern:
+    level: '%5p [%X{traceId:-}]'

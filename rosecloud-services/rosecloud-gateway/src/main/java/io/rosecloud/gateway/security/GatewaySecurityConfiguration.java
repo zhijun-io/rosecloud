@@ -14,4 +14,9 @@ public class GatewaySecurityConfiguration {
             JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties) {
         return new JwtAuthenticationGlobalFilter(jwtTokenCodec, properties);
     }
+
+    @Bean
+    public TraceIdGlobalFilter traceIdGlobalFilter() {
+        return new TraceIdGlobalFilter();
+    }
 }
