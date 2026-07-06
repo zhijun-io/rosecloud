@@ -78,7 +78,7 @@ rosecloud/
   - `rosecloud-starter-security-jwt`：JWT（HS256）编解码——`JwtTokenCodec` 签发/校验 access、refresh，claims 与 `CurrentUser` 对齐；`@ConditionalOnClass` 引入即装配（核心认证基建，非 enabled 门控），auth 签发、gateway 校验共享同一 `rosecloud.jwt.secret`/`issuer`
   - `rosecloud-starter-data-mybatisplus`：MyBatis-Plus 持久化——`BaseEntity`（审计字段）、`AuditMetaObjectHandler` 自动填充、`MybatisPlusInterceptor`（收集 `InnerInterceptor` bean + 分页）；可整体替换为 `rosecloud-starter-data-jpa`
   - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启；在场 MyBatis-Plus 时经 `TenantLineInnerInterceptor`（读 `TenantContext`，无租户不隔离）做行级隔离，由 data starter 的 `MybatisPlusInterceptor` 收集
-  - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启
+  - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启；默认 resolver 读 `UserContext`（操作人/租户），事件含 tenantId/target，内置日志监听器便于观察
   - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
 - 版本对齐：外部消费者 import `rosecloud-bom`；内部模块用 `${project.version}`，**不在 root 导入 BOM**（import-scope BOM 无法从 reactor 解析，会阻塞首次构建）
 

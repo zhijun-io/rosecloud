@@ -20,5 +20,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-common-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

@@ -10,9 +10,10 @@ import org.springframework.context.annotation.Bean;
 /**
  * Auto-configuration for audit logging.
  *
- * <p>Activated by {@code rosecloud.audit.enabled=true}; dormant otherwise. Spring
- * Boot's AOP auto-configuration enables AspectJ proxying when
- * {@code spring-boot-starter-aop} is on the classpath.
+ * <p>Activated by {@code rosecloud.audit.enabled=true}; dormant otherwise. The
+ * default principal resolver reads {@code UserContext}; the aspect publishes
+ * {@link AuditLogEvent}s, and a listener logs them for out-of-the-box
+ * observability.
  */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "rosecloud.audit", name = "enabled", havingValue = "true")
@@ -22,11 +23,17 @@ public class AuditAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AuditPrincipalResolver auditPrincipalResolver() {
-        return () -> "unknown";
+        return new UserContextAuditPrincipalResolver();
     }
 
     @Bean
     public AuditLogAspect auditLogAspect(ApplicationEventPublisher publisher, AuditPrincipalResolver resolver) {
         return new AuditLogAspect(publisher, resolver);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AuditLogEventListener auditLogEventListener() {
+        return new AuditLogEventListener();
     }
 }

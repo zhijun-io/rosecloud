@@ -1,14 +1,18 @@
 package io.rosecloud.starter.audit;
 
+import io.rosecloud.common.security.context.CurrentUser;
+import io.rosecloud.common.security.context.UserContext;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.context.ApplicationEventPublisher;
+
 import java.time.Instant;
 
 /**
  * Around-advises {@link AuditLog} methods, timing them and publishing an
- * {@link AuditLogEvent} regardless of outcome.
+ * {@link AuditLogEvent} regardless of outcome. The operator and tenant are
+ * read from {@link UserContext}.
  */
 @Aspect
 public class AuditLogAspect {
@@ -32,15 +36,24 @@ public class AuditLogAspect {
             throw t;
         } finally {
             long elapsed = System.currentTimeMillis() - start;
-            String action = auditLog.action().isBlank() ? pjp.getSignature().toShortString() : auditLog.action();
+            String action = auditLog.action().isBlank()
+                    ? pjp.getSignature().toShortString()
+                    : auditLog.action();
             publisher.publishEvent(new AuditLogEvent(
                     action,
                     auditLog.description(),
                     principalResolver.resolve(),
+                    currentTenantId(),
+                    pjp.getSignature().toShortString(),
                     elapsed,
                     Instant.now(),
                     failure
             ));
         }
+    }
+
+    private static Long currentTenantId() {
+        CurrentUser user = UserContext.get();
+        return user == null ? null : user.tenantId();
     }
 }
