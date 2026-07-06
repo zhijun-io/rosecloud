@@ -129,3 +129,18 @@ CREATE TABLE IF NOT EXISTS sys_login_log (
   KEY idx_username (username),
   KEY idx_login_time (login_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录日志表';
+
+-- Business configuration (admin-tunable via UI; distinct from Nacos infra config).
+CREATE TABLE IF NOT EXISTS sys_config (
+  id           BIGINT       NOT NULL                   COMMENT '主键',
+  config_key   VARCHAR(128) NOT NULL                   COMMENT '参数键',
+  config_value VARCHAR(512) DEFAULT NULL               COMMENT '参数值',
+  description  VARCHAR(255) DEFAULT NULL               COMMENT '描述',
+  create_time  DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time  DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by    BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by    BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted      TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_config_key (config_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='参数配置表';

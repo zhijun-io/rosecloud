@@ -13,7 +13,9 @@ public enum SystemErrorCode implements ErrorCode {
     ROLE_CODE_EXISTS("SYSA006", "角色编码已存在"),
     MENU_NOT_FOUND("SYSA007", "菜单不存在"),
     MENU_HAS_CHILDREN("SYSA008", "存在子菜单，无法删除"),
-    ROLE_NOT_FOUND("SYSA009", "角色不存在");
+    ROLE_NOT_FOUND("SYSA009", "角色不存在"),
+    CONFIG_KEY_EXISTS("SYSA010", "参数键已存在"),
+    CONFIG_NOT_FOUND("SYSA011", "参数配置不存在");
 
     private final String code;
     private final String message;
