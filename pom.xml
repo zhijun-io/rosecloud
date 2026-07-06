@@ -38,6 +38,7 @@
         <spring-cloud.version>2025.1.2</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
         <nacos-client.version>3.2.1</nacos-client.version>
+        <mybatis-plus.version>3.5.16</mybatis-plus.version>
     </properties>
 
     <!-- 注：内部模块的 rosecloud 依赖用 ${project.version} 声明（与既有模块一致）。
@@ -63,6 +64,13 @@
                 <groupId>com.alibaba.nacos</groupId>
                 <artifactId>nacos-client</artifactId>
                 <version>${nacos-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-bom</artifactId>
+                <version>${mybatis-plus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

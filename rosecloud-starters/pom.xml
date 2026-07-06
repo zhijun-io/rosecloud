@@ -18,6 +18,7 @@
 
     <modules>
         <module>rosecloud-starter-web</module>
+        <module>rosecloud-starter-data-mybatisplus</module>
         <module>rosecloud-tenant-starter</module>
         <module>rosecloud-audit-starter</module>
         <module>rosecloud-oauth2-starter</module>

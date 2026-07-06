@@ -46,6 +46,7 @@ rosecloud/
 ├── rosecloud-api/                    # 服务间契约：Feign 接口、共享 DTO/record、枚举
 ├── rosecloud-starters/               # 可插拔能力 starter，按需加载（见下）
 │   ├── rosecloud-starter-web/        # Web 入口：Jackson 2 + 安全上下文过滤 + 全局异常 + Feign 头透传
+│   ├── rosecloud-starter-data-mybatisplus/  # MyBatis-Plus 持久化（可换 JPA）
 │   ├── rosecloud-tenant-starter/     # 多租户（rosecloud.tenant.enabled）
 │   ├── rosecloud-audit-starter/      # 审计（rosecloud.audit.enabled）
 │   └── rosecloud-oauth2-starter/     # OAuth2 JWT 资源服务器（rosecloud.oauth2.enabled）
@@ -73,6 +74,7 @@ rosecloud/
 - 可选第三方依赖一律 `<optional>true</optional>` 或 `provided`，避免泄漏给消费方；starter 内部 rosecloud 依赖用 `${project.version}`
 - 当前 starter：
   - `rosecloud-starter-web`：servlet Web 入口，排除 Jackson 3、使用 Jackson 2（提供 `ObjectMapper` bean），并装配安全上下文过滤、全局异常处理、Feign 头透传；servlet 服务统一接入，替代 `spring-boot-starter-web`
+  - `rosecloud-starter-data-mybatisplus`：MyBatis-Plus 持久化——`BaseEntity`（审计字段）、`AuditMetaObjectHandler` 自动填充、`MybatisPlusInterceptor`（收集 `InnerInterceptor` bean + 分页）；可整体替换为 `rosecloud-starter-data-jpa`
   - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启
   - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启
   - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
@@ -102,7 +104,7 @@ rosecloud/
 - **分层**：轻量 controller / service / 持久化分层，不强制 DDD 四层；领域逻辑写在 service，不散落到 controller
 - **服务间调用**：统一走 OpenFeign，Feign 接口与共享 DTO 放 `rosecloud-api`，业务服务依赖 `rosecloud-api`，不直接依赖其他服务模块
 - **认证**：Spring Security + JWT；鉴权过滤、token 解析放 `rosecloud-common-security`，业务服务通过 `SecurityHeaders` 读取身份，不重复实现
-- **持久化**：当前选 MyBatis-Plus，但须保持可替换为 JPA。约束：`rosecloud-common*` 与 `rosecloud-api` 零 ORM 依赖；MP 仅存在于各服务 infrastructure 层，service 面向 repository 接口（port），`BaseMapper` 作为实现藏其后；租户数据隔离不绑死 MP，走 `rosecloud-tenant-starter` 的持久化无关 SPI + 可选 MP adapter，换 JPA 时只替换 adapter 与 repository 实现
+- **持久化**：通过 `rosecloud-starter-data-mybatisplus` 接入 MyBatis-Plus（可整体替换为 `rosecloud-starter-data-jpa`）。约束：`rosecloud-common*` 与 `rosecloud-api` 零 ORM 依赖；service/domain 层面向 repository 接口（port），MP `BaseMapper` 与 `BaseEntity` 子类（PO）藏于各服务 infrastructure 层；换 JPA 时只替换 starter + repository 实现与 PO 基类，port 与 domain 不动。`MybatisPlusInterceptor` 由 starter 统一装配并收集所有 `InnerInterceptor` bean（如租户行级拦截）先于分页加入链
 - **多租户**：隔离策略可配（默认关闭）；租户上下文通过 `X-Tenant-Id` 传递，租户开通/启停逻辑收敛在 `rosecloud-system`
 - **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置
 - **不引入**：Sa-Token（用 Spring Security）、Dubbo（用 OpenFeign，待后续演进）、Swagger/Smart-Doc（API 文档方案未定，暂不引入）

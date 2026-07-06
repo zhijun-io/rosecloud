@@ -40,6 +40,7 @@ rosecloud
 | starter | 开关 | 说明 |
 |---|---|---|
 | rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 安全上下文过滤 + 全局异常 + Feign 头透传 |
+| rosecloud-starter-data-mybatisplus | 服务按需接入 | MyBatis-Plus 持久化（可换 JPA）+ 审计自动填充 + 分页拦截器 |
 | rosecloud-tenant-starter | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传 |
 | rosecloud-audit-starter | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent` |
 | rosecloud-oauth2-starter | `rosecloud.oauth2.enabled` | OAuth2 JWT 资源服务器，需配 `rosecloud.oauth2.jwk-set-uri` |
