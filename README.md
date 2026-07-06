@@ -35,11 +35,12 @@ rosecloud
 
 ## 可插拔能力
 
-`rosecloud-starters` 下的能力以独立 starter 提供，引入依赖不激活任何 bean，只有 `rosecloud.{name}.enabled=true` 才装配（Spring Boot `@AutoConfiguration` + `@ConditionalOnProperty`）：
+`rosecloud-starters` 下的能力以独立 starter 提供，按 `@AutoConfiguration` 装配：能力型 starter（tenant/audit/oauth2）用 `rosecloud.{name}.enabled=true` 门控；核心基建 starter（`rosecloud-starter-security-jwt`）按 classpath 引入即装配：
 
 | starter | 开关 | 说明 |
 |---|---|---|
 | rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 安全上下文过滤 + 全局异常 + Feign 头透传 |
+| rosecloud-starter-security-jwt | 引入即装配 | JWT(HS256) access/refresh 签发与校验，claims 对齐 CurrentUser；auth 签发、gateway 校验共享 |
 | rosecloud-starter-data-mybatisplus | 服务按需接入 | MyBatis-Plus 持久化（可换 JPA）+ 审计自动填充 + 分页拦截器 |
 | rosecloud-tenant-starter | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传 |
 | rosecloud-audit-starter | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent` |
