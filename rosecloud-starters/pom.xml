@@ -17,6 +17,7 @@
     <description>Plug-and-play capability starters. Each is auto-configured and gated by rosecloud.{name}.enabled.</description>
 
     <modules>
+        <module>rosecloud-starter-web</module>
         <module>rosecloud-tenant-starter</module>
         <module>rosecloud-audit-starter</module>
         <module>rosecloud-oauth2-starter</module>

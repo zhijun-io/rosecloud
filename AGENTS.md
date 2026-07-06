@@ -45,6 +45,7 @@ rosecloud/
 │   └── rosecloud-common-web/         # WebConstants、Web 层公共配置
 ├── rosecloud-api/                    # 服务间契约：Feign 接口、共享 DTO/record、枚举
 ├── rosecloud-starters/               # 可插拔能力 starter，按需加载（见下）
+│   ├── rosecloud-starter-web/        # Web 入口：Jackson 2 + 安全上下文过滤 + 全局异常 + Feign 头透传
 │   ├── rosecloud-tenant-starter/     # 多租户（rosecloud.tenant.enabled）
 │   ├── rosecloud-audit-starter/      # 审计（rosecloud.audit.enabled）
 │   └── rosecloud-oauth2-starter/     # OAuth2 JWT 资源服务器（rosecloud.oauth2.enabled）
@@ -71,6 +72,7 @@ rosecloud/
 - 包根 `io.rosecloud.starter.{name}.*`；配置前缀 `rosecloud.{name}.*`；artifactId `rosecloud-{name}-starter`
 - 可选第三方依赖一律 `<optional>true</optional>` 或 `provided`，避免泄漏给消费方；starter 内部 rosecloud 依赖用 `${project.version}`
 - 当前 starter：
+  - `rosecloud-starter-web`：servlet Web 入口，排除 Jackson 3、使用 Jackson 2（提供 `ObjectMapper` bean），并装配安全上下文过滤、全局异常处理、Feign 头透传；servlet 服务统一接入，替代 `spring-boot-starter-web`
   - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启
   - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启
   - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
@@ -86,7 +88,10 @@ rosecloud/
   - 服务：`io.rosecloud.{服务名}.*`（如 `io.rosecloud.auth`、`io.rosecloud.tenant`）
   - 单体：`io.rosecloud.monolith.*`
 - **API 前缀**：`/api/v1`（见 `ServiceMetadata.API_PREFIX` 与 `WebConstants.API_PREFIX`，新增代码引用既有常量，不要重复声明字面量）
-- **统一返回体**：`ApiResponse<T>`（record：`success`、`code`、`message`、`data`），用 `ok()` / `ok(data)` / `failure(code, message)` 构造，不要自定义其他返回结构
+- **统一返回体**：`ApiResponse<T>`（record：`success`、`code`、`message`、`data`），用 `ok()` / `ok(data)` / `failure(code, message)` / `failure(ErrorCode)` 构造，不要自定义其他返回结构
+- **分页**：分页结果用 `ApiResponse<PageResult<T>>`，`PageResult`（`records`/`total`/`current`/`size`）
+- **错误码**：`ErrorCode` 接口（`code()`/`message()`），业务异常抛 `BizException(ErrorCode)`；码格式 `{MODULE}{TYPE}{SEQ}`，模块含 `CMM`（公共）、SYS/USR/SEC/TEN/NTC 等，类型 A=参数/B=业务/E=外部；公共码见 `CommonErrorCode`
+- **身份上下文**：`UserContext`（ThreadLocal）持有 `CurrentUser`，由 `rosecloud-starter-web` 的 `SecurityContextFilter` 从 `SecurityHeaders` 解码；横切链路：上游/网关透传头 → 过滤器解码为 `UserContext` → 业务读取 → 异常统一回 `ApiResponse` → Feign 调用经 `SecurityHeaderFeignPropagator` 再透传头给下游
 - **DTO / 值对象**：优先用 Java `record`（如 `TenantSummary`）
 - **常量类**：`final` 类 + 私有构造（如 `SecurityHeaders`、`WebConstants`），不放可变状态
 - **安全上下文头**：`X-User-Id` / `X-Username` / `X-Tenant-Id` / `X-Roles` / `X-Trace-Id`（见 `SecurityHeaders`），网关解析后向下游透传
@@ -101,6 +106,7 @@ rosecloud/
 - **多租户**：隔离策略可配（默认关闭）；租户上下文通过 `X-Tenant-Id` 传递，租户开通/启停逻辑收敛在 `rosecloud-system`
 - **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置
 - **不引入**：Sa-Token（用 Spring Security）、Dubbo（用 OpenFeign，待后续演进）、Swagger/Smart-Doc（API 文档方案未定，暂不引入）
+- **Jackson**：统一用 Jackson 2（`com.fasterxml.jackson`），不用 Spring Boot 4 默认的 Jackson 3（`tools.jackson`）。servlet 服务通过 `rosecloud-starter-web` 接入（已排除 `spring-boot-starter-jackson` 并提供 Jackson 2 `ObjectMapper`），不要直接依赖 `spring-boot-starter-web`/`spring-boot-starter-jackson`；reactive 网关暂仍为 Jackson 3（codec 切换待跟进）
 - **依赖方向**：`common-core` 为最底层零依赖；`common-security`、`common-web` 依赖 `common-core`；`api` 依赖 `common-core` + `common-security`；服务依赖 `api` + 所需 common；禁止反向依赖与 common 之间的循环
 
 ## 开发原则

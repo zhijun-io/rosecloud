@@ -1,0 +1,3 @@
+io.rosecloud.starter.web.RoseCloudJacksonAutoConfiguration
+io.rosecloud.starter.web.RoseCloudWebAutoConfiguration
+io.rosecloud.starter.web.RoseCloudFeignAutoConfiguration

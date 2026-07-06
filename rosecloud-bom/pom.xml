@@ -44,6 +44,11 @@
             <!-- starters (plug-and-play, on-demand) -->
             <dependency>
                 <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-starter-web</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
                 <artifactId>rosecloud-tenant-starter</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
