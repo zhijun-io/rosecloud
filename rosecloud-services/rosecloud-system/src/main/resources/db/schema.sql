@@ -169,3 +169,36 @@ CREATE TABLE IF NOT EXISTS sys_task (
   KEY idx_type_status (type, status),
   KEY idx_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务表';
+
+-- Dictionary types and items (platform-level reference data for dropdowns/enums).
+CREATE TABLE IF NOT EXISTS sys_dict_type (
+  id          BIGINT       NOT NULL                   COMMENT '主键',
+  code        VARCHAR(64)  NOT NULL                   COMMENT '字典编码',
+  name        VARCHAR(128) NOT NULL                   COMMENT '字典名称',
+  status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
+  remark      VARCHAR(255) DEFAULT NULL               COMMENT '备注',
+  create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_dict_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='字典类型表';
+
+CREATE TABLE IF NOT EXISTS sys_dict_data (
+  id          BIGINT       NOT NULL                   COMMENT '主键',
+  dict_code   VARCHAR(64)  NOT NULL                   COMMENT '所属字典编码',
+  label       VARCHAR(128) NOT NULL                   COMMENT '字典标签',
+  value       VARCHAR(128) NOT NULL                   COMMENT '字典键值',
+  sort        INT          NOT NULL DEFAULT 0         COMMENT '排序',
+  status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
+  remark      VARCHAR(255) DEFAULT NULL               COMMENT '备注',
+  create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_dict_code (dict_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='字典项表';

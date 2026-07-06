@@ -73,3 +73,15 @@ ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
 INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
 (33, 2, 31), (34, 2, 32)
 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- Dictionary management menus (under 系统管理). Platform-admin only.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, perms, icon, sort, status, visible, deleted) VALUES
+(33, 2,  '字典管理', 1, 'dict', 'system/dict/index', 'system:dict:list', 'dict', 7, 1, 1, 0),
+(34, 33, '字典新增', 2, NULL, NULL, 'system:dict:add',  NULL, 1, 1, 1, 0),
+(35, 33, '字典修改', 2, NULL, NULL, 'system:dict:edit', NULL, 2, 1, 1, 0),
+(36, 33, '字典删除', 2, NULL, NULL, 'system:dict:del',  NULL, 3, 1, 1, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(35, 1, 33), (36, 1, 34), (37, 1, 35), (38, 1, 36)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
