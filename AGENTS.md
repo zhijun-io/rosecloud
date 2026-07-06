@@ -146,12 +146,13 @@ rosecloud/
 
 - 微服务模式：各 `rosecloud-services/*` 独立启动，经 `rosecloud-gateway` 统一入口，服务间用 OpenFeign + Nacos 发现
 - 单体模式：`rosecloud-monolith` 聚合全部能力，本地联调与中小部署使用；新增业务能力需保证在两种模式下均可运行
+- 单体机制：`rosecloud-monolith` 激活 `monolith` profile，组件扫描聚合 auth/system/notice（排除各服务启动类）；无网关，故由 `MonolithJwtFilter`（servlet）校验 JWT 并注入身份头，复用下游 `SecurityContextFilter`；auth→system 的 `SystemUserApi` 由 system 侧 `LocalSystemUserApi`（`@Profile("monolith")`）进程内直连，不经 Feign
 
 ## 新增业务服务
 
 手动步骤（无 CLI 脚手架）：
 
-1. 在 `rosecloud-services/` 下建 `rosecloud-{name}/`，`pom.xml` 继承 `rosecloud-services`，按需引入 `actuator` + `web` + `openfeign` + `nacos-config` + `nacos-discovery` + `rosecloud-api` + `rosecloud-common-*`，并配 `spring-boot-maven-plugin`
+1. 在 `rosecloud-services/` 下建 `rosecloud-{name}/`，`pom.xml` 继承 `rosecloud-services`，按需引入 `actuator` + `web` + `openfeign` + `nacos-config` + `nacos-discovery` + `rosecloud-api` + `rosecloud-common-*`，并配 `spring-boot-maven-plugin`；若该服务需被单体聚合，`spring-boot-maven-plugin` 须配 `<classifier>exec</classifier>`（可执行胖包带 exec 分类器，主产物保持薄 jar 供单体依赖）
 2. 新建 `RoseCloud{Name}Application.java`（`@SpringBootApplication` + `@EnableFeignClients`）
 3. 新建 `application.yml`（端口取 9170 起的空闲段，沿用 Nacos env 占位）
 4. 在 `rosecloud-services/pom.xml` 的 `<modules>` 注册新模块

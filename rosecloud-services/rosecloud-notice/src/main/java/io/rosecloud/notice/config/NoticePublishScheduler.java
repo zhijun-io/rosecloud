@@ -21,7 +21,8 @@ public class NoticePublishScheduler {
         this.noticeService = noticeService;
     }
 
-    @Scheduled(fixedDelayString = "${rosecloud.notice.publish-check-ms:60000}")
+    @Scheduled(fixedDelayString = "${rosecloud.notice.publish-check-ms:60000}",
+            initialDelayString = "${rosecloud.notice.publish-check-ms:60000}")
     public void publishDue() {
         int published = noticeService.publishScheduledNotices();
         if (published > 0) {

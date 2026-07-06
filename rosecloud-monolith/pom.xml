@@ -24,10 +24,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
@@ -37,22 +33,17 @@
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-api</artifactId>
+            <artifactId>rosecloud-auth</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-core</artifactId>
+            <artifactId>rosecloud-system</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-security</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-web</artifactId>
+            <artifactId>rosecloud-notice</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -62,13 +53,18 @@
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-audit-starter</artifactId>
+            <artifactId>rosecloud-oauth2-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-oauth2-starter</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -81,4 +77,3 @@
         </plugins>
     </build>
 </project>
-
