@@ -82,6 +82,7 @@ rosecloud/
   - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启；默认 resolver 读 `UserContext`（操作人/租户），事件含 tenantId/target，内置日志监听器便于观察
   - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
   - `rosecloud-lock-starter`：分布式锁抽象（`DistributedLock`，非阻塞 `tryLock` 返回 `LockToken` 或 `null`）；`rosecloud.lock.enabled` 开启，默认 `in-memory`（单实例，`ReentrantLock` 按 key），`rosecloud.lock.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`SET NX PX` + Lua 释放，跨实例）；消费方需自带 `spring-boot-starter-data-redis`
+  - `rosecloud-cache-starter`：缓存抽象（`RoseCloudCache`，字符串键值，不绑定序列化，消费方自行用 `ObjectMapper` 序列化）；`rosecloud.cache.enabled` 开启，默认 `in-memory`（单实例，`ConcurrentHashMap` 惰性过期），`rosecloud.cache.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（跨实例）；`ttl=null` 表示不过期；消费方需自带 `spring-boot-starter-data-redis`
 - 版本对齐：外部消费者 import `rosecloud-bom`；内部模块用 `${project.version}`，**不在 root 导入 BOM**（import-scope BOM 无法从 reactor 解析，会阻塞首次构建）
 
 新增 starter：在 `rosecloud-starters/` 下建 `rosecloud-{name}-starter/`（继承 `rosecloud-starters`），写 `XxxProperties` + `@AutoConfiguration`（带 `@ConditionalOnProperty(rosecloud.{name}.enabled)`）+ `AutoConfiguration.imports`，并在 `rosecloud-starters/pom.xml` 与 `rosecloud-bom` 注册坐标。

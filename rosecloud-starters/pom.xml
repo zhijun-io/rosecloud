@@ -24,5 +24,6 @@
         <module>rosecloud-audit-starter</module>
         <module>rosecloud-oauth2-starter</module>
         <module>rosecloud-lock-starter</module>
+        <module>rosecloud-cache-starter</module>
     </modules>
 </project>
