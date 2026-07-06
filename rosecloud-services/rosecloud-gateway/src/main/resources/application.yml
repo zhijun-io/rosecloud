@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: rosecloud-gateway
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+
+server:
+  port: 9110
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

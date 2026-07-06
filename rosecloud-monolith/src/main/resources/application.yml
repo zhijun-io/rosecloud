@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: rosecloud-monolith
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+
+server:
+  port: 9160
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+
+# 可插拔能力 starter：默认关闭，按需开启。
+# 引入对应 starter 依赖后，置 enabled=true 即激活自动配置。
+#   rosecloud.tenant.enabled  -> 多租户上下文/过滤器（详见 rosecloud-tenant-starter）
+#   rosecloud.audit.enabled   -> @AuditLog 审计切面（详见 rosecloud-audit-starter）
+#   rosecloud.oauth2.enabled  -> OAuth2 JWT 资源服务器（详见 rosecloud-oauth2-starter，需配 jwk-set-uri）
+rosecloud:
+  tenant:
+    enabled: false
+  audit:
+    enabled: false
+  oauth2:
+    enabled: false

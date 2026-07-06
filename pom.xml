@@ -24,6 +24,8 @@
         <module>rosecloud-common</module>
         <module>rosecloud-api</module>
         <module>rosecloud-starters</module>
+        <module>rosecloud-services</module>
+        <module>rosecloud-monolith</module>
     </modules>
 
     <properties>
