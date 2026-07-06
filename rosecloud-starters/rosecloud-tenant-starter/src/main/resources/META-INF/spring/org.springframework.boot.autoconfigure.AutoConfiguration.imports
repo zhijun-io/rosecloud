@@ -1,1 +1,2 @@
 io.rosecloud.starter.tenant.TenantAutoConfiguration
+io.rosecloud.starter.tenant.mybatis.TenantMybatisAutoConfiguration

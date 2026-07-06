@@ -27,6 +27,12 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- MyBatis-Plus tenant-line interceptor; optional so non-MP consumers aren't forced onto it -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- Servlet filter; provided so reactive (gateway) consumers are not forced onto servlet API -->
         <dependency>
             <groupId>jakarta.servlet</groupId>

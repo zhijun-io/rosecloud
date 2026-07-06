@@ -77,7 +77,7 @@ rosecloud/
   - `rosecloud-starter-web`：servlet Web 入口，排除 Jackson 3、使用 Jackson 2（提供 `ObjectMapper` bean），并装配安全上下文过滤、全局异常处理、Feign 头透传；servlet 服务统一接入，替代 `spring-boot-starter-web`
   - `rosecloud-starter-security-jwt`：JWT（HS256）编解码——`JwtTokenCodec` 签发/校验 access、refresh，claims 与 `CurrentUser` 对齐；`@ConditionalOnClass` 引入即装配（核心认证基建，非 enabled 门控），auth 签发、gateway 校验共享同一 `rosecloud.jwt.secret`/`issuer`
   - `rosecloud-starter-data-mybatisplus`：MyBatis-Plus 持久化——`BaseEntity`（审计字段）、`AuditMetaObjectHandler` 自动填充、`MybatisPlusInterceptor`（收集 `InnerInterceptor` bean + 分页）；可整体替换为 `rosecloud-starter-data-jpa`
-  - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启
+  - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启；在场 MyBatis-Plus 时经 `TenantLineInnerInterceptor`（读 `TenantContext`，无租户不隔离）做行级隔离，由 data starter 的 `MybatisPlusInterceptor` 收集
   - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启
   - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
 - 版本对齐：外部消费者 import `rosecloud-bom`；内部模块用 `${project.version}`，**不在 root 导入 BOM**（import-scope BOM 无法从 reactor 解析，会阻塞首次构建）
@@ -107,7 +107,7 @@ rosecloud/
 - **服务间调用**：统一走 OpenFeign，Feign 接口与共享 DTO 放 `rosecloud-api`，业务服务依赖 `rosecloud-api`，不直接依赖其他服务模块
 - **认证**：Spring Security（`BCryptPasswordEncoder`）+ JWT。`rosecloud-starter-security-jwt` 提供 `JwtTokenCodec`（access/refresh 签发与校验，claims 与 `CurrentUser` 对齐）；`rosecloud-auth` 签发令牌，`rosecloud-gateway` 的 `JwtAuthenticationGlobalFilter` 校验 bearer 并注入 `SecurityHeaders`（先剥离客户端伪造的同名头），下游经 `rosecloud-starter-web` 的 `SecurityContextFilter` 解码为 `UserContext`，业务不重复实现。令牌密钥/issuer 走 `rosecloud.jwt.*`（env/Nacos，不入库）；登出为无状态，吊销/黑名单待补
 - **持久化**：通过 `rosecloud-starter-data-mybatisplus` 接入 MyBatis-Plus（可整体替换为 `rosecloud-starter-data-jpa`）。约束：`rosecloud-common*` 与 `rosecloud-api` 零 ORM 依赖；service/domain 层面向 repository 接口（port），MP `BaseMapper` 与 `BaseEntity` 子类（PO）藏于各服务 infrastructure 层；换 JPA 时只替换 starter + repository 实现与 PO 基类，port 与 domain 不动。`MybatisPlusInterceptor` 由 starter 统一装配并收集所有 `InnerInterceptor` bean（如租户行级拦截）先于分页加入链
-- **多租户**：隔离策略可配（默认关闭）；租户上下文通过 `X-Tenant-Id` 传递，租户开通/启停逻辑收敛在 `rosecloud-system`
+- **多租户**：隔离策略可配（默认关闭）；租户上下文通过 `X-Tenant-Id` 传递，租户开通/启停逻辑收敛在 `rosecloud-system`；开启后数据层经 `TenantLineInnerInterceptor` 按 `TenantContext` 改写 SQL（`tenant_id` 列），无租户上下文（平台/系统）不隔离
 - **网关路由**：动态路由由 `rosecloud-gateway` 的 `MetadataRouteDefinitionLocator` 按服务发现元数据 `rosecloud.gateway.path` 自动生成（`lb://` + Path 断言，路由 id `dyn-{serviceId}`，支持逗号分隔多路径）——新服务只需在自身 `spring.cloud.nacos.discovery.metadata.rosecloud.gateway.path` 声明路径即接入，无需改网关；`RouteRefreshScheduler` 启动时及每 30s 发布 `RefreshRoutesEvent` 刷新
 - **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置（各服务 `spring.config.import: optional:nacos:rosecloud-common.yaml` 拉取共享 `rosecloud-common.yaml`；内容见 `deploy/nacos/`，本地默认对齐 docker-compose）
 - **不引入**：Sa-Token（用 Spring Security）、Dubbo（用 OpenFeign，待后续演进）、Swagger/Smart-Doc（API 文档方案未定，暂不引入）
