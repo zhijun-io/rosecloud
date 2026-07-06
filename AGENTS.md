@@ -84,6 +84,7 @@ rosecloud/
   - `rosecloud-lock-starter`：分布式锁抽象（`DistributedLock`，非阻塞 `tryLock` 返回 `LockToken` 或 `null`）；`rosecloud.lock.enabled` 开启，默认 `in-memory`（单实例，`ReentrantLock` 按 key），`rosecloud.lock.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`SET NX PX` + Lua 释放，跨实例）；消费方需自带 `spring-boot-starter-data-redis`
   - `rosecloud-cache-starter`：缓存抽象（`RoseCloudCache`，字符串键值，不绑定序列化，消费方自行用 `ObjectMapper` 序列化）；`rosecloud.cache.enabled` 开启，默认 `in-memory`（单实例，`ConcurrentHashMap` 惰性过期），`rosecloud.cache.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（跨实例）；`ttl=null` 表示不过期；消费方需自带 `spring-boot-starter-data-redis`
   - `rosecloud-sequence-starter`：业务序列号生成（`SequenceGenerator`，`next(key)` 返回从 1 起的单调递增 long）；`rosecloud.sequence.enabled` 开启，默认 `in-memory`（单实例，`AtomicLong` 按 key，重启重置），`rosecloud.sequence.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`INCR`，跨实例持久）；消费方需自带 `spring-boot-starter-data-redis`
+  - `rosecloud-storage-starter`：文件存储抽象（`FileStorage`，按相对路径 key 存取字节流 store/load/exists/delete）；`rosecloud.storage.enabled` 开启，默认 `local`（本地文件系统，路径规范化防穿越，`rosecloud.storage.base-dir` 配置根目录）；消费方需 S3/OSS 时自定义 `FileStorage` bean 覆盖（`@ConditionalOnMissingBean` 优先）
 - 版本对齐：外部消费者 import `rosecloud-bom`；内部模块用 `${project.version}`，**不在 root 导入 BOM**（import-scope BOM 无法从 reactor 解析，会阻塞首次构建）
 
 新增 starter：在 `rosecloud-starters/` 下建 `rosecloud-{name}-starter/`（继承 `rosecloud-starters`），写 `XxxProperties` + `@AutoConfiguration`（带 `@ConditionalOnProperty(rosecloud.{name}.enabled)`）+ `AutoConfiguration.imports`，并在 `rosecloud-starters/pom.xml` 与 `rosecloud-bom` 注册坐标。

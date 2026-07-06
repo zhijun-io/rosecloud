@@ -87,6 +87,11 @@
                 <artifactId>rosecloud-sequence-starter</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-storage-starter</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
 
             <!-- services -->
             <dependency>

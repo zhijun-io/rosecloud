@@ -26,5 +26,6 @@
         <module>rosecloud-lock-starter</module>
         <module>rosecloud-cache-starter</module>
         <module>rosecloud-sequence-starter</module>
+        <module>rosecloud-storage-starter</module>
     </modules>
 </project>
