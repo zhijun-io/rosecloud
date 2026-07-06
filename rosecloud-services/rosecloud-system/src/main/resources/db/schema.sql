@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS sys_tenant (
   contact_phone VARCHAR(32)  DEFAULT NULL          COMMENT '联系电话',
   expire_time   DATE         DEFAULT NULL          COMMENT '到期时间',
   remark        VARCHAR(255) DEFAULT NULL          COMMENT '备注',
+  admin_username VARCHAR(64)  DEFAULT NULL          COMMENT '首个管理员用户名',
+  admin_password VARCHAR(128) DEFAULT NULL          COMMENT '首个管理员密码(BCrypt,开通后清空)',
   create_time   DATETIME     DEFAULT NULL          COMMENT '创建时间',
   update_time   DATETIME     DEFAULT NULL          COMMENT '更新时间',
   create_by     BIGINT       DEFAULT NULL          COMMENT '创建人',

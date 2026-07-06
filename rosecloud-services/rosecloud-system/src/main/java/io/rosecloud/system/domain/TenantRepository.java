@@ -14,7 +14,11 @@ public interface TenantRepository {
 
     boolean existsByCode(String code);
 
-    Long insert(Tenant tenant);
+    Long insert(Tenant tenant, String adminUsername, String adminPasswordHash);
+
+    Optional<TenantAdminCredentials> findAdminCredentials(Long id);
+
+    void clearAdminPassword(Long id);
 
     void updateStatus(Long id, TenantStatus status);
 

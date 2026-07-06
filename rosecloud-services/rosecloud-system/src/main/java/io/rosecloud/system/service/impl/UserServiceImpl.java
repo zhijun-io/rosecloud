@@ -40,6 +40,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Long createWithHash(String username, String passwordHash, String nickname, Long tenantId) {
+        if (userRepository.existsByUsername(username)) {
+            throw new BizException(SystemErrorCode.USERNAME_EXISTS);
+        }
+        User user = new User(null, username, nickname, 1, tenantId);
+        return userRepository.insert(user, passwordHash);
+    }
+
+    @Override
     public PageResult<User> page(long current, long size, String keyword) {
         return userRepository.page(current, size, keyword);
     }

@@ -3,21 +3,39 @@ package io.rosecloud.system.service.impl;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.system.domain.Role;
+import io.rosecloud.system.domain.RoleRepository;
 import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantAdminCredentials;
 import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.TenantService;
+import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.TenantApplyRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class TenantServiceImpl implements TenantService {
 
-    private final TenantRepository tenantRepository;
+    /** Platform-level role granted to each tenant's first admin on open. */
+    private static final String TENANT_ADMIN_ROLE_CODE = "tenant-admin";
 
-    public TenantServiceImpl(TenantRepository tenantRepository) {
+    private final TenantRepository tenantRepository;
+    private final RoleRepository roleRepository;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
+
+    public TenantServiceImpl(TenantRepository tenantRepository, RoleRepository roleRepository,
+                             UserService userService, PasswordEncoder passwordEncoder) {
         this.tenantRepository = tenantRepository;
+        this.roleRepository = roleRepository;
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @AuditLog(action = "tenant-apply", description = "申请租户")
@@ -28,16 +46,20 @@ public class TenantServiceImpl implements TenantService {
         }
         Tenant tenant = new Tenant(null, request.name(), request.code(), TenantStatus.PENDING,
                 request.contactUser(), request.contactPhone(), request.expireTime(), request.remark());
-        return tenantRepository.insert(tenant);
+        String passwordHash = request.adminPassword() == null || request.adminPassword().isBlank()
+                ? null : passwordEncoder.encode(request.adminPassword());
+        return tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
     }
 
     @AuditLog(action = "tenant-open", description = "开通租户")
+    @Transactional
     @Override
     public void open(Long id) {
         Tenant tenant = load(id);
         if (tenant.status() != TenantStatus.PENDING) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
+        provisionAdmin(id);
         tenantRepository.updateStatus(id, TenantStatus.ENABLED);
     }
 
@@ -64,6 +86,20 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public PageResult<Tenant> page(long current, long size, String keyword) {
         return tenantRepository.page(current, size, keyword);
+    }
+
+    private void provisionAdmin(Long tenantId) {
+        TenantAdminCredentials creds = tenantRepository.findAdminCredentials(tenantId).orElse(null);
+        if (creds == null || creds.username() == null || creds.username().isBlank()
+                || creds.passwordHash() == null) {
+            return;
+        }
+        Role tenantAdminRole = roleRepository.findByCode(TENANT_ADMIN_ROLE_CODE)
+                .orElseThrow(() -> new BizException(SystemErrorCode.ROLE_NOT_FOUND));
+        Long userId = userService.createWithHash(creds.username(), creds.passwordHash(),
+                creds.username(), tenantId);
+        userService.assignRoles(userId, List.of(tenantAdminRole.id()));
+        tenantRepository.clearAdminPassword(tenantId);
     }
 
     private Tenant load(Long id) {

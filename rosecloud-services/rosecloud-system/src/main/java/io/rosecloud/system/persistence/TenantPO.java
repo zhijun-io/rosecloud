@@ -16,6 +16,8 @@ public class TenantPO extends BaseEntity {
     private String contactPhone;
     private LocalDate expireTime;
     private String remark;
+    private String adminUsername;
+    private String adminPassword;
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -31,4 +33,8 @@ public class TenantPO extends BaseEntity {
     public void setExpireTime(LocalDate expireTime) { this.expireTime = expireTime; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public String getAdminUsername() { return adminUsername; }
+    public void setAdminUsername(String adminUsername) { this.adminUsername = adminUsername; }
+    public String getAdminPassword() { return adminPassword; }
+    public void setAdminPassword(String adminPassword) { this.adminPassword = adminPassword; }
 }

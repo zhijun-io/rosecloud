@@ -2,10 +2,11 @@ package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantAdminCredentials;
 import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.domain.TenantStatus;
 import org.springframework.stereotype.Repository;
@@ -33,11 +34,26 @@ public class TenantRepositoryImpl implements TenantRepository {
     }
 
     @Override
-    public Long insert(Tenant tenant) {
+    public Long insert(Tenant tenant, String adminUsername, String adminPasswordHash) {
         TenantPO po = toPO(tenant);
         po.setId(null);
+        po.setAdminUsername(adminUsername);
+        po.setAdminPassword(adminPasswordHash);
         mapper.insert(po);
         return po.getId();
+    }
+
+    @Override
+    public Optional<TenantAdminCredentials> findAdminCredentials(Long id) {
+        return Optional.ofNullable(mapper.selectById(id))
+                .map(po -> new TenantAdminCredentials(po.getAdminUsername(), po.getAdminPassword()));
+    }
+
+    @Override
+    public void clearAdminPassword(Long id) {
+        mapper.update(null, new LambdaUpdateWrapper<TenantPO>()
+                .eq(TenantPO::getId, id)
+                .set(TenantPO::getAdminPassword, null));
     }
 
     @Override

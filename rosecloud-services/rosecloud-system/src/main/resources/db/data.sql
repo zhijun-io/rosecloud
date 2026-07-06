@@ -40,3 +40,20 @@ INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
 (8,1,8),(9,1,9),(10,1,10),(11,1,11),(12,1,12),(13,1,13),
 (14,1,14),(15,1,15),(16,1,16),(17,1,17),(18,1,18)
 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- Tenant-scoped roles (platform-level, shared by all tenants in v1).
+INSERT INTO sys_role (id, code, name, deleted) VALUES
+(2, 'tenant-admin', '租户管理员', 0),
+(3, 'tenant-user', '普通用户', 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- tenant-admin: workspace + in-tenant user/role management + notices.
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(19,2,1),(20,2,3),(21,2,4),(22,2,7),
+(23,2,8),(24,2,9),(25,2,10),(26,2,11),(27,2,12),(28,2,13)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- tenant-user: workspace + notices.
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(29,3,1),(30,3,7)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);

@@ -14,6 +14,8 @@ public interface UserService {
 
     Long create(UserCreateRequest request);
 
+    Long createWithHash(String username, String passwordHash, String nickname, Long tenantId);
+
     PageResult<User> page(long current, long size, String keyword);
 
     User get(Long id);
