@@ -11,6 +11,7 @@ public interface RoleService {
     Long create(RoleCreateRequest request);
 
     PageResult<Role> page(long current, long size, String keyword);
+    Role get(Long id);
 
     void assignMenus(Long roleId, List<Long> menuIds);
 

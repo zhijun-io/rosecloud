@@ -6,14 +6,19 @@ import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.UserCreateRequest;
+import io.rosecloud.system.service.dto.UserProfile;
+import io.rosecloud.system.service.dto.UserRoleAssignRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/system/users")
@@ -37,6 +42,11 @@ public class UserController {
         return ApiResponse.ok(userService.page(current, size, keyword));
     }
 
+    @GetMapping("/me")
+    public ApiResponse<UserProfile> me() {
+        return ApiResponse.ok(userService.me());
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<User> get(@PathVariable Long id) {
         return ApiResponse.ok(userService.get(id));
@@ -45,6 +55,17 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         userService.delete(id);
+        return ApiResponse.ok();
+    }
+
+    @GetMapping("/{id}/roles")
+    public ApiResponse<List<Long>> roles(@PathVariable Long id) {
+        return ApiResponse.ok(userService.findRoleIdsByUserId(id));
+    }
+
+    @PutMapping("/{id}/roles")
+    public ApiResponse<Void> assignRoles(@PathVariable Long id, @RequestBody UserRoleAssignRequest request) {
+        userService.assignRoles(id, request.roleIds());
         return ApiResponse.ok();
     }
 }

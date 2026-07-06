@@ -3,15 +3,19 @@ package io.rosecloud.system.service.impl;
 import io.rosecloud.api.user.UserAuthInfo;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.security.context.CurrentUser;
+import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.UserCreateRequest;
+import io.rosecloud.system.service.dto.UserProfile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -55,5 +59,29 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserAuthInfo> findAuthInfo(String username) {
         return userRepository.findAuthInfo(username);
+    }
+    @AuditLog(action = "user-assign-roles", description = "用户角色授权")
+    @Override
+    public void assignRoles(Long userId, List<Long> roleIds) {
+        if (userRepository.findById(userId).isEmpty()) {
+            throw new BizException(SystemErrorCode.USER_NOT_FOUND);
+        }
+        userRepository.assignRoles(userId, roleIds == null ? List.of() : roleIds);
+    }
+
+    @Override
+    public List<Long> findRoleIdsByUserId(Long userId) {
+        return userRepository.findRoleIdsByUserId(userId);
+    }
+
+    @Override
+    public UserProfile me() {
+        CurrentUser current = UserContext.get();
+        if (current == null || current.userId() == null) {
+            return null;
+        }
+        User user = userRepository.findById(current.userId())
+                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
+        return new UserProfile(user, userRepository.findRoleCodesByUserId(current.userId()));
     }
 }

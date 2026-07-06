@@ -3,6 +3,7 @@ package io.rosecloud.system.domain;
 import io.rosecloud.api.user.UserAuthInfo;
 import io.rosecloud.common.core.model.PageResult;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,4 +26,8 @@ public interface UserRepository {
     void deleteById(Long id);
 
     List<Long> findRoleIdsByUserId(Long userId);
+
+    List<String> findRoleCodesByUserId(Long userId);
+
+    void assignRoles(Long userId, Collection<Long> roleIds);
 }

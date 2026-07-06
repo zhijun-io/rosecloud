@@ -4,6 +4,7 @@ import io.rosecloud.common.core.model.PageResult;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository port for roles. Implemented in the infrastructure layer; the
@@ -18,6 +19,10 @@ public interface RoleRepository {
     PageResult<Role> page(long current, long size, String keyword);
 
     boolean existsById(Long id);
+
+    Optional<Role> findById(Long id);
+
+    Optional<Role> findByCode(String code);
 
     List<Long> findMenuIdsByRoleId(Long roleId);
 

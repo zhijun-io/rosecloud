@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class RoleRepositoryImpl implements RoleRepository {
@@ -73,6 +74,17 @@ public class RoleRepositoryImpl implements RoleRepository {
             po.setMenuId(menuId);
             roleMenuMapper.insert(po);
         }
+    }
+
+    @Override
+    public Optional<Role> findById(Long id) {
+        return Optional.ofNullable(roleMapper.selectById(id)).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Role> findByCode(String code) {
+        return Optional.ofNullable(roleMapper.selectOne(
+                new LambdaQueryWrapper<RolePO>().eq(RolePO::getCode, code))).map(this::toDomain);
     }
 
     private Role toDomain(RolePO po) {

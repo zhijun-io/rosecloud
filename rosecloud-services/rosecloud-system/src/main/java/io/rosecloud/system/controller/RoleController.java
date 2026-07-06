@@ -43,6 +43,11 @@ public class RoleController {
         return ApiResponse.ok();
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<Role> get(@PathVariable Long id) {
+        return ApiResponse.ok(roleService.get(id));
+    }
+
     @GetMapping
     public ApiResponse<PageResult<Role>> page(@RequestParam(defaultValue = "1") long current,
                                               @RequestParam(defaultValue = "10") long size,

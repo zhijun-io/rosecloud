@@ -9,6 +9,7 @@ import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,6 +94,30 @@ public class UserRepositoryImpl implements UserRepository {
         return userRoleMapper.selectList(
                 new LambdaQueryWrapper<UserRolePO>().eq(UserRolePO::getUserId, userId))
                 .stream().map(UserRolePO::getRoleId).toList();
+    }
+
+    @Override
+    public List<String> findRoleCodesByUserId(Long userId) {
+        List<Long> roleIds = findRoleIdsByUserId(userId);
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        return roleMapper.selectList(new LambdaQueryWrapper<RolePO>().in(RolePO::getId, roleIds))
+                .stream().map(RolePO::getCode).toList();
+    }
+
+    @Override
+    public void assignRoles(Long userId, Collection<Long> roleIds) {
+        userRoleMapper.delete(new LambdaQueryWrapper<UserRolePO>().eq(UserRolePO::getUserId, userId));
+        if (roleIds == null) {
+            return;
+        }
+        for (Long roleId : roleIds) {
+            UserRolePO po = new UserRolePO();
+            po.setUserId(userId);
+            po.setRoleId(roleId);
+            userRoleMapper.insert(po);
+        }
     }
 
     private User toDomain(UserPO po) {

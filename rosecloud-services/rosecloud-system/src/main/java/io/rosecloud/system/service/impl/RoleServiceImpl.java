@@ -47,4 +47,9 @@ public class RoleServiceImpl implements RoleService {
     public List<Long> findMenuIdsByRoleId(Long roleId) {
         return roleRepository.findMenuIdsByRoleId(roleId);
     }
+    @Override
+    public Role get(Long id) {
+        return roleRepository.findById(id)
+                .orElseThrow(() -> new BizException(SystemErrorCode.ROLE_NOT_FOUND));
+    }
 }
