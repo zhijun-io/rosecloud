@@ -22,7 +22,9 @@ public enum SystemErrorCode implements ErrorCode {
     TASK_RETRY_EXCEEDED("SYSA015", "任务重试次数已达上限"),
     DICT_TYPE_CODE_EXISTS("SYSA016", "字典编码已存在"),
     DICT_TYPE_NOT_FOUND("SYSA017", "字典类型不存在"),
-    DICT_DATA_NOT_FOUND("SYSA018", "字典项不存在");
+    DICT_DATA_NOT_FOUND("SYSA018", "字典项不存在"),
+    DEPT_NOT_FOUND("SYSA019", "部门不存在"),
+    DEPT_HAS_CHILDREN("SYSA020", "存在子部门，无法删除");
 
     private final String code;
     private final String message;

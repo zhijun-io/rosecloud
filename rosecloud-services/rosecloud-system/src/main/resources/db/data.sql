@@ -85,3 +85,20 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
 (35, 1, 33), (36, 1, 34), (37, 1, 35), (38, 1, 36)
 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- Department management menus (under 系统管理). Platform-admin only.
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, perms, icon, sort, status, visible, deleted) VALUES
+(37, 2,  '部门管理', 1, 'dept', 'system/dept/index', 'system:dept:list', 'tree', 8, 1, 1, 0),
+(38, 37, '部门新增', 2, NULL, NULL, 'system:dept:add',  NULL, 1, 1, 1, 0),
+(39, 37, '部门修改', 2, NULL, NULL, 'system:dept:edit', NULL, 2, 1, 1, 0),
+(40, 37, '部门删除', 2, NULL, NULL, 'system:dept:del',  NULL, 3, 1, 1, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(39, 1, 37), (40, 1, 38), (41, 1, 39), (42, 1, 40)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+
+-- Root department.
+INSERT INTO sys_dept (id, parent_id, name, sort, status, leader, phone, deleted) VALUES
+(1, 0, '总公司', 0, 1, NULL, NULL, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);

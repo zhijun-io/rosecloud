@@ -202,3 +202,21 @@ CREATE TABLE IF NOT EXISTS sys_dict_data (
   PRIMARY KEY (id),
   KEY idx_dict_code (dict_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='字典项表';
+
+-- Department / org tree (platform-level for v1; user-dept binding is a follow-up).
+CREATE TABLE IF NOT EXISTS sys_dept (
+  id          BIGINT       NOT NULL                   COMMENT '主键',
+  parent_id   BIGINT       NOT NULL DEFAULT 0         COMMENT '父部门ID(0=根)',
+  name        VARCHAR(128) NOT NULL                   COMMENT '部门名称',
+  sort        INT          NOT NULL DEFAULT 0         COMMENT '排序',
+  status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
+  leader      VARCHAR(64)  DEFAULT NULL               COMMENT '负责人',
+  phone       VARCHAR(32)  DEFAULT NULL               COMMENT '联系电话',
+  create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_parent (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部门表';
