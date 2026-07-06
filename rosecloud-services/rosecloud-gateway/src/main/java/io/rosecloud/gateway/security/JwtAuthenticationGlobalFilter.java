@@ -1,6 +1,7 @@
 package io.rosecloud.gateway.security;
 
 import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -17,6 +18,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.nio.charset.StandardCharsets;
 
@@ -30,11 +32,14 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtTokenCodec jwtTokenCodec;
     private final GatewaySecurityProperties properties;
+    private final TokenRevocationService tokenRevocationService;
     private final PathMatcher pathMatcher = new AntPathMatcher();
 
-    public JwtAuthenticationGlobalFilter(JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties) {
+    public JwtAuthenticationGlobalFilter(JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties,
+                                         TokenRevocationService tokenRevocationService) {
         this.jwtTokenCodec = jwtTokenCodec;
         this.properties = properties;
+        this.tokenRevocationService = tokenRevocationService;
     }
 
     @Override
@@ -61,6 +66,13 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
                         claims.tenantId() == null ? "" : String.valueOf(claims.tenantId()))
                 .header(SecurityHeaders.ROLES, String.join(",", claims.roles()))
                 .build();
+        if (claims.jti() != null) {
+            return Mono.fromCallable(() -> tokenRevocationService.isRevoked(claims.jti()))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .flatMap(revoked -> revoked
+                            ? unauthorized(exchange, "token revoked")
+                            : chain.filter(exchange.mutate().request(mutated).build()));
+        }
         return chain.filter(exchange.mutate().request(mutated).build());
     }
 

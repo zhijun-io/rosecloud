@@ -1,6 +1,7 @@
 package io.rosecloud.monolith;
 
 import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -32,23 +33,27 @@ import java.util.Set;
 public class MonolithJwtFilter implements Filter {
 
     private final JwtTokenCodec jwtTokenCodec;
+    private final TokenRevocationService tokenRevocationService;
 
-    public MonolithJwtFilter(JwtTokenCodec jwtTokenCodec) {
+    public MonolithJwtFilter(JwtTokenCodec jwtTokenCodec, TokenRevocationService tokenRevocationService) {
         this.jwtTokenCodec = jwtTokenCodec;
+        this.tokenRevocationService = tokenRevocationService;
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest http = (HttpServletRequest) request;
-        String token = extractToken(http);
-        if (token != null) {
-            try {
-                TokenClaims claims = jwtTokenCodec.parse(token);
-                http = new IdentityHeaderRequestWrapper(http, claims);
-            } catch (InvalidTokenException ignored) {
-                // invalid token: proceed anonymously (no identity headers)
-            }
+       String token = extractToken(http);
+       if (token != null) {
+           try {
+               TokenClaims claims = jwtTokenCodec.parse(token);
+                if (!tokenRevocationService.isRevoked(claims.jti())) {
+                    http = new IdentityHeaderRequestWrapper(http, claims);
+                }
+           } catch (InvalidTokenException ignored) {
+               // invalid token: proceed anonymously (no identity headers)
+           }
         }
         chain.doFilter(http, response);
     }

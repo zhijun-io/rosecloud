@@ -1,6 +1,7 @@
 package io.rosecloud.gateway.security;
 
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
+import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,8 +12,9 @@ public class GatewaySecurityConfiguration {
 
     @Bean
     public JwtAuthenticationGlobalFilter jwtAuthenticationGlobalFilter(
-            JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties) {
-        return new JwtAuthenticationGlobalFilter(jwtTokenCodec, properties);
+            JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties,
+            TokenRevocationService tokenRevocationService) {
+        return new JwtAuthenticationGlobalFilter(jwtTokenCodec, properties, tokenRevocationService);
     }
 
     @Bean

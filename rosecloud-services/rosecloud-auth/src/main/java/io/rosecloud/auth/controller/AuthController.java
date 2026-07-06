@@ -6,8 +6,10 @@ import io.rosecloud.auth.service.dto.RefreshRequest;
 import io.rosecloud.auth.service.dto.TokenResponse;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,8 +34,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
-        authService.logout();
+    public ApiResponse<Void> logout(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth) {
+        authService.logout(auth);
         return ApiResponse.ok();
     }
 }

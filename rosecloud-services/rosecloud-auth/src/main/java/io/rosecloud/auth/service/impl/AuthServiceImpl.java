@@ -16,6 +16,7 @@ import io.rosecloud.starter.security.jwt.JwtProperties;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
 import io.rosecloud.starter.security.jwt.TokenType;
+import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,14 +32,17 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenCodec jwtTokenCodec;
     private final JwtProperties jwtProperties;
     private final LoginLogApi loginLogApi;
+    private final TokenRevocationService tokenRevocationService;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           JwtTokenCodec jwtTokenCodec, JwtProperties jwtProperties, LoginLogApi loginLogApi) {
+                           JwtTokenCodec jwtTokenCodec, JwtProperties jwtProperties, LoginLogApi loginLogApi,
+                           TokenRevocationService tokenRevocationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenCodec = jwtTokenCodec;
         this.jwtProperties = jwtProperties;
         this.loginLogApi = loginLogApi;
+        this.tokenRevocationService = tokenRevocationService;
     }
 
     @Override
@@ -78,11 +82,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Stateless logout: clients discard their tokens. Token revocation / blacklist
-     * (which needs a token store) is a follow-up.
+     * Revokes the caller's access token (by {@code jti}) until its expiry, so it
+     * is rejected by the gateway/monolith filter before it expires. Already
+     * invalid/expired tokens are a no-op. Multi-instance revocation needs a shared
+     * store (Redis); the default in-memory store suits the monolith.
      */
     @Override
-    public void logout() {
+    public void logout(String bearerToken) {
+        String token = extractBearer(bearerToken);
+        if (token == null) {
+            return;
+        }
+        try {
+            TokenClaims claims = jwtTokenCodec.parse(token);
+            if (claims.jti() != null) {
+                tokenRevocationService.revoke(claims.jti(), claims.expiresAt());
+            }
+        } catch (InvalidTokenException ignored) {
+            // already invalid/expired: nothing to revoke
+        }
+    }
+
+    private static String extractBearer(String auth) {
+        if (auth != null && auth.startsWith("Bearer ")) {
+            return auth.substring(7).trim();
+        }
+        return null;
     }
 
     private TokenResponse issue(CurrentUser user) {

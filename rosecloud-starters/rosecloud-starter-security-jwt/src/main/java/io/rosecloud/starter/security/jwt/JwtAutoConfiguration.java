@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
  * gateway verifies them.
  */
 @AutoConfiguration
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, TokenRevocationProperties.class})
 @ConditionalOnClass(Jwts.class)
 public class JwtAutoConfiguration {
 
@@ -21,5 +21,11 @@ public class JwtAutoConfiguration {
     @ConditionalOnMissingBean
     public JwtTokenCodec jwtTokenCodec(JwtProperties properties) {
         return new JwtTokenCodec(properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TokenRevocationService tokenRevocationService() {
+        return new InMemoryTokenRevocationService();
     }
 }

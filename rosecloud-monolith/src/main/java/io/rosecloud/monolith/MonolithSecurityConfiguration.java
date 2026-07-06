@@ -1,6 +1,7 @@
 package io.rosecloud.monolith;
 
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
+import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +17,10 @@ import org.springframework.core.Ordered;
 public class MonolithSecurityConfiguration {
 
     @Bean
-    public FilterRegistrationBean<MonolithJwtFilter> monolithJwtFilterRegistration(JwtTokenCodec jwtTokenCodec) {
+    public FilterRegistrationBean<MonolithJwtFilter> monolithJwtFilterRegistration(
+            JwtTokenCodec jwtTokenCodec, TokenRevocationService tokenRevocationService) {
         FilterRegistrationBean<MonolithJwtFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new MonolithJwtFilter(jwtTokenCodec));
+        registration.setFilter(new MonolithJwtFilter(jwtTokenCodec, tokenRevocationService));
         registration.addUrlPatterns("/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
         return registration;

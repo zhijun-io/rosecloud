@@ -10,6 +10,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Signs and verifies HS256 JWTs carrying the caller identity. Used by the auth
@@ -46,6 +47,7 @@ public class JwtTokenCodec {
         Date now = new Date();
         var builder = Jwts.builder()
                 .issuer(properties.getIssuer())
+                .id(UUID.randomUUID().toString())
                 .claim("username", user.username())
                 .claim("roles", user.roles())
                 .claim("type", type.name())
@@ -84,7 +86,9 @@ public class JwtTokenCodec {
                     claims.get("username", String.class),
                     parseLong(claims.get("tid", String.class)),
                     roles(claims),
-                    parseType(claims.get("type", String.class)));
+                    parseType(claims.get("type", String.class)),
+                    claims.getId(),
+                    claims.getExpiration() == null ? null : claims.getExpiration().toInstant());
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidTokenException("invalid token", e);
         }
