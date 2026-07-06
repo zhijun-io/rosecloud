@@ -1,4 +1,7 @@
 spring:
+  config:
+    import:
+      - optional:nacos:rosecloud-common.yaml
   application:
     name: rosecloud-auth
   cloud:

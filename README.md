@@ -74,6 +74,21 @@ cd rosecloud/rosecloud-monolith
 mvn spring-boot:run
 ```
 
+## Nacos 共享配置
+
+各服务通过 `spring.config.import: optional:nacos:rosecloud-common.yaml` 从 Nacos 拉取共享配置（`optional:` 表示 Nacos 不可达或配置缺失时不阻断启动）。本地起服务前需在 Nacos 创建：
+
+- dataId：`rosecloud-common.yaml`，group：`DEFAULT_GROUP`
+- 内容见 `deploy/nacos/rosecloud-common.yaml`（数据源等基础设施配置，敏感值以 `${ENV:默认值}` 引用进程环境变量，本地默认对齐 docker-compose）
+
+auth 与 gateway 共享 JWT 密钥，启动前设置环境变量（≥32 字节）：
+
+```bash
+export ROSECLOUD_JWT_SECRET=change-me-please-32-bytes-minimum
+```
+
+Nacos 默认账号 `nacos/nacos`，连接通过 `NACOS_SERVER_ADDR` / `NACOS_USERNAME` / `NACOS_PASSWORD` 覆盖。
+
 ## 默认端口
 
 | 模块 | 端口 |
