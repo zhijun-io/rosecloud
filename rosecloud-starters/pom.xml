@@ -25,5 +25,6 @@
         <module>rosecloud-oauth2-starter</module>
         <module>rosecloud-lock-starter</module>
         <module>rosecloud-cache-starter</module>
+        <module>rosecloud-sequence-starter</module>
     </modules>
 </project>
