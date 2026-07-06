@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.rosecloud</groupId>
+    <artifactId>rosecloud-bom</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>RoseCloud BOM</name>
+    <description>RoseCloud Bill of Materials — import once to align all rosecloud module versions.</description>
+
+    <properties>
+        <rosecloud.version>0.1.0-SNAPSHOT</rosecloud.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- common -->
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-common-core</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-common-security</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-common-web</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+
+            <!-- api -->
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-api</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+
+            <!-- starters (plug-and-play, on-demand) -->
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-tenant-starter</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-audit-starter</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-oauth2-starter</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+
+            <!-- services -->
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-gateway</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-auth</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-system</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-notice</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-monolith</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

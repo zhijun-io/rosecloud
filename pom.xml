@@ -20,8 +20,10 @@
     <description>RoseCloud modular microservice scaffold</description>
 
     <modules>
+        <module>rosecloud-bom</module>
         <module>rosecloud-common</module>
         <module>rosecloud-api</module>
+        <module>rosecloud-starters</module>
     </modules>
 
     <properties>
