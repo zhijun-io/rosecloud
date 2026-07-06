@@ -72,6 +72,11 @@
                 <artifactId>rosecloud-oauth2-starter</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-lock-starter</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
 
             <!-- services -->
             <dependency>

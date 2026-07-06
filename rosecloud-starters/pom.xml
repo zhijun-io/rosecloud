@@ -23,5 +23,6 @@
         <module>rosecloud-tenant-starter</module>
         <module>rosecloud-audit-starter</module>
         <module>rosecloud-oauth2-starter</module>
+        <module>rosecloud-lock-starter</module>
     </modules>
 </project>
