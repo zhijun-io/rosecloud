@@ -1,0 +1,62 @@
+package io.rosecloud.notice.controller;
+
+import io.rosecloud.common.core.model.ApiResponse;
+import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.notice.domain.Notice;
+import io.rosecloud.notice.service.NoticeService;
+import io.rosecloud.notice.service.dto.MyNotice;
+import io.rosecloud.notice.service.dto.NoticePublishRequest;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(ServiceMetadata.API_PREFIX + "/notice/notices")
+public class NoticeController {
+
+    private final NoticeService noticeService;
+
+    public NoticeController(NoticeService noticeService) {
+        this.noticeService = noticeService;
+    }
+
+    @PostMapping
+    public ApiResponse<Long> publish(@RequestBody NoticePublishRequest request) {
+        return ApiResponse.ok(noticeService.publish(request));
+    }
+
+    @GetMapping
+    public ApiResponse<PageResult<Notice>> page(@RequestParam(defaultValue = "1") long current,
+                                                @RequestParam(defaultValue = "10") long size,
+                                                @RequestParam(required = false) String keyword) {
+        return ApiResponse.ok(noticeService.page(current, size, keyword));
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<PageResult<MyNotice>> myNotices(@RequestParam(defaultValue = "1") long current,
+                                                      @RequestParam(defaultValue = "10") long size) {
+        return ApiResponse.ok(noticeService.myNotices(current, size));
+    }
+
+    @GetMapping("/me/{id}")
+    public ApiResponse<MyNotice> getMine(@PathVariable Long id) {
+        return ApiResponse.ok(noticeService.getMine(id));
+    }
+
+    @PostMapping("/me/{id}/read")
+    public ApiResponse<Void> markRead(@PathVariable Long id) {
+        noticeService.markRead(id);
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/me/{id}/confirm")
+    public ApiResponse<Void> confirm(@PathVariable Long id) {
+        noticeService.confirm(id);
+        return ApiResponse.ok();
+    }
+}
