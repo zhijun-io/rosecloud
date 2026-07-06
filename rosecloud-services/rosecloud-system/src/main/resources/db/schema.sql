@@ -91,3 +91,24 @@ CREATE TABLE IF NOT EXISTS sys_role_menu (
   PRIMARY KEY (id),
   UNIQUE KEY uk_role_menu (role_id, menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联表';
+
+-- Operation audit log. Populated by AuditLogPersistenceListener from AuditLogEvent.
+CREATE TABLE IF NOT EXISTS sys_audit_log (
+  id             BIGINT       NOT NULL                   COMMENT '主键',
+  action         VARCHAR(64)  NOT NULL                   COMMENT '操作动作',
+  description    VARCHAR(255) DEFAULT NULL               COMMENT '描述',
+  principal      VARCHAR(64)  DEFAULT NULL               COMMENT '操作人',
+  tenant_id      BIGINT       DEFAULT NULL               COMMENT '租户ID',
+  target         VARCHAR(128) DEFAULT NULL               COMMENT '目标方法',
+  elapsed_millis BIGINT       DEFAULT NULL               COMMENT '耗时(毫秒)',
+  success        TINYINT      NOT NULL                   COMMENT '是否成功:1是 0否',
+  error          VARCHAR(255) DEFAULT NULL               COMMENT '失败信息',
+  create_time    DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time    DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by      BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by      BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted        TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_create_time (create_time),
+  KEY idx_action (action)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作审计日志表';
