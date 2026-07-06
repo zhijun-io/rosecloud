@@ -10,7 +10,10 @@ public enum SystemErrorCode implements ErrorCode {
     TENANT_STATUS_INVALID("SYSA003", "租户当前状态不允许该操作"),
     USERNAME_EXISTS("SYSA004", "用户名已存在"),
     USER_NOT_FOUND("SYSA005", "用户不存在"),
-    ROLE_CODE_EXISTS("SYSA006", "角色编码已存在");
+    ROLE_CODE_EXISTS("SYSA006", "角色编码已存在"),
+    MENU_NOT_FOUND("SYSA007", "菜单不存在"),
+    MENU_HAS_CHILDREN("SYSA008", "存在子菜单，无法删除"),
+    ROLE_NOT_FOUND("SYSA009", "角色不存在");
 
     private final String code;
     private final String message;

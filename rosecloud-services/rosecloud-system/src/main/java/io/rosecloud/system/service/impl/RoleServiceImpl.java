@@ -10,6 +10,8 @@ import io.rosecloud.system.service.RoleService;
 import io.rosecloud.system.service.dto.RoleCreateRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class RoleServiceImpl implements RoleService {
 
@@ -31,5 +33,18 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public PageResult<Role> page(long current, long size, String keyword) {
         return roleRepository.page(current, size, keyword);
+    }
+    @AuditLog(action = "role-assign-menus", description = "角色菜单授权")
+    @Override
+    public void assignMenus(Long roleId, List<Long> menuIds) {
+        if (!roleRepository.existsById(roleId)) {
+            throw new BizException(SystemErrorCode.ROLE_NOT_FOUND);
+        }
+        roleRepository.assignMenus(roleId, menuIds == null ? List.of() : menuIds);
+    }
+
+    @Override
+    public List<Long> findMenuIdsByRoleId(Long roleId) {
+        return roleRepository.findMenuIdsByRoleId(roleId);
     }
 }

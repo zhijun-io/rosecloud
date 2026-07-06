@@ -88,6 +88,13 @@ public class UserRepositoryImpl implements UserRepository {
         userMapper.deleteById(id);
     }
 
+    @Override
+    public List<Long> findRoleIdsByUserId(Long userId) {
+        return userRoleMapper.selectList(
+                new LambdaQueryWrapper<UserRolePO>().eq(UserRolePO::getUserId, userId))
+                .stream().map(UserRolePO::getRoleId).toList();
+    }
+
     private User toDomain(UserPO po) {
         return new User(po.getId(), po.getUsername(), po.getNickname(), po.getStatus(), po.getTenantId());
     }

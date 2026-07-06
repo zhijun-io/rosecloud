@@ -58,3 +58,34 @@ CREATE TABLE IF NOT EXISTS sys_user_role (
   PRIMARY KEY (id),
   UNIQUE KEY uk_user_role (user_id, role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
+
+-- Menu / permission tables. Menus drive both navigation and permission codes
+-- (button-typed menus carry a `perms` code). Role-menu binding controls access.
+CREATE TABLE IF NOT EXISTS sys_menu (
+  id          BIGINT       NOT NULL                   COMMENT '主键',
+  parent_id   BIGINT       NOT NULL DEFAULT 0         COMMENT '父菜单ID(0=根)',
+  name        VARCHAR(64)  NOT NULL                   COMMENT '菜单名称',
+  type        TINYINT      NOT NULL                   COMMENT '类型:0目录 1菜单 2按钮',
+  path        VARCHAR(128) DEFAULT NULL               COMMENT '路由路径',
+  component   VARCHAR(128) DEFAULT NULL               COMMENT '前端组件',
+  perms       VARCHAR(128) DEFAULT NULL               COMMENT '权限标识(如 system:user:add)',
+  icon        VARCHAR(64)  DEFAULT NULL               COMMENT '图标',
+  sort        INT          NOT NULL DEFAULT 0         COMMENT '排序',
+  status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
+  visible     TINYINT      NOT NULL DEFAULT 1         COMMENT '是否可见:1是 0否',
+  create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  KEY idx_parent (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜单表';
+
+CREATE TABLE IF NOT EXISTS sys_role_menu (
+  id      BIGINT NOT NULL              COMMENT '主键',
+  role_id BIGINT NOT NULL              COMMENT '角色ID',
+  menu_id BIGINT NOT NULL              COMMENT '菜单ID',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_role_menu (role_id, menu_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联表';
