@@ -1,0 +1,94 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: rosecloud-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rosecloud123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-rosecloud}
+      MYSQL_USER: ${MYSQL_USER:-rosecloud}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - rosecloud-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: rosecloud-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-rosecloud123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - rosecloud-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-rosecloud123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rosecloud-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rosecloud}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rosecloud123}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rosecloud-rabbitmq-data:/var/lib/rabbitmq
+
+  nacos:
+    image: nacos/nacos-server:v3.2.1
+    container_name: rosecloud-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-cm9zZWNsb3VkLW5hY29zLWF1dGgtdG9rZW4tZm9yLWxvY2FsLWRldg==}
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-security}
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "38082:8080"
+    volumes:
+      - rosecloud-nacos-data:/home/nacos/data
+
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.1
+    container_name: rosecloud-xxl-job-admin
+    restart: unless-stopped
+    profiles:
+      - jobs
+    depends_on:
+      - mysql
+    environment:
+      PARAMS: >-
+        --server.port=8080
+        --spring.datasource.url=jdbc:mysql://mysql:3306/${XXL_JOB_DATABASE:-xxl_job}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+        --spring.datasource.username=${MYSQL_USER:-rosecloud}
+        --spring.datasource.password=${MYSQL_PASSWORD:-rosecloud123}
+        --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-rosecloud-xxl-job-token}
+    ports:
+      - "38081:8080"
+
+volumes:
+  rosecloud-mysql-data:
+  rosecloud-redis-data:
+  rosecloud-rabbitmq-data:
+  rosecloud-nacos-data:
+
