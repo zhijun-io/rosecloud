@@ -17,7 +17,6 @@ import io.rosecloud.starter.security.jwt.TokenType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -45,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
             throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
         }
-        return issue(new CurrentUser(user.userId(), user.username(), user.tenantId(), List.of(), null));
+        return issue(new CurrentUser(user.userId(), user.username(), user.tenantId(), user.roles(), null));
     }
 
     @Override

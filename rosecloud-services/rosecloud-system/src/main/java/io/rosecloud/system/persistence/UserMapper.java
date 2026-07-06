@@ -1,4 +1,4 @@
-package io.rosecloud.auth.persistence;
+package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
