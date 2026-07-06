@@ -41,10 +41,20 @@
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-web</artifactId>
+                <artifactId>rosecloud-common-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-common-security</artifactId>
             <version>${project.version}</version>
         </dependency>
-    </dependencies>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-security-jwt</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        </dependencies>
 
     <build>
         <plugins>
@@ -55,4 +65,3 @@
         </plugins>
     </build>
 </project>
-

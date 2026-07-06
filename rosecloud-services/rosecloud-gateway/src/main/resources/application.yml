@@ -16,3 +16,13 @@ management:
       exposure:
         include: health,info
 
+rosecloud:
+  jwt:
+    secret: ${ROSECLOUD_JWT_SECRET:}
+    issuer: ${ROSECLOUD_JWT_ISSUER:rosecloud}
+  gateway:
+    security:
+      white-list:
+        - /api/v1/auth/login
+        - /api/v1/auth/refresh
+        - /actuator/**
