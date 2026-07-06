@@ -220,3 +220,27 @@ CREATE TABLE IF NOT EXISTS sys_dept (
   PRIMARY KEY (id),
   KEY idx_parent (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部门表';
+
+-- Login sessions for online-user management. Keyed by access-token jti;
+-- status 1在线 0已登出. Online = status=1 AND expire_time>now.
+CREATE TABLE IF NOT EXISTS sys_login_session (
+  id          BIGINT       NOT NULL                   COMMENT '主键',
+  jti         VARCHAR(64)  NOT NULL                   COMMENT '访问令牌ID',
+  user_id     BIGINT       DEFAULT NULL               COMMENT '用户ID',
+  username    VARCHAR(64)  DEFAULT NULL               COMMENT '用户名',
+  tenant_id   BIGINT       DEFAULT NULL               COMMENT '租户ID',
+  login_time  DATETIME     DEFAULT NULL               COMMENT '登录时间',
+  expire_time DATETIME     DEFAULT NULL               COMMENT '令牌过期时间',
+  ip          VARCHAR(64)  DEFAULT NULL               COMMENT '登录IP',
+  user_agent  VARCHAR(255) DEFAULT NULL               COMMENT 'User-Agent',
+  status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1在线 0已登出',
+  create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_jti (jti),
+  KEY idx_user (user_id),
+  KEY idx_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录会话表';

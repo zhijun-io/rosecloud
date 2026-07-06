@@ -2,6 +2,8 @@ package io.rosecloud.auth.service.impl;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
+import io.rosecloud.api.session.LoginSessionApi;
+import io.rosecloud.api.session.LoginSessionRequest;
 import io.rosecloud.auth.domain.AuthUser;
 import io.rosecloud.auth.domain.UserRepository;
 import io.rosecloud.auth.error.AuthErrorCode;
@@ -17,6 +19,8 @@ import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
 import io.rosecloud.starter.security.jwt.TokenType;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,20 +37,22 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProperties jwtProperties;
     private final LoginLogApi loginLogApi;
     private final TokenRevocationService tokenRevocationService;
+    private final LoginSessionApi loginSessionApi;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
                            JwtTokenCodec jwtTokenCodec, JwtProperties jwtProperties, LoginLogApi loginLogApi,
-                           TokenRevocationService tokenRevocationService) {
+                           TokenRevocationService tokenRevocationService, LoginSessionApi loginSessionApi) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenCodec = jwtTokenCodec;
         this.jwtProperties = jwtProperties;
         this.loginLogApi = loginLogApi;
         this.tokenRevocationService = tokenRevocationService;
+        this.loginSessionApi = loginSessionApi;
     }
 
     @Override
-    public TokenResponse login(LoginRequest request) {
+    public TokenResponse login(LoginRequest request, String ip, String userAgent) {
         try {
             AuthUser user = userRepository.findByUsername(request.username())
                     .orElseThrow(() -> new BizException(AuthErrorCode.BAD_CREDENTIALS));
@@ -56,8 +62,10 @@ public class AuthServiceImpl implements AuthService {
             if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
                 throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
             }
-            TokenResponse token = issue(new CurrentUser(user.userId(), user.username(), user.tenantId(),
-                    user.roles(), null));
+            CurrentUser currentUser = new CurrentUser(user.userId(), user.username(), user.tenantId(),
+                    user.roles(), null);
+            TokenResponse token = issue(currentUser);
+            recordSession(token.accessToken(), currentUser, ip, userAgent);
             recordLogin(request.username(), true, null);
             return token;
         } catch (BizException e) {
@@ -97,6 +105,11 @@ public class AuthServiceImpl implements AuthService {
             TokenClaims claims = jwtTokenCodec.parse(token);
             if (claims.jti() != null) {
                 tokenRevocationService.revoke(claims.jti(), claims.expiresAt());
+                try {
+                    loginSessionApi.logoutByJti(claims.jti());
+                } catch (Exception e) {
+                    log.warn("failed to mark login session logged out for jti={}", claims.jti(), e);
+                }
             }
         } catch (InvalidTokenException ignored) {
             // already invalid/expired: nothing to revoke
@@ -115,6 +128,19 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtTokenCodec.issueRefreshToken(user);
         long expiresIn = jwtProperties.getAccessTtl().toSeconds();
         return new TokenResponse(accessToken, refreshToken, expiresIn);
+    }
+
+    /** Records the login session (by access-token jti); never lets it fail the login. */
+    private void recordSession(String accessToken, CurrentUser user, String ip, String userAgent) {
+        try {
+            TokenClaims claims = jwtTokenCodec.parse(accessToken);
+            LocalDateTime expireTime = claims.expiresAt() == null
+                    ? null : LocalDateTime.ofInstant(claims.expiresAt(), ZoneId.systemDefault());
+            loginSessionApi.record(new LoginSessionRequest(claims.jti(), user.userId(), user.username(),
+                    user.tenantId(), expireTime, ip, userAgent));
+        } catch (Exception e) {
+            log.warn("failed to record login session for username={}", user.username(), e);
+        }
     }
 
     /** Reports a login attempt to the system service; never lets logging fail the login. */

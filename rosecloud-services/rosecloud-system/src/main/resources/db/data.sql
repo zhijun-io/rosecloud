@@ -102,3 +102,13 @@ ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
 INSERT INTO sys_dept (id, parent_id, name, sort, status, leader, phone, deleted) VALUES
 (1, 0, '总公司', 0, 1, NULL, NULL, 0)
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- Online-user management menu (under 系统管理). Platform-admin only (v1).
+INSERT INTO sys_menu (id, parent_id, name, type, path, component, perms, icon, sort, status, visible, deleted) VALUES
+(41, 2, '在线用户', 1, 'online', 'system/online/index', 'system:session:list', 'monitor', 9, 1, 1, 0),
+(42, 41, '强制下线', 2, NULL, NULL, 'system:session:kick', NULL, 1, 1, 1, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO sys_role_menu (id, role_id, menu_id) VALUES
+(43, 1, 41), (44, 1, 42)
+ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);

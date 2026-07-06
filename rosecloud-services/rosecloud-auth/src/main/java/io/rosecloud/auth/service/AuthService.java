@@ -6,7 +6,7 @@ import io.rosecloud.auth.service.dto.TokenResponse;
 
 public interface AuthService {
 
-    TokenResponse login(LoginRequest request);
+    TokenResponse login(LoginRequest request, String ip, String userAgent);
 
     TokenResponse refresh(RefreshRequest request);
 

@@ -6,6 +6,7 @@ import io.rosecloud.auth.service.dto.RefreshRequest;
 import io.rosecloud.auth.service.dto.TokenResponse;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,8 +25,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request) {
-        return ApiResponse.ok(authService.login(request));
+    public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request, HttpServletRequest http) {
+        return ApiResponse.ok(authService.login(request, clientIp(http), http.getHeader(HttpHeaders.USER_AGENT)));
+    }
+
+    private static String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/refresh")
