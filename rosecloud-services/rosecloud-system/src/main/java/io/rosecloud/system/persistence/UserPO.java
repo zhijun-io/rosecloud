@@ -12,6 +12,8 @@ public class UserPO extends BaseEntity {
     private String nickname;
     private Integer status;
     private Long tenantId;
+    private String email;
+    private String phone;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -23,4 +25,8 @@ public class UserPO extends BaseEntity {
     public void setStatus(Integer status) { this.status = status; }
     public Long getTenantId() { return tenantId; }
     public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 }

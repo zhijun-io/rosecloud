@@ -1,6 +1,6 @@
-package io.rosecloud.notice.domain;
+package io.rosecloud.api.notice;
 
-/** Notice audience scope (stored as a tinyint code). */
+/** Notice audience scope (stored as a tinyint code). Shared by notice and system. */
 public enum NoticeTargetType {
 
     GLOBAL(0),

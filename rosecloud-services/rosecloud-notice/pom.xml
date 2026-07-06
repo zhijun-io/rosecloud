@@ -60,6 +60,17 @@
             <artifactId>rosecloud-audit-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 可选：邮件通道；引入但不激活，无 mail 配置时邮件通道跳过 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

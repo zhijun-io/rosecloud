@@ -5,15 +5,17 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.notice.domain.Notice;
+import io.rosecloud.notice.domain.NoticeChannel;
 import io.rosecloud.notice.domain.NoticePublishType;
 import io.rosecloud.notice.domain.NoticeRecord;
 import io.rosecloud.notice.domain.NoticeRepository;
 import io.rosecloud.notice.domain.NoticeStatus;
-import io.rosecloud.notice.domain.NoticeTargetType;
+import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.notice.error.NoticeErrorCode;
 import io.rosecloud.notice.service.NoticeService;
 import io.rosecloud.notice.service.dto.MyNotice;
 import io.rosecloud.notice.service.dto.NoticePublishRequest;
+import io.rosecloud.notice.channel.NoticeDispatchService;
 import io.rosecloud.starter.audit.AuditLog;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +29,11 @@ import java.util.stream.Collectors;
 public class NoticeServiceImpl implements NoticeService {
 
     private final NoticeRepository noticeRepository;
+    private final NoticeDispatchService dispatchService;
 
-    public NoticeServiceImpl(NoticeRepository noticeRepository) {
+    public NoticeServiceImpl(NoticeRepository noticeRepository, NoticeDispatchService dispatchService) {
         this.noticeRepository = noticeRepository;
+        this.dispatchService = dispatchService;
     }
 
     @AuditLog(action = "notice-publish", description = "发布通知")
@@ -53,11 +57,16 @@ public class NoticeServiceImpl implements NoticeService {
         CurrentUser sender = UserContext.get();
         Long senderId = sender == null ? null : sender.userId();
         Long senderTenantId = sender == null ? null : sender.tenantId();
+        int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), publishType, publishTime,
                 request.effectiveTime(), request.expireTime(), status,
-                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId);
-        return noticeRepository.insert(notice);
+                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels);
+        Long id = noticeRepository.insert(notice);
+        if (status == NoticeStatus.PUBLISHED.code()) {
+            dispatchService.dispatch(notice.withId(id));
+        }
+        return id;
     }
 
     @Override
@@ -116,7 +125,13 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Override
     public int publishScheduledNotices() {
-        return noticeRepository.publishScheduled(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        List<Notice> due = noticeRepository.findDueScheduled(now);
+        for (Notice notice : due) {
+            noticeRepository.markPublished(notice.id());
+            dispatchService.dispatch(notice);
+        }
+        return due.size();
     }
 
     private Notice loadAndCheckVisible(Long id) {

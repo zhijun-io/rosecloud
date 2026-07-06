@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS sys_notice (
   need_confirm     TINYINT      NOT NULL DEFAULT 0         COMMENT '是否需确认:0否 1是',
   sender_id        BIGINT       DEFAULT NULL               COMMENT '发布人',
   tenant_id        BIGINT       DEFAULT NULL               COMMENT '发布人租户(平台为空)',
+  channels        TINYINT      NOT NULL DEFAULT 1         COMMENT '通道位掩码:1站内 2邮件 4短信',
   create_time      DATETIME     DEFAULT NULL               COMMENT '创建时间',
   update_time      DATETIME     DEFAULT NULL               COMMENT '更新时间',
   create_by        BIGINT       DEFAULT NULL               COMMENT '创建人',

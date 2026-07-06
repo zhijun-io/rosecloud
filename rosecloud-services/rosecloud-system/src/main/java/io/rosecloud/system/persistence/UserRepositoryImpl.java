@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.api.notice.NoticeRecipient;
+import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
@@ -118,6 +120,41 @@ public class UserRepositoryImpl implements UserRepository {
             po.setRoleId(roleId);
             userRoleMapper.insert(po);
         }
+    }
+
+    @Override
+    public List<NoticeRecipient> findContacts(Integer targetType, Long tenantId, String roleCode) {
+        int type = targetType == null ? NoticeTargetType.GLOBAL.code() : targetType;
+        List<UserPO> users;
+        if (type == NoticeTargetType.TENANT.code()) {
+            users = userMapper.selectList(new LambdaQueryWrapper<UserPO>()
+                    .eq(UserPO::getTenantId, tenantId).eq(UserPO::getStatus, 1));
+        } else if (type == NoticeTargetType.ROLE.code()) {
+            users = findByRole(roleCode);
+        } else {
+            users = userMapper.selectList(new LambdaQueryWrapper<UserPO>().eq(UserPO::getStatus, 1));
+        }
+        return users.stream()
+                .map(po -> new NoticeRecipient(po.getId(), po.getEmail(), po.getPhone()))
+                .toList();
+    }
+
+    private List<UserPO> findByRole(String roleCode) {
+        if (roleCode == null || roleCode.isBlank()) {
+            return List.of();
+        }
+        RolePO role = roleMapper.selectOne(new LambdaQueryWrapper<RolePO>().eq(RolePO::getCode, roleCode));
+        if (role == null) {
+            return List.of();
+        }
+        List<Long> userIds = userRoleMapper.selectList(
+                new LambdaQueryWrapper<UserRolePO>().eq(UserRolePO::getRoleId, role.getId()))
+                .stream().map(UserRolePO::getUserId).toList();
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        return userMapper.selectList(new LambdaQueryWrapper<UserPO>()
+                .in(UserPO::getId, userIds).eq(UserPO::getStatus, 1));
     }
 
     private User toDomain(UserPO po) {

@@ -10,7 +10,7 @@ import io.rosecloud.notice.domain.NoticePublishType;
 import io.rosecloud.notice.domain.NoticeRecord;
 import io.rosecloud.notice.domain.NoticeRepository;
 import io.rosecloud.notice.domain.NoticeStatus;
-import io.rosecloud.notice.domain.NoticeTargetType;
+import io.rosecloud.api.notice.NoticeTargetType;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -38,11 +38,18 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
-    public int publishScheduled(LocalDateTime now) {
-        return noticeMapper.update(null, new LambdaUpdateWrapper<NoticePO>()
+    public List<Notice> findDueScheduled(LocalDateTime now) {
+        return noticeMapper.selectList(new LambdaQueryWrapper<NoticePO>()
                 .eq(NoticePO::getStatus, NoticeStatus.DRAFT.code())
                 .eq(NoticePO::getPublishType, NoticePublishType.SCHEDULED.code())
-                .le(NoticePO::getPublishTime, now)
+                .le(NoticePO::getPublishTime, now))
+                .stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public void markPublished(Long id) {
+        noticeMapper.update(null, new LambdaUpdateWrapper<NoticePO>()
+                .eq(NoticePO::getId, id)
                 .set(NoticePO::getStatus, NoticeStatus.PUBLISHED.code()));
     }
 
@@ -148,7 +155,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         return new Notice(po.getId(), po.getTitle(), po.getContent(), po.getTargetType(),
                 po.getTargetTenantId(), po.getTargetRoleCode(), po.getPublishType(), po.getPublishTime(),
                 po.getEffectiveTime(), po.getExpireTime(), po.getStatus(), po.getNeedConfirm(),
-                po.getSenderId(), po.getTenantId());
+                po.getSenderId(), po.getTenantId(), po.getChannels());
     }
 
     private NoticeRecord toRecordDomain(NoticeRecordPO po) {
@@ -172,6 +179,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         po.setNeedConfirm(n.needConfirm());
         po.setSenderId(n.senderId());
         po.setTenantId(n.tenantId());
+        po.setChannels(n.channels());
         return po;
     }
 }

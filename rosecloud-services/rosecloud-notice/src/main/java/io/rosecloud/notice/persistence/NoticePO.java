@@ -22,6 +22,7 @@ public class NoticePO extends BaseEntity {
     private Boolean needConfirm;
     private Long senderId;
     private Long tenantId;
+    private Integer channels;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -49,4 +50,6 @@ public class NoticePO extends BaseEntity {
     public void setSenderId(Long senderId) { this.senderId = senderId; }
     public Long getTenantId() { return tenantId; }
     public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public Integer getChannels() { return channels; }
+    public void setChannels(Integer channels) { this.channels = channels; }
 }

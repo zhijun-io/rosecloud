@@ -16,7 +16,10 @@ public interface NoticeRepository {
 
     Long insert(Notice notice);
 
-    int publishScheduled(LocalDateTime now);
+    /** Scheduled notices now due (draft + scheduled + publishTime <= now). */
+    List<Notice> findDueScheduled(LocalDateTime now);
+
+    void markPublished(Long id);
 
     PageResult<Notice> page(long current, long size, String keyword);
 

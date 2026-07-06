@@ -1,6 +1,7 @@
 package io.rosecloud.system.domain;
 
 import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.common.core.model.PageResult;
 
 import java.util.Collection;
@@ -30,4 +31,7 @@ public interface UserRepository {
     List<String> findRoleCodesByUserId(Long userId);
 
     void assignRoles(Long userId, Collection<Long> roleIds);
+
+    /** Resolves recipient contacts (email/phone) for a notice target. */
+    List<NoticeRecipient> findContacts(Integer targetType, Long tenantId, String roleCode);
 }

@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS sys_user (
   nickname    VARCHAR(64)  DEFAULT NULL               COMMENT '昵称',
   status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
   tenant_id   BIGINT       DEFAULT NULL               COMMENT '租户ID(平台账号为空)',
+  email       VARCHAR(128) DEFAULT NULL               COMMENT '邮箱',
+  phone       VARCHAR(32)  DEFAULT NULL               COMMENT '手机号',
   create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
   update_time DATETIME     DEFAULT NULL               COMMENT '更新时间',
   create_by   BIGINT       DEFAULT NULL               COMMENT '创建人',
