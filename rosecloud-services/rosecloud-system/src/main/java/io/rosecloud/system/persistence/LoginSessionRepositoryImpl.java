@@ -32,6 +32,11 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
     }
 
     @Override
+    public Optional<LoginSession> findById(Long id) {
+        return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
+    }
+
+    @Override
     public Optional<LoginSession> findByJti(String jti) {
         return Optional.ofNullable(mapper.selectOne(
                 new LambdaQueryWrapper<LoginSessionPO>().eq(LoginSessionPO::getJti, jti))).map(this::toDomain);
@@ -41,6 +46,14 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
     public void markLoggedOutByJti(String jti) {
         mapper.update(null, new LambdaUpdateWrapper<LoginSessionPO>()
                 .eq(LoginSessionPO::getJti, jti)
+                .set(LoginSessionPO::getStatus, LoginSessionStatus.LOGGED_OUT.code())
+                .set(LoginSessionPO::getUpdateTime, LocalDateTime.now()));
+    }
+
+    @Override
+    public void markLoggedOutById(Long id) {
+        mapper.update(null, new LambdaUpdateWrapper<LoginSessionPO>()
+                .eq(LoginSessionPO::getId, id)
                 .set(LoginSessionPO::getStatus, LoginSessionStatus.LOGGED_OUT.code())
                 .set(LoginSessionPO::getUpdateTime, LocalDateTime.now()));
     }

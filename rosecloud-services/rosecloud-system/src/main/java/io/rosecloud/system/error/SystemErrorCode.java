@@ -24,7 +24,8 @@ public enum SystemErrorCode implements ErrorCode {
     DICT_TYPE_NOT_FOUND("SYSA017", "字典类型不存在"),
     DICT_DATA_NOT_FOUND("SYSA018", "字典项不存在"),
     DEPT_NOT_FOUND("SYSA019", "部门不存在"),
-    DEPT_HAS_CHILDREN("SYSA020", "存在子部门，无法删除");
+    DEPT_HAS_CHILDREN("SYSA020", "存在子部门，无法删除"),
+    SESSION_NOT_FOUND("SYSA021", "会话不存在");
 
     private final String code;
     private final String message;

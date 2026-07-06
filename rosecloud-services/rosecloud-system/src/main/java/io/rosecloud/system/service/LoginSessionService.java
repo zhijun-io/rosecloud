@@ -11,4 +11,6 @@ public interface LoginSessionService {
     void logoutByJti(String jti);
 
     PageResult<LoginSession> onlinePage(long current, long size);
+
+    void kick(Long id);
 }
