@@ -22,10 +22,13 @@ RoseCloud 是企业后台 + SaaS 平台底座，基于 Spring Boot 4.1 + Spring 
 
 ```bash
 sdk env install                                    # 安装 .sdkmanrc 指定的 Java 21（仅首次；Maven 经 mvnw 提供）
-task init                                          # 启动基础设施 + 发布 Nacos 共享配置 + 导入建表种子（克隆后一次）
+# 按需选择初始化模式（二选一）：
+task init:monolith                                 # 【单体模式】仅启动 MySQL + 导入建表种子（克隆后一次）
+# 或
+task init:microservice                             # 【微服务模式】启动全部基础设施 + 发布 Nacos 共享配置 + 导入建表种子
 task build                                         # 全量构建（经 mvnw，跳过测试）
 task build:module MODULE=rosecloud-services/rosecloud-auth   # 构建单模块及其依赖
-task run:monolith                                  # 单体模式启动 :9160（Docker，前台跟随日志）
+task run:monolith                                  # 单体模式启动 :9160（Docker，前台跟随日志，无其他中间件依赖）
 task run:microservice                              # 微服务模式启动（Docker，网关 :9110 + auth/system/notice）
 cd rosecloud-services/rosecloud-auth && ./mvnw spring-boot:run   # 运行单个服务（本机直跑，调试用）
 docker compose --profile jobs up -d                # 额外启动 XXL-Job Admin
@@ -35,7 +38,7 @@ task down                                          # 停止全部容器
 
 选择覆盖变更的最小命令：行为改动通常 `./mvnw test` 足够；跨模块或自动配置改动用 `./mvnw verify -DskipITs`；完整校验用 `./mvnw verify`（或 `task test`）。
 
-本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`task init` 已自动发布共享配置与建表种子，无需手动初始化。
+本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`task init:microservice` 已自动发布共享配置与建表种子，无需手动初始化；单体模式无需 Nacos/Redis/RabbitMQ，仅依赖 MySQL。
 
 ## 模块结构
 

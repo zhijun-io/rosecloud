@@ -55,16 +55,22 @@ rosecloud
 ```bash
 git clone <repo> rosecloud && cd rosecloud
 sdk env install          # 安装 .sdkmanrc 指定的 Java 21（仅首次）
-task init                # 启动 MySQL/Nacos/Redis/RabbitMQ + 发布 Nacos 共享配置 + 导入建表与种子（克隆后一次，幂等）
+# 按需选择初始化模式（二选一）：
+task init:monolith       # 【单体模式】仅启动 MySQL + 导入建表与种子（克隆后一次，幂等）
+# 或
+task init:microservice   # 【微服务模式】启动全部基础设施（MySQL/Nacos/Redis/RabbitMQ）+ 发布 Nacos 配置 + 导入建表种子
 task build               # 全量构建（经 mvnw，跳过测试）
 ```
 
-`task init` 幂等，克隆后执行一次即可：等待基础设施就绪（健康检查）、向 Nacos 发布 `rosecloud-common.yaml`、导入 system/notice 的建表与种子（含管理员 `admin/admin123`）。`deploy/*.sh` 为历史脚本（本地 `java -jar` 直跑），保留备查；推荐用 Taskfile，服务统一在 Docker 内运行。
+`task init:monolith` / `task init:microservice` 均幂等，克隆后执行一次即可：
+- 单体模式仅依赖 MySQL，无需其他中间件，令牌吊销用内存存储
+- 微服务模式启动全套基础设施，包含服务发现、配置中心、缓存、消息队列等能力
+`deploy/*.sh` 为历史脚本（本地 `java -jar` 直跑），保留备查；推荐用 Taskfile，服务统一在 Docker 内运行。
 
-任选一种模式启动（服务以 Docker 容器运行，前台跟随日志，Ctrl-C 停止）：
+任选对应模式启动（服务以 Docker 容器运行，前台跟随日志，Ctrl-C 停止）：
 
 ```bash
-task run:monolith        # 单体模式，单进程 :9160
+task run:monolith        # 单体模式，单进程 :9160（无其他中间件依赖）
 # 或
 task run:microservice    # 微服务模式，网关 :9110 + auth :9120 / system :9130 / notice :9150
 ```
