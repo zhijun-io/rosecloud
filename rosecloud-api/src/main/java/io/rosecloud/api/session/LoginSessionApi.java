@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * service records a session on login (by token {@code jti}) and marks it
  * logged out on logout, so the system can list online users / sessions.
  */
-@FeignClient(name = "rosecloud-system", path = "/internal/sessions")
+@FeignClient(name = "rosecloud-system", contextId = "loginSessionApi", path = "/internal/sessions")
 public interface LoginSessionApi {
 
     @PostMapping

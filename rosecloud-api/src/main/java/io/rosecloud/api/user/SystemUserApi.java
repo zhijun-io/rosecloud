@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * auth service calls this instead of touching the user store directly, so the
  * canonical user store lives in a single service.
  */
-@FeignClient(name = "rosecloud-system", path = "/internal/users")
+@FeignClient(name = "rosecloud-system", contextId = "systemUserApi", path = "/internal/users")
 public interface SystemUserApi {
 
     /** Returns the auth snapshot for a username, or {@code null} data if not found. */

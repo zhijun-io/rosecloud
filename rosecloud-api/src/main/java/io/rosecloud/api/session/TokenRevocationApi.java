@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  * auth service, which owns the {@code TokenRevocationService}. The gateway /
  * monolith filter then rejects the revoked {@code jti}.
  */
-@FeignClient(name = "rosecloud-auth", path = "/internal/revoke")
+@FeignClient(name = "rosecloud-auth", contextId = "tokenRevocationApi", path = "/internal/revoke")
 public interface TokenRevocationApi {
 
     @PostMapping

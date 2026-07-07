@@ -12,7 +12,7 @@ import java.util.List;
  * phone) from the system service for a notice target, so push channels can
  * deliver beyond the in-app station feed.
  */
-@FeignClient(name = "rosecloud-system", path = "/internal/notice/recipients")
+@FeignClient(name = "rosecloud-system", contextId = "noticeRecipientApi", path = "/internal/notice/recipients")
 public interface NoticeRecipientApi {
 
     @PostMapping
