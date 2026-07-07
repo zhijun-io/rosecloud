@@ -4,6 +4,7 @@ import io.rosecloud.auth.service.AuthService;
 import io.rosecloud.auth.service.dto.LoginRequest;
 import io.rosecloud.auth.service.dto.RefreshRequest;
 import io.rosecloud.auth.service.dto.TokenResponse;
+import io.rosecloud.auth.support.ClientIpResolver;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,22 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final ClientIpResolver clientIpResolver;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, ClientIpResolver clientIpResolver) {
         this.authService = authService;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(@RequestBody LoginRequest request, HttpServletRequest http) {
-        return ApiResponse.ok(authService.login(request, clientIp(http), http.getHeader(HttpHeaders.USER_AGENT)));
-    }
-
-    private static String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ApiResponse.ok(authService.login(request, clientIpResolver.resolve(http), http.getHeader(HttpHeaders.USER_AGENT)));
     }
 
     @PostMapping("/refresh")
