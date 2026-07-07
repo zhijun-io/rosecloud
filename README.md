@@ -73,7 +73,6 @@ task build               # 全量构建（经 mvnw，跳过测试）
 `task run:monolith` / `task run:microservice` 由 `Taskfile.yml` 编排，会自动完成构建、基础设施准备和服务启动：
 - 单体模式仅依赖 MySQL，无需其他中间件，令牌吊销用内存存储
 - 微服务模式启动全套基础设施，包含服务发现、配置中心、缓存、消息队列等能力
-- 仓库不再保留独立的 `deploy/*.sh` 启动脚本，统一使用 Taskfile
 
 任选对应模式启动（服务以 Docker 容器运行，前台跟随日志，Ctrl-C 停止）：
 
@@ -90,17 +89,12 @@ BASE=http://127.0.0.1:9160            # 单体；微服务用 http://127.0.0.1:9
 TOKEN=$(curl -s -X POST $BASE/api/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["accessToken"])')
+  
 curl -s $BASE/api/system/depts/tree -H "Authorization: Bearer $TOKEN"   # 200 部门树
 curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 ```
 
 > 令牌吊销说明：共享配置默认 `type=redis`（auth/gateway 共享 Redis）。微服务模式登出后旧令牌在 gateway 侧即时失效（跨进程：auth 写入 Redis、gateway 读取校验）；单体模式无 Redis 依赖、回退 `in-memory`，登出后同进程即时失效。无 Redis 环境可设 `ROSECLOUD_TOKEN_REVOCATION_TYPE=in-memory`。
-
-JWT 密钥默认用开发值；生产务必设置 `ROSECLOUD_JWT_SECRET`（≥32 字节，auth 与 gateway 必须一致）：
-
-```bash
-export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
-```
 
 ## 共享配置
 
@@ -115,12 +109,6 @@ export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
 ## 变更记录
 
 见 [CHANGELOG.md](CHANGELOG.md)。
-
-auth 与 gateway 共享 JWT 密钥，启动前设置环境变量（≥32 字节）：
-
-```bash
-export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
-```
 
 ## 默认端口
 
@@ -152,13 +140,3 @@ export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
 - [task](https://taskfile.dev)（`brew install go-task/tap/go-task`）
 
 进入 `rosecloud/` 后 `sdk env` 切到 Java 21；`task --list` 查看全部命令，服务统一以 Docker 容器运行。
-
-## 下一步建议
-
-建议按下面顺序继续实现：
-
-1. `rosecloud-common-*` 补基础返回体、异常、上下文和配置模型
-2. `rosecloud-auth` 落 Spring Security + JWT 基础链路
-3. `rosecloud-system` 落用户、角色、菜单、权限骨架，并承载租户开通/启停（租户管理并入 system）
-4. `rosecloud-notice` 落公告、站内信和触达链路
-5. `rosecloud-monolith` 作为本地单体调试入口联通上述能力
