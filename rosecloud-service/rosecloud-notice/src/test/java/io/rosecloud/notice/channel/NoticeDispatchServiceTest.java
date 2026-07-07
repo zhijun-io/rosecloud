@@ -12,11 +12,15 @@ import io.rosecloud.notice.domain.NoticeStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class NoticeDispatchServiceTest {
+
+    /** Runs dispatch synchronously so assertions need no joining. */
+    private static final Executor SYNC = Runnable::run;
 
     @Test
     void dispatchesOnlyToChannelsInMask() {
@@ -28,7 +32,7 @@ class NoticeDispatchServiceTest {
         NoticeRecipientApi api = req -> ApiResponse.ok(recipients);
         NoticeDispatchService service = new NoticeDispatchService(api,
                 List.of(capturingSender(NoticeChannel.EMAIL, emailCount),
-                        capturingSender(NoticeChannel.SMS, smsCount)));
+                        capturingSender(NoticeChannel.SMS, smsCount)), SYNC);
 
         Notice notice = notice(NoticeChannel.EMAIL.code());
         service.doDispatch(notice, NoticeChannel.maskOf(notice.channels()));
@@ -45,7 +49,7 @@ class NoticeDispatchServiceTest {
             return ApiResponse.ok(List.of());
         };
         NoticeDispatchService service = new NoticeDispatchService(api,
-                List.of(capturingSender(NoticeChannel.EMAIL, new AtomicInteger())));
+                List.of(capturingSender(NoticeChannel.EMAIL, new AtomicInteger())), SYNC);
         Notice notice = new Notice(7L, "t", "c", NoticeTargetType.TENANT.code(), 99L, "admin",
                 NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
                 null, null, NoticeChannel.EMAIL.code());

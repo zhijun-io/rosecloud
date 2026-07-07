@@ -7,11 +7,13 @@ import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticeChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -29,10 +31,13 @@ public class NoticeDispatchService {
 
     private final NoticeRecipientApi recipientApi;
     private final Map<NoticeChannel, NoticeChannelSender> senders;
+    private final Executor executor;
 
-    public NoticeDispatchService(NoticeRecipientApi recipientApi, List<NoticeChannelSender> senders) {
+    public NoticeDispatchService(NoticeRecipientApi recipientApi, List<NoticeChannelSender> senders,
+            @Qualifier("noticeDispatchExecutor") Executor executor) {
         this.recipientApi = recipientApi;
         this.senders = senders.stream().collect(toMap(NoticeChannelSender::channel, identity()));
+        this.executor = executor;
     }
 
     public void dispatch(Notice notice) {
@@ -40,7 +45,12 @@ public class NoticeDispatchService {
         if (!NoticeChannel.EMAIL.in(mask) && !NoticeChannel.SMS.in(mask)) {
             return;
         }
-        CompletableFuture.runAsync(() -> doDispatch(notice, mask));
+        CompletableFuture.runAsync(() -> doDispatch(notice, mask), executor)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("notice {} dispatch future terminated exceptionally", notice.id(), ex);
+                    }
+                });
     }
 
     void doDispatch(Notice notice, int mask) {
