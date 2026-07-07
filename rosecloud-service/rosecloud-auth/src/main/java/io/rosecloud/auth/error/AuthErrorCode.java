@@ -31,13 +31,7 @@ public enum AuthErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
-
-    @Override
-    public String modulePrefix() {
-        return "auth";
-    }
-
-    @Override
+@Override
     public int httpStatus() {
         return 401;
     }

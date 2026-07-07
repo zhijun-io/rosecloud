@@ -13,13 +13,7 @@ public enum SecurityErrorCode implements ErrorCode {
     SecurityErrorCode(String message) {
         this.message = message;
     }
-
-    @Override
-    public String modulePrefix() {
-        return "security";
-    }
-
-    @Override
+@Override
     public String message() {
         return message;
     }

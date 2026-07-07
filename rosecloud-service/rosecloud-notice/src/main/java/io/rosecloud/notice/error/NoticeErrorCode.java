@@ -19,10 +19,4 @@ public enum NoticeErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
-
-    @Override
-    public String modulePrefix() {
-        return "notice";
-    }
-
 }

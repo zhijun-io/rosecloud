@@ -5,7 +5,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: '${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}'
     username: ${MYSQL_USER:rosecloud}
-    password: ${MYSQL_PASSWORD:rosecloud123}
+    password: ${MYSQL_PASSWORD:-tVKoY6P7Bqm7TFCUOdneoq}
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -16,7 +16,7 @@ spring:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:rosecloud123}
+      password: ${REDIS_PASSWORD:-CvnnEHxiK5ldkOzU6cdMByk}
   cloud:
     openfeign:
       autoconfiguration:
@@ -52,7 +52,7 @@ rosecloud:
       - sys_login_session
   security:
     jwt:
-      secret: ${ROSECLOUD_SECURITY_JWT_SECRET:rosecloud-dev-secret-please-change-me-0123456789}
+      secret: ${ROSECLOUD_SECURITY_JWT_SECRET:-"EGpBkD0uIstmuaCTQF6KqiDPL9YTuRL1KFrCjoL+m0Q/1HqQPWxoQPxwNw2A2OBO"}
       issuer: ${ROSECLOUD_SECURITY_JWT_ISSUER:rosecloud}
       revocation:
         type: ${ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE:redis}

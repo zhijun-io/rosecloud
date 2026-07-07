@@ -16,10 +16,4 @@ public enum CommonErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
-
-    @Override
-    public String modulePrefix() {
-        return "common";
-    }
-
 }
