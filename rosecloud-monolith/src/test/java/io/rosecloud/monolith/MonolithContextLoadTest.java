@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("monolith")
 @TestPropertySource(properties = {
-        "spring.config.import=",
+        "spring.config.import=optional:classpath:rosecloud-common.yaml",
         "spring.cloud.nacos.config.enabled=false",
         "spring.cloud.nacos.config.import-check.enabled=false",
         "spring.cloud.nacos.discovery.enabled=false",

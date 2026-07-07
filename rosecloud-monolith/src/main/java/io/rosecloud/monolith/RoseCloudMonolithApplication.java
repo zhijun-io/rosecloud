@@ -3,6 +3,7 @@ package io.rosecloud.monolith;
 import io.rosecloud.auth.RoseCloudAuthApplication;
 import io.rosecloud.notice.RoseCloudNoticeApplication;
 import io.rosecloud.system.RoseCloudSystemApplication;
+import io.rosecloud.system.config.LocalSystemUserApi;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

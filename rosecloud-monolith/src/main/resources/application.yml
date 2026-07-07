@@ -1,26 +1,15 @@
 spring:
+  config:
+    import:
+      - optional:classpath:rosecloud-common.yaml
   application:
     name: rosecloud-monolith
   profiles:
     active: monolith
-  # 单体模式数据库配置（直连MySQL）
-  datasource:
-    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${MYSQL_USER:rosecloud}
-    password: ${MYSQL_PASSWORD:rosecloud123}
-    driver-class-name: com.mysql.cj.jdbc.Driver
   # Flyway 数据库版本化迁移配置
   flyway:
-    enabled: true
-    baseline-on-migrate: true  # 数据库已有表时自动创建基线，避免首次启动报错
-    validate-on-migrate: true
-    clean-disabled: true  # 禁用clean操作，防止误删数据
     locations: classpath*:db/migration  # 扫描所有依赖jar包中的迁移脚本（system/notice模块的SQL）
     validate-migration-naming: false  # 允许不同模块使用相同版本号前缀（如system和notice都有V1.0__xxx）
-  # 日志配置
-  logging:
-    pattern:
-      level: '%5p [%X{traceId:-}]'
   cloud:
     nacos:
       config:
@@ -30,27 +19,6 @@ spring:
         enabled: false  # 禁用Nacos服务发现
     discovery:
       enabled: false  # 完全禁用Spring Cloud服务发现
-    openfeign:
-      autoconfiguration:
-        jackson:
-          enabled: false   # 用 Jackson 2，关闭 OpenFeign 的 Jackson 3 模块（见 auth application.yml 注释）
 
 server:
   port: 9160
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-
-rosecloud:
-  audit:
-    enabled: true
-  jwt:
-    secret: ${ROSECLOUD_JWT_SECRET:}
-    issuer: ${ROSECLOUD_JWT_ISSUER:rosecloud}
-  tenant:
-    enabled: false
-  oauth2:
-    enabled: false
