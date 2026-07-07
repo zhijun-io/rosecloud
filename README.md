@@ -2,12 +2,12 @@
 
 `rosecloud` 是一个独立于当前仓库主工程的开发骨架。
 
-当前阶段目标：
+仓库定位：
 
-- 建立可独立迁移的 Maven 多模块工程
+- 提供可独立迁移的 Maven 多模块工程
 - 固化基础技术栈和模块边界
 - 提供本地开发所需的基础容器编排
-- 为后续逐步实现网关、认证、租户、系统管理、通知和单体模式预留稳定入口
+- 为后续逐步实现网关、认证、租户、系统管理、通知和单体模式预留入口
 
 ## 当前模块
 
@@ -21,11 +21,19 @@ rosecloud
 │   ├── rosecloud-common-security
 │   └── rosecloud-common-web
 ├── rosecloud-api
-├── rosecloud-starters            # 可插拔能力 starter，按需加载
-│   ├── rosecloud-tenant-starter  # 多租户（rosecloud.tenant.enabled）
-│   ├── rosecloud-audit-starter   # 审计（rosecloud.audit.enabled）
-│   └── rosecloud-oauth2-starter  # OAuth2 JWT 资源服务器（rosecloud.oauth2.enabled）
-├── rosecloud-services
+├── rosecloud-starter-tech        # 技术型 starter 父模块
+│   ├── rosecloud-starter-web
+│   ├── rosecloud-starter-security-jwt
+│   ├── rosecloud-starter-data-mybatisplus
+│   ├── rosecloud-starter-lock
+│   ├── rosecloud-starter-cache
+│   ├── rosecloud-starter-sequence
+│   ├── rosecloud-starter-storage
+│   └── rosecloud-starter-oauth2
+├── rosecloud-starter-business    # 业务型 starter 父模块
+│   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）
+│   └── rosecloud-starter-audit   # 审计（rosecloud.audit.enabled）
+├── rosecloud-service
 │   ├── rosecloud-auth
 │   ├── rosecloud-gateway
 │   ├── rosecloud-notice
@@ -35,18 +43,18 @@ rosecloud
 
 ## 可插拔能力
 
-`rosecloud-starters` 下的能力以独立 starter 提供，按 `@AutoConfiguration` 装配：能力型 starter（tenant/audit/oauth2）用 `rosecloud.{name}.enabled=true` 门控；核心基建 starter（`rosecloud-starter-security-jwt`）按 classpath 引入即装配：
+starter 分成两个父模块：`rosecloud-starter-tech` 承载技术型 starter，`rosecloud-starter-business` 承载业务型 starter。二者都通过 `@AutoConfiguration` 装配；业务型 starter（tenant/audit）用 `rosecloud.{name}.enabled=true` 门控，核心基建 starter（`rosecloud-starter-security-jwt`）按 classpath 引入即装配：
 
 | starter | 开关 | 说明 |
 |---|---|---|
 | rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 安全上下文过滤 + 全局异常 + Feign 头透传 |
 | rosecloud-starter-security-jwt | 引入即装配 | JWT(HS256) access/refresh 签发与校验，claims 对齐 CurrentUser；auth 签发、gateway 校验共享 |
 | rosecloud-starter-data-mybatisplus | 服务按需接入 | MyBatis-Plus 持久化（可换 JPA）+ 审计自动填充 + 分页拦截器 |
-| rosecloud-tenant-starter | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传、MyBatis-Plus 行级隔离（`TenantLineInnerInterceptor`） |
-| rosecloud-audit-starter | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent`（含操作人/租户，内置日志监听器） |
-| rosecloud-oauth2-starter | `rosecloud.oauth2.enabled` | OAuth2 JWT 资源服务器，需配 `rosecloud.oauth2.jwk-set-uri` |
+| rosecloud-starter-tenant | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传、MyBatis-Plus 行级隔离（`TenantLineInnerInterceptor`） |
+| rosecloud-starter-audit | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent`（含操作人/租户，内置日志监听器） |
+| rosecloud-starter-oauth2 | `rosecloud.oauth2.enabled` | OAuth2 JWT 资源服务器，需配 `rosecloud.oauth2.jwk-set-uri` |
 
-`rosecloud-monolith` 已引入三者并默认关闭，按需置 `enabled=true` 即激活。
+`rosecloud-monolith` 引入了业务型 starter 和需要的技术型 starter，并默认关闭可选能力，按需置 `enabled=true` 即激活。
 
 ## 快速开始
 
@@ -55,17 +63,17 @@ rosecloud
 ```bash
 git clone <repo> rosecloud && cd rosecloud
 sdk env install          # 安装 .sdkmanrc 指定的 Java 21（仅首次）
-# 按需选择初始化模式（二选一）：
-task init:monolith       # 【单体模式】仅启动 MySQL + 导入建表与种子（克隆后一次，幂等）
+# 按需选择运行模式（二选一）：
+task run:monolith        # 【单体模式】自动完成构建与启动
 # 或
-task init:microservice   # 【微服务模式】启动全部基础设施（MySQL/Nacos/Redis/RabbitMQ）+ 发布 Nacos 配置 + 导入建表种子
+task run:microservice    # 【微服务模式】自动完成构建、基础设施启动与服务启动
 task build               # 全量构建（经 mvnw，跳过测试）
 ```
 
-`task init:monolith` / `task init:microservice` 均幂等，克隆后执行一次即可：
+`task run:monolith` / `task run:microservice` 由 `Taskfile.yml` 编排，会自动完成构建、基础设施准备和服务启动：
 - 单体模式仅依赖 MySQL，无需其他中间件，令牌吊销用内存存储
 - 微服务模式启动全套基础设施，包含服务发现、配置中心、缓存、消息队列等能力
-`deploy/*.sh` 为历史脚本（本地 `java -jar` 直跑），保留备查；推荐用 Taskfile，服务统一在 Docker 内运行。
+- 仓库不再保留独立的 `deploy/*.sh` 启动脚本，统一使用 Taskfile
 
 任选对应模式启动（服务以 Docker 容器运行，前台跟随日志，Ctrl-C 停止）：
 
@@ -91,23 +99,28 @@ curl -s -X POST $BASE/api/v1/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 JWT 密钥默认用开发值；生产务必设置 `ROSECLOUD_JWT_SECRET`（≥32 字节，auth 与 gateway 必须一致）：
 
 ```bash
-export ROSECLOUD_JWT_SECRET=change-me-please-32-bytes-minimum
+export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
 ```
 
-## Nacos 共享配置
+## 共享配置
 
-各服务通过 `spring.config.import: optional:nacos:rosecloud-common.yaml` 从 Nacos 拉取共享配置（`optional:` 表示 Nacos 不可达或配置缺失时不阻断启动）。本地起服务前需在 Nacos 创建：
+各服务通过 `spring.config.import` 复用共享配置（`optional:` 表示共享文件不存在时不阻断启动）。共享文件位于 `rosecloud-common/rosecloud-common-core/src/main/resources/rosecloud-common.yaml`。
 
-- dataId：`rosecloud-common.yaml`，group：`DEFAULT_GROUP`
-- 内容见 `deploy/nacos/rosecloud-common.yaml`（数据源等基础设施配置，敏感值以 `${ENV:默认值}` 引用进程环境变量，本地默认对齐 docker-compose）
+导入顺序为 `classpath` 默认值 -> Nacos 公共配置 -> Nacos 服务配置 -> Nacos profile 配置，因此服务自己的 `application.yml` 和 Nacos 中的服务/profile 配置都可以覆盖共享文件中的任意项；单体模式同样适用，适合保留自己的 `spring.flyway.locations`、`spring.cloud.nacos.*` 和单体专属开关。
+
+## 许可证
+
+本仓库采用 [Apache License 2.0](LICENSE)。
+
+## 变更记录
+
+见 [CHANGELOG.md](CHANGELOG.md)。
 
 auth 与 gateway 共享 JWT 密钥，启动前设置环境变量（≥32 字节）：
 
 ```bash
-export ROSECLOUD_JWT_SECRET=change-me-please-32-bytes-minimum
+export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
 ```
-
-本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问）；如需开启，设置 `NACOS_AUTH_ENABLE=true` 与对应 token/identity 后用 `NACOS_USERNAME` / `NACOS_PASSWORD` 覆盖。`task init` 已自动发布共享配置，无需手动在 Nacos 创建。Nacos 地址通过 `NACOS_SERVER_ADDR` 覆盖。
 
 ## 默认端口
 

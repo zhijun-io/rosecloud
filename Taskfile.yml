@@ -3,12 +3,8 @@ version: '3'
 # RoseCloud 任务编排。安装 task：brew install go-task/tap/go-task（或见 https://taskfile.dev）
 # 快速开始（二选一，一键启动）：task run:monolith | task run:microservice
 # 服务以 Docker 容器运行，自动完成构建、初始化、启动全流程。
-# 前置：sdkman 已安装配置（.sdkmanrc 锁定 Java 21；首次 `sdk env install` 装 JDK）。Maven 经 `mvnw` 包装器提供（版本见 .mvn/wrapper/）。
-# 注：task 内置 shell（gosh）无法 source sdkman，故构建经 `bash -lc` 激活 sdkman 后调用 ./mvnw。
-
 vars:
-  # 构建前自动激活 sdkman 环境，使用 .sdkmanrc 指定的 Java 版本
-  MVN: bash -lc 'source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env install && ./mvnw "$@"' _
+  MVN: bash ./mvnw "$@"
   COMPOSE: docker compose
 
 tasks:
@@ -27,7 +23,7 @@ tasks:
 
   build:microservice:
     desc: 仅构建微服务模式所需模块（节省时间）
-    cmd: '{{.MVN}} -pl rosecloud-services/rosecloud-auth,rosecloud-services/rosecloud-system,rosecloud-services/rosecloud-notice,rosecloud-services/rosecloud-gateway -am install -DskipTests'
+    cmd: '{{.MVN}} -pl rosecloud-service/rosecloud-auth,rosecloud-service/rosecloud-system,rosecloud-service/rosecloud-notice,rosecloud-service/rosecloud-gateway -am install -DskipTests'
 
   test:
     desc: 构建并运行测试
@@ -47,16 +43,6 @@ tasks:
     run: once
     cmd: '{{.COMPOSE}} --profile microservice up -d --wait mysql nacos redis rabbitmq'
 
-  nacos:publish:
-    desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml（仅微服务需要）
-    deps: [ infra:microservice ]
-    cmd: |
-      curl -fsS -X POST 'http://127.0.0.1:8848/nacos/v3/admin/cs/config' \
-        -H "${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}: ${NACOS_AUTH_IDENTITY_VALUE:-security}" \
-        --data-urlencode 'dataId=rosecloud-common.yaml' --data-urlencode 'groupName=DEFAULT_GROUP' \
-        --data-urlencode 'namespaceId=public' --data-urlencode 'type=yaml' \
-        --data-urlencode "content@deploy/nacos/rosecloud-common.yaml" >/dev/null && echo 'nacos 配置已发布'
-
   run:monolith:
     desc: 单体模式一键启动（自动完成初始化 → 构建 → 运行，:9160，admin/admin123）
     deps: [ infra:monolith ]  # 仅启动MySQL，SQL由Flyway在服务启动时自动执行
@@ -66,7 +52,7 @@ tasks:
 
   run:microservice:
     desc: 微服务模式一键启动（自动完成初始化 → 构建 → 运行，网关 :9110，admin/admin123）
-    deps: [ infra:microservice, nacos:publish ]  # 启动基础设施+发布Nacos配置，SQL由Flyway自动执行
+    deps: [ infra:microservice ]  # 启动基础设施，SQL由Flyway自动执行
     cmds:
       - task: build:microservice  # 等基础设施就绪后再构建
       - '{{.COMPOSE}} --profile microservice up -d --build'  # 构建成功后启动服务，自动执行数据库迁移

@@ -22,15 +22,16 @@ RoseCloud 是企业后台 + SaaS 平台底座，基于 Spring Boot 4.1 + Spring 
 
 ```bash
 sdk env install                                    # 安装 .sdkmanrc 指定的 Java 21（仅首次；Maven 经 mvnw 提供）
-# 按需选择初始化模式（二选一）：
-task init:monolith                                 # 【单体模式】仅启动 MySQL + 导入建表种子（克隆后一次）
+# 按需选择运行模式（二选一）：
+task run:monolith                                  # 【单体模式】自动完成构建、基础设施准备与启动
 # 或
-task init:microservice                             # 【微服务模式】启动全部基础设施 + 发布 Nacos 共享配置 + 导入建表种子
+task run:microservice                              # 【微服务模式】自动完成构建、基础设施准备与启动
 task build                                         # 全量构建（经 mvnw，跳过测试）
-task build:module MODULE=rosecloud-services/rosecloud-auth   # 构建单模块及其依赖
+task build:monolith                                # 构建单体模式所需模块
+task build:microservice                            # 构建微服务模式所需模块
 task run:monolith                                  # 单体模式启动 :9160（Docker，前台跟随日志，无其他中间件依赖）
 task run:microservice                              # 微服务模式启动（Docker，网关 :9110 + auth/system/notice）
-cd rosecloud-services/rosecloud-auth && ./mvnw spring-boot:run   # 运行单个服务（本机直跑，调试用）
+cd rosecloud-service/rosecloud-auth && ./mvnw spring-boot:run   # 运行单个服务（本机直跑，调试用）
 docker compose --profile jobs up -d                # 额外启动 XXL-Job Admin
 task test                                          # 构建并运行测试
 task down                                          # 停止全部容器
@@ -38,7 +39,7 @@ task down                                          # 停止全部容器
 
 选择覆盖变更的最小命令：行为改动通常 `./mvnw test` 足够；跨模块或自动配置改动用 `./mvnw verify -DskipITs`；完整校验用 `./mvnw verify`（或 `task test`）。
 
-本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`task init:microservice` 已自动发布共享配置与建表种子，无需手动初始化；单体模式无需 Nacos/Redis/RabbitMQ，仅依赖 MySQL。
+本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`task run:microservice` 会自动启动微服务所需基础设施与服务；单体模式无需 Nacos/Redis/RabbitMQ，仅依赖 MySQL。
 
 ## 模块结构
 
@@ -50,17 +51,22 @@ rosecloud/
 │   ├── rosecloud-common-security/    # SecurityHeaders、安全上下文，无 Spring Security 硬依赖
 │   └── rosecloud-common-web/         # WebConstants、Web 层公共配置
 ├── rosecloud-api/                    # 服务间契约：Feign 接口、共享 DTO/record、枚举
-├── rosecloud-starters/               # 可插拔能力 starter，按需加载（见下）
+├── rosecloud-starter-tech/           # 技术型 starter 父模块
 │   ├── rosecloud-starter-web/        # Web 入口：Jackson 2 + 安全上下文过滤 + 全局异常 + Feign 头透传
 │   ├── rosecloud-starter-security-jwt/  # JWT 编解码：access/refresh 签发与校验（auth 签发、gateway 校验）
 │   ├── rosecloud-starter-data-mybatisplus/  # MyBatis-Plus 持久化（可换 JPA）
-│   ├── rosecloud-tenant-starter/     # 多租户（rosecloud.tenant.enabled）
-│   ├── rosecloud-audit-starter/      # 审计（rosecloud.audit.enabled）
-│   └── rosecloud-oauth2-starter/     # OAuth2 JWT 资源服务器（rosecloud.oauth2.enabled）
-├── rosecloud-services/
+│   ├── rosecloud-starter-lock/       # 分布式锁
+│   ├── rosecloud-starter-cache/      # 缓存
+│   ├── rosecloud-starter-sequence/   # 业务序列号
+│   ├── rosecloud-starter-storage/    # 文件存储
+│   └── rosecloud-starter-oauth2/     # OAuth2 JWT 资源服务器
+├── rosecloud-starter-business/       # 业务型 starter 父模块
+│   ├── rosecloud-starter-tenant/     # 多租户（rosecloud.tenant.enabled）
+│   └── rosecloud-starter-audit/      # 审计（rosecloud.audit.enabled）
+├── rosecloud-service/
 │   ├── rosecloud-gateway/            # Spring Cloud Gateway（WebFlux，9110）
 │   ├── rosecloud-auth/               # 认证服务（9120）
-│   ├── rosecloud-system/             # 系统管理 + 租户管理 + 任务中心（9130）
+│   ├── rosecloud-system/             # 系统管理 + 租户管理（9130）
 │   └── rosecloud-notice/             # 通知中心（9150）
 └── rosecloud-monolith/               # 单体模式入口，聚合上述能力（9160）
 ```
@@ -84,16 +90,16 @@ rosecloud/
   - `rosecloud-starter-security-jwt`：JWT（HS256）编解码——`JwtTokenCodec` 签发/校验 access、refresh，claims 与 `CurrentUser` 对齐；`@ConditionalOnClass` 引入即装配（核心认证基建，非 enabled 门控），auth 签发、gateway 校验共享同一 `rosecloud.jwt.secret`/`issuer`
   - `rosecloud-starter-data-mybatisplus`：MyBatis-Plus 持久化——`BaseEntity`（审计字段）、`AuditMetaObjectHandler` 自动填充、`MybatisPlusInterceptor`（收集 `InnerInterceptor` bean + 分页）；可整体替换为 `rosecloud-starter-data-jpa`
   - `rosecloud-starter-data-mybatisplus` 多数据源：`rosecloud.datasource.dynamic.enabled=true` 时装配 `RoseCloudRoutingDataSource`（`AbstractRoutingDataSource`，`@Primary`）为路由数据源，按 `DataSourceRoute` SPI（默认走 primary）选择目标；`rosecloud.datasource.dynamic.primary` + `datasources` 配置多目标；默认关闭，单数据源路径不受影响。路由键在事务首次取连接时解析，故请求/上下文内应保持稳定；租户级专属数据源为其扩展位
-  - `rosecloud-tenant-starter`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启；在场 MyBatis-Plus 时经 `TenantLineInnerInterceptor`（读 `TenantContext`，无租户不隔离）做行级隔离，由 data starter 的 `MybatisPlusInterceptor` 收集
-  - `rosecloud-audit-starter`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启；默认 resolver 读 `UserContext`（操作人/租户），事件含 tenantId/target，内置日志监听器便于观察
-  - `rosecloud-oauth2-starter`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
-  - `rosecloud-lock-starter`：分布式锁抽象（`DistributedLock`，非阻塞 `tryLock` 返回 `LockToken` 或 `null`）；`rosecloud.lock.enabled` 开启，默认 `in-memory`（单实例，`ReentrantLock` 按 key），`rosecloud.lock.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`SET NX PX` + Lua 释放，跨实例）；消费方需自带 `spring-boot-starter-data-redis`
-  - `rosecloud-cache-starter`：缓存抽象（`RoseCloudCache`，字符串键值，不绑定序列化，消费方自行用 `ObjectMapper` 序列化）；`rosecloud.cache.enabled` 开启，默认 `in-memory`（单实例，`ConcurrentHashMap` 惰性过期），`rosecloud.cache.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（跨实例）；`ttl=null` 表示不过期；消费方需自带 `spring-boot-starter-data-redis`
-  - `rosecloud-sequence-starter`：业务序列号生成（`SequenceGenerator`，`next(key)` 返回从 1 起的单调递增 long）；`rosecloud.sequence.enabled` 开启，默认 `in-memory`（单实例，`AtomicLong` 按 key，重启重置），`rosecloud.sequence.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`INCR`，跨实例持久）；消费方需自带 `spring-boot-starter-data-redis`
-  - `rosecloud-storage-starter`：文件存储抽象（`FileStorage`，按相对路径 key 存取字节流 store/load/exists/delete）；`rosecloud.storage.enabled` 开启，默认 `local`（本地文件系统，路径规范化防穿越，`rosecloud.storage.base-dir` 配置根目录）；消费方需 S3/OSS 时自定义 `FileStorage` bean 覆盖（`@ConditionalOnMissingBean` 优先）
+  - `rosecloud-starter-tenant`：多租户上下文（`TenantContext`）、解析器（`TenantResolver`，默认 header）、servlet/reactive 过滤器、`@Async` 透传；`rosecloud.tenant.enabled` 开启；在场 MyBatis-Plus 时经 `TenantLineInnerInterceptor`（读 `TenantContext`，无租户不隔离）做行级隔离，由 data starter 的 `MybatisPlusInterceptor` 收集
+  - `rosecloud-starter-audit`：`@AuditLog` 注解 + AOP 切面，完成时发布 `AuditLogEvent`；`AuditPrincipalResolver` 可覆盖；`rosecloud.audit.enabled` 开启；默认 resolver 读 `UserContext`（操作人/租户），事件含 tenantId/target，内置日志监听器便于观察
+  - `rosecloud-starter-oauth2`：OAuth2 JWT 资源服务器（servlet `SecurityFilterChain`，`@ConditionalOnMissingBean` 可覆盖）；`rosecloud.oauth2.enabled` 开启，需配 `rosecloud.oauth2.jwk-set-uri`
+  - `rosecloud-starter-lock`：分布式锁抽象（`DistributedLock`，非阻塞 `tryLock` 返回 `LockToken` 或 `null`）；`rosecloud.lock.enabled` 开启，默认 `in-memory`（单实例，`ReentrantLock` 按 key），`rosecloud.lock.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`SET NX PX` + Lua 释放，跨实例）；消费方需自带 `spring-boot-starter-data-redis`
+  - `rosecloud-starter-cache`：缓存抽象（`RoseCloudCache`，字符串键值，不绑定序列化，消费方自行用 `ObjectMapper` 序列化）；`rosecloud.cache.enabled` 开启，默认 `in-memory`（单实例，`ConcurrentHashMap` 惰性过期），`rosecloud.cache.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（跨实例）；`ttl=null` 表示不过期；消费方需自带 `spring-boot-starter-data-redis`
+  - `rosecloud-starter-sequence`：业务序列号生成（`SequenceGenerator`，`next(key)` 返回从 1 起的单调递增 long）；`rosecloud.sequence.enabled` 开启，默认 `in-memory`（单实例，`AtomicLong` 按 key，重启重置），`rosecloud.sequence.type=redis` 且在场 `StringRedisTemplate` 时切 Redis 后端（`INCR`，跨实例持久）；消费方需自带 `spring-boot-starter-data-redis`
+  - `rosecloud-starter-storage`：文件存储抽象（`FileStorage`，按相对路径 key 存取字节流 store/load/exists/delete）；`rosecloud.storage.enabled` 开启，默认 `local`（本地文件系统，路径规范化防穿越，`rosecloud.storage.base-dir` 配置根目录）；消费方需 S3/OSS 时自定义 `FileStorage` bean 覆盖（`@ConditionalOnMissingBean` 优先）
 - 版本对齐：外部消费者 import `rosecloud-bom`；内部模块用 `${project.version}`，**不在 root 导入 BOM**（import-scope BOM 无法从 reactor 解析，会阻塞首次构建）
 
-新增 starter：在 `rosecloud-starters/` 下建 `rosecloud-{name}-starter/`（继承 `rosecloud-starters`），写 `XxxProperties` + `@AutoConfiguration`（带 `@ConditionalOnProperty(rosecloud.{name}.enabled)`）+ `AutoConfiguration.imports`，并在 `rosecloud-starters/pom.xml` 与 `rosecloud-bom` 注册坐标。
+新增 starter：在对应父模块下建 `rosecloud-starter-{name}/`。技术型 starter 继承 `rosecloud-starter-tech`，业务型 starter 继承 `rosecloud-starter-business`。写 `XxxProperties` + `@AutoConfiguration`（带 `@ConditionalOnProperty(rosecloud.{name}.enabled)`）+ `AutoConfiguration.imports`，并在对应父 POM 与 `rosecloud-bom` 注册坐标。
 
 ## 包与命名约定
 
@@ -113,20 +119,7 @@ rosecloud/
 
 ## 代码规范
 
-- **启动类**：业务服务与单体用 `@SpringBootApplication` + `@EnableFeignClients(basePackages = "io.rosecloud.api")`（显式扫描 `rosecloud-api` 的 Feign 契约；默认无 basePackages 只扫本服务包，会漏掉 `io.rosecloud.api`）；网关只用 `@SpringBootApplication`（WebFlux，不开 Feign）
-- **分层**：轻量 controller / service / 持久化分层，不强制 DDD 四层；领域逻辑写在 service，不散落到 controller
-- **服务间调用**：统一走 OpenFeign，Feign 接口与共享 DTO 放 `rosecloud-api`，业务服务依赖 `rosecloud-api`，不直接依赖其他服务模块。多个 `@FeignClient` 指向同一 `name`（服务）时每个须设唯一 `contextId`，否则 `FeignClientSpecification` bean 冲突；消费 `lb://` 的服务（auth/system/notice）须在 pom 引入 `spring-cloud-starter-loadbalancer`（网关已含）
-- **认证**：Spring Security（`BCryptPasswordEncoder`）+ JWT。`rosecloud-starter-security-jwt` 提供 `JwtTokenCodec`（access/refresh 签发与校验，claims 与 `CurrentUser` 对齐）；`rosecloud-auth` 签发令牌，`rosecloud-gateway` 的 `JwtAuthenticationGlobalFilter` 校验 bearer 并注入 `SecurityHeaders`（先剥离客户端伪造的同名头），下游经 `rosecloud-starter-web` 的 `SecurityContextFilter` 解码为 `UserContext`，业务不重复实现。令牌密钥/issuer 走 `rosecloud.jwt.*`（env/Nacos，不入库）；令牌携带 `jti`/`exp`，登出经 `TokenRevocationService`（`rosecloud.security.token-revocation.type`）按 `jti` 吊销至过期，gateway/monolith 过滤器拒绝已吊销令牌。共享配置默认 `type=redis`（跨进程：auth 吊销写入、gateway 读取，共享 Redis）；`RedisTokenRevocationAutoConfiguration` 须 `@AutoConfiguration(before = JwtAutoConfiguration.class)` 以免 in-memory bean 遮蔽 redis。无 Redis 客户端的服务自动回退 `in-memory`（单进程内生效）——单体在 monolith pom 排除 auth 的 redis 依赖故走 in-memory。redis 后端需 `spring-boot-starter-data-redis`（auth/gateway 已引入）。登录会话记录于 `sys_login_session`，支持在线用户查询与强制下线（system 经 Feign 调 auth 吊销 `jti`），跨进程吊销/下线同样依赖 redis
-- **持久化**：通过 `rosecloud-starter-data-mybatisplus` 接入 MyBatis-Plus（可整体替换为 `rosecloud-starter-data-jpa`）。约束：`rosecloud-common*` 与 `rosecloud-api` 零 ORM 依赖；service/domain 层面向 repository 接口（port），MP `BaseMapper` 与 `BaseEntity` 子类（PO）藏于各服务 infrastructure 层；换 JPA 时只替换 starter + repository 实现与 PO 基类，port 与 domain 不动。`MybatisPlusInterceptor` 由 starter 统一装配并收集所有 `InnerInterceptor` bean（如租户行级拦截）先于分页加入链
-- **多租户**：隔离策略可配（默认关闭）；租户上下文通过 `X-Tenant-Id` 传递，租户开通/启停逻辑收敛在 `rosecloud-system`；开启后数据层经 `TenantLineInnerInterceptor` 按 `TenantContext` 改写 SQL（`tenant_id` 列），无租户上下文（平台/系统）不隔离
-- **任务中心**：平台内部支撑能力，v1 进程内 `@Async`（单实例，不依赖 RabbitMQ/XXL-Job）。`rosecloud-system` 的 `task` 包提供 `TaskHandler` SPI（按 `type()` 注册）+ `TaskHandlerRegistry` + `TaskExecutor`（`@Async("rosecloudTaskExecutor")`，`TaskAsyncConfiguration` 开 `@EnableAsync`）；任务表 `sys_task`（状态 待执行/执行中/成功/失败，含 `retry_count`/`max_retry`/`payload`/`result`/`error`）。主线=租户生命周期：`TenantService.open()` 派发 `tenant-provisioning` 任务，`TenantProvisioner` 异步建首个管理员并启用租户（租户在成功前保持待开通）；辅线=通知相关任务（待补）。租户管理员仅可查看本租户任务与重试失败任务（按 `UserContext.tenantId()` 过滤）；handler 在工作线程执行、无 `UserContext`，不得依赖请求上下文。多实例分发（RabbitMQ）为后续演进
-- **通知通道**：站内为拉取式（默认）；邮件/短信为推送通道，由 `NoticeChannelSender` SPI 实现——`EmailNoticeSender`（条件装配 `JavaMailSender`，无配置则跳过）、`SmsNoticeSender`（桩）。`NoticeDispatchService` 在即时/定时发布时按 `channels` 位掩码（站内1/邮件2/短信4）经 `NoticeRecipientApi`（Feign→system）解析接收人邮箱/手机后异步分发，失败仅记日志不影响发布；接收人联系存于 `sys_user.email/phone`，按全局/租户/角色解析
-- **网关路由**：动态路由由 `rosecloud-gateway` 的 `MetadataRouteDefinitionLocator` 按服务发现元数据 `rosecloud.gateway.path` 自动生成（`lb://` + Path 断言，路由 id `dyn-{serviceId}`，支持逗号分隔多路径）——新服务只需在自身 `spring.cloud.nacos.discovery.metadata.rosecloud.gateway.path` 声明路径即接入，无需改网关；`RouteRefreshScheduler` 启动时及每 30s 发布 `RefreshRoutesEvent` 刷新
-- **链路标识**：网关 `TraceIdGlobalFilter` 在入口为每个请求生成/复用 `X-Trace-Id` 并向下游与响应透传（先于鉴权，白名单亦追踪）；servlet 服务经 `SecurityContextFilter` 兜底生成（直连无网关时）并写入 `traceId` MDC、回写响应头，Feign 经 `SecurityHeaderFeignPropagator` 透传；共享配置 `logging.pattern.level` 带出 `traceId` 便于日志关联
-- **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置（各服务 `spring.config.import: optional:nacos:rosecloud-common.yaml` 拉取共享 `rosecloud-common.yaml`；内容见 `deploy/nacos/`，本地默认对齐 docker-compose）。本地 Nacos 默认关闭鉴权，故各服务 `nacos.username/password` 默认空（匿名）；开启鉴权时用 `NACOS_USERNAME`/`NACOS_PASSWORD` 覆盖。`task init` 已自动发布共享配置，无需手动在 Nacos 创建
-- **不引入**：Sa-Token（用 Spring Security）、Dubbo（用 OpenFeign，待后续演进）、Swagger/Smart-Doc（API 文档方案未定，暂不引入）
-- **Jackson**：统一用 Jackson 2（`com.fasterxml.jackson`），不用 Spring Boot 4 默认的 Jackson 3（`tools.jackson`）。servlet 服务通过 `rosecloud-starter-web` 接入（已排除 `spring-boot-starter-jackson` 并提供 Jackson 2 `ObjectMapper`），不要直接依赖 `spring-boot-starter-web`/`spring-boot-starter-jackson`；reactive 网关暂仍为 Jackson 3（codec 切换待跟进）。注意：OpenFeign 的 `FeignJacksonConfiguration`（`PageJacksonModule` 继承 Jackson 3 的 `tools.jackson.databind.JacksonModule`）在 Feign 服务类路径出现 `spring-data-commons`（如引入 redis）时被 `@ConditionalOnClass(Page,Sort)` 激活并加载，仅 Jackson 2 下抛 `ClassNotFoundException`；故各 Feign 服务 `application.yml` 设 `spring.cloud.openfeign.autoconfiguration.jackson.enabled=false`（rosecloud 用自有 `PageResult`，不需要该模块）
-- **依赖方向**：`common-core` 为最底层零依赖；`common-security`、`common-web` 依赖 `common-core`；`api` 依赖 `common-core` + `common-security`；服务依赖 `api` + 所需 common；禁止反向依赖与 common 之间的循环
+代码规范已迁移到 [`CONTRIBUTING.md`](/Users/zhijunio/github/rosecloud/CONTRIBUTING.md)。
 
 ## 开发原则
 
@@ -158,7 +151,7 @@ rosecloud/
 
 ## 双模式说明
 
-- 微服务模式：各 `rosecloud-services/*` 独立启动，经 `rosecloud-gateway` 统一入口，服务间用 OpenFeign + Nacos 发现
+- 微服务模式：各 `rosecloud-service/*` 独立启动，经 `rosecloud-gateway` 统一入口，服务间用 OpenFeign + Nacos 发现
 - 单体模式：`rosecloud-monolith` 聚合全部能力，本地联调与中小部署使用；新增业务能力需保证在两种模式下均可运行
 - 单体机制：`rosecloud-monolith` 激活 `monolith` profile，组件扫描聚合 auth/system/notice（排除各服务启动类）；无网关，故由 `MonolithJwtFilter`（servlet）校验 JWT 并注入身份头，复用下游 `SecurityContextFilter`；auth→system 的 `SystemUserApi` 由 system 侧 `LocalSystemUserApi`（`@Profile("monolith")`）进程内直连，不经 Feign。单体 `@ComponentScan` 须含 `io.rosecloud.monolith`（否则 `MonolithSecurityConfiguration` 不装配）；OAuth2 关闭时（默认）由 `MonolithSecurityConfiguration` 注册一条 permitAll 的 `SecurityFilterChain`，避免 Spring Boot 默认安全链拦截全部路由，真正鉴权由 `MonolithJwtFilter` 强制执行（白名单 login/refresh/actuator，无/无效/已吊销令牌返回 401）
 
@@ -166,10 +159,10 @@ rosecloud/
 
 手动步骤（无 CLI 脚手架）：
 
-1. 在 `rosecloud-services/` 下建 `rosecloud-{name}/`，`pom.xml` 继承 `rosecloud-services`，按需引入 `actuator` + `web` + `openfeign` + `nacos-config` + `nacos-discovery` + `rosecloud-api` + `rosecloud-common-*`，并配 `spring-boot-maven-plugin`；若该服务需被单体聚合，`spring-boot-maven-plugin` 须配 `<classifier>exec</classifier>`（可执行胖包带 exec 分类器，主产物保持薄 jar 供单体依赖）
+1. 在 `rosecloud-service/` 下建 `rosecloud-{name}/`，`pom.xml` 继承 `rosecloud-service`，按需引入 `actuator` + `web` + `openfeign` + `nacos-config` + `nacos-discovery` + `rosecloud-api` + `rosecloud-common-*`，并配 `spring-boot-maven-plugin`；若该服务需被单体聚合，`spring-boot-maven-plugin` 须配 `<classifier>exec</classifier>`（可执行胖包带 exec 分类器，主产物保持薄 jar 供单体依赖）
 2. 新建 `RoseCloud{Name}Application.java`（`@SpringBootApplication` + `@EnableFeignClients`）
 3. 新建 `application.yml`（端口取 9170 起的空闲段，沿用 Nacos env 占位）
-4. 在 `rosecloud-services/pom.xml` 的 `<modules>` 注册新模块
+4. 在 `rosecloud-service/pom.xml` 的 `<modules>` 注册新模块
 5. 单体如需聚合，在 `rosecloud-monolith` 引入该服务依赖
 
 ## 参考文档

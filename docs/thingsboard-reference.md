@@ -2,7 +2,7 @@
 
 > 源码基准：`~/github/thingsboard`，浅克隆最新 master，提交 `9a4f1c5`。下文 ThingsBoard 文件以 `../thingsboard/...` 引用，行号基于该提交。
 >
-> 对照基准：RoseCloud 现状见 `rosecloud-starters/`、`rosecloud-services/`（auth/gateway/system/notice/monolith）。
+> 对照基准：RoseCloud 现状见 `rosecloud-starter-tech/`、`rosecloud-starter-business/`、`rosecloud-service/`（auth/gateway/system/notice/monolith）。
 >
 > 路线图基线（`docs/01-requirements.md` §4.12、§5.2、§5.4、§5.5）：OAuth2 与 MFA 属 P1，**默认关闭但必须预留**；完整 OAuth2 Authorization Server 与全量 MFA 不在第一阶段做满。
 >
@@ -261,7 +261,7 @@
 | Job | 异步作业查询/列表/取消/重处理/删除 | `.../controller/JobController.java`(:58,:65,:93,:101,:109) |
 | Event | 按类型/过滤器查事件、清除事件（debug/lifecycle） | `.../controller/EventController.java`(:117,:194,:235) |
 
-> 借鉴价值：RoseCloud 已有任务中心（`sys_task`+`TaskHandler` SPI+`TaskExecutor`）；可借鉴 Job 的 cancel/reprocess API 与 Event 的按 filter 查询/清除。
+> 借鉴价值：如果后续 RoseCloud 再引入独立异步编排能力，可借鉴 Job 的 cancel/reprocess API 与 Event 的按 filter 查询/清除；当前版本不保留独立任务中心。
 
 ## B9 资源与文件
 
