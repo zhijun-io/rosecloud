@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.service.AuditLogService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ public class AuditLogController {
         this.auditLogService = auditLogService;
     }
 
+    @PreAuthorize("hasAuthority('system:audit:list')")
     @GetMapping
     public ApiResponse<PageResult<AuditLog>> page(@RequestParam(defaultValue = "1") long current,
                                                    @RequestParam(defaultValue = "10") long size,

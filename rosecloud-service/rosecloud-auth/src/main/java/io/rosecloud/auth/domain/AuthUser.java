@@ -9,9 +9,10 @@ import java.util.List;
  * port.
  */
 public record AuthUser(Long userId, String username, String passwordHash,
-                       Integer status, Long tenantId, List<String> roles) {
+                       Integer status, Long tenantId, List<String> roles, List<String> perms) {
 
     public AuthUser {
         roles = roles == null ? Collections.emptyList() : List.copyOf(roles);
+        perms = perms == null ? Collections.emptyList() : List.copyOf(perms);
     }
 }

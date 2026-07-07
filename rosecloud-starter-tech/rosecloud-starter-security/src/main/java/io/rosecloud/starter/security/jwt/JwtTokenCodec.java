@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Signs and verifies HS256 JWTs carrying the caller username. Used by the auth
@@ -22,15 +23,29 @@ import java.util.UUID;
  */
 public class JwtTokenCodec {
 
+    /**
+     * Well-known dev-default secret committed to the repo (docker-compose). It must
+     * never be used in production; the codec refuses it unless {@code allowDevSecret}
+     * is explicitly opted in.
+     */
+    private static final String DEV_DEFAULT_SECRET = "rosecloud-dev-secret-please-change-me-0123456789";
+
     private final JwtProperties properties;
     private final SecretKey key;
 
     public JwtTokenCodec(JwtProperties properties) {
         this.properties = properties;
-        byte[] secretBytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
+        String secret = properties.getSecret();
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < 32) {
             throw new IllegalStateException(
                     "rosecloud.jwt.secret must be at least 32 bytes for HS256");
+        }
+        if (DEV_DEFAULT_SECRET.equals(secret) && !properties.isAllowDevSecret()) {
+            throw new IllegalStateException(
+                    "Refusing to start with the committed dev-default JWT secret. "
+                            + "Override rosecloud.jwt.secret with a strong random value, "
+                            + "or set rosecloud.jwt.allow-dev-secret=true only for local dev.");
         }
         this.key = Keys.hmacShaKeyFor(secretBytes);
     }
@@ -50,6 +65,7 @@ public class JwtTokenCodec {
                 .id(UUID.randomUUID().toString())
                 .subject(user.username())
                 .claim("type", type.name())
+                .claim("perms", user.perms())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ttlMillis))
                 .signWith(key, Jwts.SIG.HS256);
@@ -77,10 +93,23 @@ public class JwtTokenCodec {
                     subject(claims),
                     parseType(claims.get("type", String.class)),
                     claims.getId(),
-                    claims.getExpiration() == null ? null : claims.getExpiration().toInstant());
+                    claims.getExpiration() == null ? null : claims.getExpiration().toInstant(),
+                    readPerms(claims));
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidTokenException("invalid token", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> readPerms(Claims claims) {
+        Object raw = claims.get("perms");
+        if (!(raw instanceof List<?> list)) {
+            return List.of();
+        }
+        return list.stream()
+                .map(String::valueOf)
+                .filter(p -> !p.isBlank())
+                .collect(Collectors.toList());
     }
 
     private static String subject(Claims claims) {

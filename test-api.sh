@@ -77,6 +77,12 @@ api() {
   xh --ignore-stdin -b -A bearer -a "$1" "${@:2}"
 }
 
+INTERNAL_KEY="${ROSECLOUD_INTERNAL_API_KEY:-rosecloud-dev-internal-key}"
+internal_api() {
+  local method=$1 url=$2; shift 2
+  xh --ignore-stdin -b "$method" "$url" "$@" "X-RoseCloud-Internal-Key:$INTERNAL_KEY"
+}
+
 echo "users"
 user_id=$(api "$admin_token" POST "$BASE_URL/api/system/users" username="u$now" password=p123456 nickname="u$now" | jq -r '.data')
 expect_fail api "$admin_token" POST "$BASE_URL/api/system/users" username="u$now" password=p123456 nickname="u$now"
@@ -158,16 +164,16 @@ expect_401 api "$logout_token" GET "$BASE_URL/api/system/users/me"
 
 if is_monolith && [[ "${RUN_INTERNAL:-0}" == "1" ]]; then
   echo "internal"
-  jq -e '.success == true and .data.username == "admin"' <<<"$(api "$admin_token" GET "$BASE_URL/internal/users/auth/admin")" >/dev/null
-  jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
-  jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
+  jq -e '.success == true and .data.username == "admin"' <<<"$(internal_api GET "$BASE_URL/internal/users/auth/admin")" >/dev/null
+  jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
+  jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
 
   session_token=$(login_token admin admin123)
   record_jti="rec-$now"
-  jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/sessions" "$(jq -nc --arg jti "$record_jti" --argjson uid 1 --arg exp "${future}T23:59:59" '{jti:$jti,userId:$uid,username:"admin",tenantId:null,expireTime:$exp,ip:"127.0.0.1",userAgent:"xh"}')")" >/dev/null
-  jq -e '.success == true' <<<"$(api "$session_token" POST "$BASE_URL/internal/sessions/logout-by-jti?jti=$record_jti")" >/dev/null
+  jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/sessions" "$(jq -nc --arg jti "$record_jti" --argjson uid 1 --arg exp "${future}T23:59:59" '{jti:$jti,userId:$uid,username:"admin",tenantId:null,expireTime:$exp,ip:"127.0.0.1",userAgent:"xh"}')")" >/dev/null
+  jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/sessions/logout-by-jti?jti=$record_jti")" >/dev/null
   access_jti=$(jti_of "$session_token")
-  jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/revoke" "$(jq -nc --arg jti "$access_jti" --arg exp "${future}T23:59:59" '{jti:$jti,expireTime:$exp}')")" >/dev/null
+  jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/revoke" "$(jq -nc --arg jti "$access_jti" --arg exp "${future}T23:59:59" '{jti:$jti,expireTime:$exp}')")" >/dev/null
   expect_401 api "$session_token" GET "$BASE_URL/api/system/users/me"
 fi
 

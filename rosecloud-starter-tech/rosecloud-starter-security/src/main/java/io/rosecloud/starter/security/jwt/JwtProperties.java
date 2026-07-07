@@ -15,6 +15,13 @@ public class JwtProperties {
     /** HMAC-SHA signing secret (UTF-8 bytes). Must be at least 32 bytes for HS256. */
     private String secret = "";
 
+    /**
+     * Allows the well-known dev-default secret to be used. Must stay {@code false}
+     * in any non-development profile; the dev default is committed to the repo and
+     * must never reach production. Docker Compose opts in explicitly for local runs.
+     */
+    private boolean allowDevSecret = true;
+
     /** Token issuer, verified on parse. */
     private String issuer = "rosecloud";
 
@@ -30,6 +37,14 @@ public class JwtProperties {
 
     public void setSecret(String secret) {
         this.secret = secret;
+    }
+
+    public boolean isAllowDevSecret() {
+        return allowDevSecret;
+    }
+
+    public void setAllowDevSecret(boolean allowDevSecret) {
+        this.allowDevSecret = allowDevSecret;
     }
 
     public String getIssuer() {

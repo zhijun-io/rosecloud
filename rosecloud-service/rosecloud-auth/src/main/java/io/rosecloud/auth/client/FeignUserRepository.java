@@ -32,6 +32,6 @@ public class FeignUserRepository implements UserRepository {
         }
         UserAuthInfo info = response.data();
         return Optional.of(new AuthUser(info.userId(), info.username(), info.passwordHash(),
-                info.status(), info.tenantId(), info.roles()));
+                info.status(), info.tenantId(), info.roles(), info.perms()));
     }
 }

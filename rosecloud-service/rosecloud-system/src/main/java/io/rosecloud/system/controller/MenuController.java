@@ -7,6 +7,7 @@ import io.rosecloud.system.service.MenuService;
 import io.rosecloud.system.service.dto.MenuRequest;
 import io.rosecloud.system.service.dto.MenuTreeNode;
 import io.rosecloud.system.service.dto.UserMenuResult;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,33 +29,39 @@ public class MenuController {
         this.menuService = menuService;
     }
 
+    @PreAuthorize("hasAuthority('system:menu:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody MenuRequest request) {
         return ApiResponse.ok(menuService.create(request));
     }
 
+    @PreAuthorize("hasAuthority('system:menu:edit')")
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody MenuRequest request) {
         menuService.update(id, request);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:menu:del')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         menuService.delete(id);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:menu:list')")
     @GetMapping
     public ApiResponse<List<Menu>> list() {
         return ApiResponse.ok(menuService.list());
     }
 
+    @PreAuthorize("hasAuthority('system:menu:list')")
     @GetMapping("/tree")
     public ApiResponse<List<MenuTreeNode>> tree() {
         return ApiResponse.ok(menuService.tree());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ApiResponse<UserMenuResult> myMenus() {
         return ApiResponse.ok(menuService.myMenus());

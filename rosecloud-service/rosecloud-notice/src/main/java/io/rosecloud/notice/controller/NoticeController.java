@@ -7,6 +7,7 @@ import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.service.NoticeService;
 import io.rosecloud.notice.service.dto.MyNotice;
 import io.rosecloud.notice.service.dto.NoticePublishRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,11 +26,13 @@ public class NoticeController {
         this.noticeService = noticeService;
     }
 
+    @PreAuthorize("hasAuthority('system:notice:publish')")
     @PostMapping
     public ApiResponse<Long> publish(@RequestBody NoticePublishRequest request) {
         return ApiResponse.ok(noticeService.publish(request));
     }
 
+    @PreAuthorize("hasAuthority('system:notice:list')")
     @GetMapping
     public ApiResponse<PageResult<Notice>> page(@RequestParam(defaultValue = "1") long current,
                                                 @RequestParam(defaultValue = "10") long size,
@@ -37,23 +40,27 @@ public class NoticeController {
         return ApiResponse.ok(noticeService.page(current, size, keyword));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ApiResponse<PageResult<MyNotice>> myNotices(@RequestParam(defaultValue = "1") long current,
                                                       @RequestParam(defaultValue = "10") long size) {
         return ApiResponse.ok(noticeService.myNotices(current, size));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me/{id}")
     public ApiResponse<MyNotice> getMine(@PathVariable Long id) {
         return ApiResponse.ok(noticeService.getMine(id));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/me/{id}/read")
     public ApiResponse<Void> markRead(@PathVariable Long id) {
         noticeService.markRead(id);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/me/{id}/confirm")
     public ApiResponse<Void> confirm(@PathVariable Long id) {
         noticeService.confirm(id);

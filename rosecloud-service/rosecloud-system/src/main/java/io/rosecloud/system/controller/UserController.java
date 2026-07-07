@@ -8,6 +8,7 @@ import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.service.dto.UserRoleAssignRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,11 +31,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    @PreAuthorize("hasAuthority('system:user:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody UserCreateRequest request) {
         return ApiResponse.ok(userService.create(request));
     }
 
+    @PreAuthorize("hasAuthority('system:user:list')")
     @GetMapping
     public ApiResponse<PageResult<User>> page(@RequestParam(defaultValue = "1") long current,
                                               @RequestParam(defaultValue = "10") long size,
@@ -42,27 +45,32 @@ public class UserController {
         return ApiResponse.ok(userService.page(current, size, keyword));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ApiResponse<UserProfile> me() {
         return ApiResponse.ok(userService.me());
     }
 
+    @PreAuthorize("hasAuthority('system:user:list')")
     @GetMapping("/{id}")
     public ApiResponse<User> get(@PathVariable Long id) {
         return ApiResponse.ok(userService.get(id));
     }
 
+    @PreAuthorize("hasAuthority('system:user:del')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:user:list')")
     @GetMapping("/{id}/roles")
     public ApiResponse<List<Long>> roles(@PathVariable Long id) {
         return ApiResponse.ok(userService.findRoleIdsByUserId(id));
     }
 
+    @PreAuthorize("hasAuthority('system:user:edit')")
     @PutMapping("/{id}/roles")
     public ApiResponse<Void> assignRoles(@PathVariable Long id, @RequestBody UserRoleAssignRequest request) {
         userService.assignRoles(id, request.roleIds());

@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.LoginLog;
 import io.rosecloud.system.service.LoginLogService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ public class LoginLogController {
         this.loginLogService = loginLogService;
     }
 
+    @PreAuthorize("hasAuthority('system:loginlog:list')")
     @GetMapping
     public ApiResponse<PageResult<LoginLog>> page(@RequestParam(defaultValue = "1") long current,
                                                   @RequestParam(defaultValue = "10") long size,

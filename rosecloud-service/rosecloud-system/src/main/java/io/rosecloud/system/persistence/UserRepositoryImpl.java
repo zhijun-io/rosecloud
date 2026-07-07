@@ -21,11 +21,16 @@ public class UserRepositoryImpl implements UserRepository {
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMapper roleMapper;
+    private final RoleMenuMapper roleMenuMapper;
+    private final MenuMapper menuMapper;
 
-    public UserRepositoryImpl(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper) {
+    public UserRepositoryImpl(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper,
+                              RoleMenuMapper roleMenuMapper, MenuMapper menuMapper) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleMapper = roleMapper;
+        this.roleMenuMapper = roleMenuMapper;
+        this.menuMapper = menuMapper;
     }
 
     @Override
@@ -36,7 +41,7 @@ public class UserRepositoryImpl implements UserRepository {
             return Optional.empty();
         }
         return Optional.of(new UserAuthInfo(po.getId(), po.getUsername(), po.getPassword(),
-                po.getStatus(), po.getTenantId(), loadRoleCodes(po.getId())));
+                po.getStatus(), po.getTenantId(), loadRoleCodes(po.getId()), loadPerms(po.getId())));
     }
 
     private List<String> loadRoleCodes(Long userId) {
@@ -49,6 +54,34 @@ public class UserRepositoryImpl implements UserRepository {
         List<RolePO> roles = roleMapper.selectList(
                 new LambdaQueryWrapper<RolePO>().in(RolePO::getId, roleIds));
         return roles.stream().map(RolePO::getCode).toList();
+    }
+
+    /**
+     * Aggregates the caller's fine-grained permission codes: the union of
+     * non-null {@code sys_menu.perms} reachable through the user's roles. The
+     * resulting set is embedded into the JWT at login so endpoint-level
+     * {@code @PreAuthorize("hasAuthority('system:user:add')")} rules can be
+     * enforced statelessly without re-querying the menu tree on every request.
+     */
+    private List<String> loadPerms(Long userId) {
+        List<Long> roleIds = findRoleIdsByUserId(userId);
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> menuIds = roleMenuMapper.selectList(
+                        new LambdaQueryWrapper<RoleMenuPO>().in(RoleMenuPO::getRoleId, roleIds))
+                .stream().map(RoleMenuPO::getMenuId).toList();
+        if (menuIds.isEmpty()) {
+            return List.of();
+        }
+        return menuMapper.selectList(
+                        new LambdaQueryWrapper<MenuPO>().in(MenuPO::getId, menuIds))
+                .stream()
+                .map(MenuPO::getPerms)
+                .filter(java.util.Objects::nonNull)
+                .filter(p -> !p.isBlank())
+                .distinct()
+                .toList();
     }
 
     @Override

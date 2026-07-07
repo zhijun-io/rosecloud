@@ -3,6 +3,7 @@ package io.rosecloud.monolith;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
+import io.rosecloud.starter.security.jwt.TokenType;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -60,6 +61,10 @@ public class MonolithJwtFilter implements Filter {
             claims = jwtTokenCodec.parse(token);
         } catch (InvalidTokenException e) {
             unauthorized(httpResponse, "invalid token");
+            return;
+        }
+        if (claims.type() != TokenType.ACCESS) {
+            unauthorized(httpResponse, "wrong token type");
             return;
         }
         if (claims.jti() != null && tokenRevocationService.isRevoked(claims.jti())) {

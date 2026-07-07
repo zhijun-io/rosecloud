@@ -5,6 +5,7 @@ import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
+import io.rosecloud.starter.security.jwt.TokenType;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -56,6 +57,9 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             claims = jwtTokenCodec.parse(token);
         } catch (InvalidTokenException e) {
             return unauthorized(exchange, "invalid token");
+        }
+        if (claims.type() != TokenType.ACCESS) {
+            return unauthorized(exchange, "wrong token type");
         }
         if (claims.jti() != null) {
             return Mono.fromCallable(() -> tokenRevocationService.isRevoked(claims.jti()))

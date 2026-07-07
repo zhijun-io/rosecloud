@@ -8,6 +8,7 @@ import io.rosecloud.system.service.RoleService;
 import io.rosecloud.system.service.dto.RoleCreateRequest;
 import io.rosecloud.system.service.dto.RoleMenuAssignRequest;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,27 +28,32 @@ public class RoleController {
         this.roleService = roleService;
     }
 
+    @PreAuthorize("hasAuthority('system:role:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody RoleCreateRequest request) {
         return ApiResponse.ok(roleService.create(request));
     }
 
+    @PreAuthorize("hasAuthority('system:role:list')")
     @GetMapping("/{id}/menus")
     public ApiResponse<List<Long>> menus(@PathVariable Long id) {
         return ApiResponse.ok(roleService.findMenuIdsByRoleId(id));
     }
 
+    @PreAuthorize("hasAuthority('system:role:perm')")
     @PutMapping("/{id}/menus")
     public ApiResponse<Void> assignMenus(@PathVariable Long id, @RequestBody RoleMenuAssignRequest request) {
         roleService.assignMenus(id, request.menuIds());
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:role:list')")
     @GetMapping("/{id}")
     public ApiResponse<Role> get(@PathVariable Long id) {
         return ApiResponse.ok(roleService.get(id));
     }
 
+    @PreAuthorize("hasAuthority('system:role:list')")
     @GetMapping
     public ApiResponse<PageResult<Role>> page(@RequestParam(defaultValue = "1") long current,
                                               @RequestParam(defaultValue = "10") long size,

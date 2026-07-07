@@ -1,4 +1,5 @@
 io.rosecloud.starter.security.jwt.JwtAutoConfiguration
 io.rosecloud.starter.security.jwt.RedisTokenRevocationAutoConfiguration
 io.rosecloud.starter.security.SecurityWebAutoConfiguration
+io.rosecloud.starter.security.MethodSecurityAutoConfiguration
 io.rosecloud.starter.security.oauth2.OAuth2ResourceServerAutoConfiguration

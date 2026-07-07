@@ -5,7 +5,11 @@ x-app-env: &app-env
   REDIS_PASSWORD: ${REDIS_PASSWORD:-rosecloud123}
   NACOS_SERVER_ADDR: nacos:8848
   ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+  # 本地开发显式允许仓库内置的 dev 默认密钥；生产部署必须覆盖 ROSECLOUD_JWT_SECRET 并删除此行
+  ROSECLOUD_JWT_ALLOW_DEV_SECRET: "true"
   ROSECLOUD_TOKEN_REVOCATION_TYPE: ${ROSECLOUD_TOKEN_REVOCATION_TYPE:-redis}
+  # 服务间 /internal/** 调用共享密钥；生产必须覆盖 ROSECLOUD_INTERNAL_API_KEY 并删除此默认值
+  ROSECLOUD_INTERNAL_API_KEY: ${ROSECLOUD_INTERNAL_API_KEY:-rosecloud-dev-internal-key}
 
 services:
   mysql:
@@ -75,6 +79,7 @@ services:
     profiles: [microservice]  # 仅微服务模式需要Nacos
     environment:
       MODE: standalone
+      # 生产必须开启鉴权并覆盖下方 token；本地默认关闭仅用于快速起站
       NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-false}
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-cm9zZWNsb3VkLW5hY29zLWF1dGgtdG9rZW4tZm9yLWxvY2FsLWRldg==}
       NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}
@@ -143,7 +148,9 @@ services:
       # 单体仅依赖 MySQL，无 Nacos/Redis/RabbitMQ
       MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+      ROSECLOUD_JWT_ALLOW_DEV_SECRET: "true"  # 本地单体开发允许 dev 默认密钥
       ROSECLOUD_TOKEN_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
+      ROSECLOUD_INTERNAL_API_KEY: ${ROSECLOUD_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
     depends_on: [mysql]
     ports: ["9160:9160"]
 

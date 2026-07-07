@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
             }
             CurrentUser currentUser = new CurrentUser(user.userId(), user.username(), user.tenantId(),
-                    user.roles());
+                    user.roles(), user.perms());
             TokenResponse token = issue(currentUser);
             recordSession(token.accessToken(), currentUser, ip, userAgent);
             recordLogin(request.username(), true, null, ip, userAgent);
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
         AuthUser user = userRepository.findByUsername(claims.username())
                 .orElseThrow(() -> new BizException(AuthErrorCode.INVALID_TOKEN));
         return issue(new CurrentUser(user.userId(), user.username(), user.tenantId(),
-                user.roles()));
+                user.roles(), user.perms()));
     }
 
     /**

@@ -7,6 +7,7 @@ package io.rosecloud.common.security.context;
 public final class UserContext {
 
     private static final ThreadLocal<CurrentUser> HOLDER = new ThreadLocal<>();
+    private static final ThreadLocal<String> TOKEN = new ThreadLocal<>();
 
     private UserContext() {
     }
@@ -19,7 +20,20 @@ public final class UserContext {
         HOLDER.set(user);
     }
 
+    /**
+     * Raw bearer token of the inbound request, captured so outbound Feign calls
+     * can propagate the caller's identity to downstream services.
+     */
+    public static String getToken() {
+        return TOKEN.get();
+    }
+
+    public static void setToken(String token) {
+        TOKEN.set(token);
+    }
+
     public static void clear() {
         HOLDER.remove();
+        TOKEN.remove();
     }
 }

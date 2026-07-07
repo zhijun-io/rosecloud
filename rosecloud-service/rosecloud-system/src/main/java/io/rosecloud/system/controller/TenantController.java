@@ -6,6 +6,7 @@ import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantApplyRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,28 +25,33 @@ public class TenantController {
         this.tenantService = tenantService;
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:open')")
     @PostMapping("/apply")
     public ApiResponse<Long> apply(@RequestBody TenantApplyRequest request) {
         return ApiResponse.ok(tenantService.apply(request));
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:open')")
     @PostMapping("/{id}/open")
     public ApiResponse<Long> open(@PathVariable Long id) {
         return ApiResponse.ok(tenantService.open(id));
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:toggle')")
     @PostMapping("/{id}/disable")
     public ApiResponse<Void> disable(@PathVariable Long id) {
         tenantService.disable(id);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:toggle')")
     @PostMapping("/{id}/enable")
     public ApiResponse<Void> enable(@PathVariable Long id) {
         tenantService.enable(id);
         return ApiResponse.ok();
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:list')")
     @GetMapping
     public ApiResponse<PageResult<Tenant>> page(@RequestParam(defaultValue = "1") long current,
                                                  @RequestParam(defaultValue = "10") long size,
