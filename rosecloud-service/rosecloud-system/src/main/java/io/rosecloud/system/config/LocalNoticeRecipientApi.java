@@ -5,18 +5,17 @@ import io.rosecloud.api.notice.NoticeRecipientApi;
 import io.rosecloud.api.notice.NoticeRecipientRequest;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.domain.UserRepository;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * In-process {@link NoticeRecipientApi} for monolith mode: delegates to
- * {@link UserRepository} instead of Feign. Only active under the
- * {@code monolith} profile.
+ * {@link UserRepository} instead of Feign.
  */
-@Profile("monolith")
 @Component
+@ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
 public class LocalNoticeRecipientApi implements NoticeRecipientApi {
 
     private final UserRepository userRepository;

@@ -5,7 +5,8 @@ spring:
   application:
     name: rosecloud-monolith
   profiles:
-    active: monolith
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+    default: dev
   # Flyway 数据库版本化迁移配置
   flyway:
     locations: classpath*:db/migration  # 扫描所有依赖jar包中的迁移脚本（system/notice模块的SQL）

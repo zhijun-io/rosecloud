@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Internal endpoints consumed by other services over Feign (not routed by the
- * gateway). Reachable only via direct service-to-service calls; returns
- * {@code null} data when a user is not found.
+ * Internal endpoints consumed by other services over Feign, not routed by the
+ * gateway. The auth/security path uses username as the stable lookup key and
+ * expects a null payload when no user exists.
  */
 @RestController
 @RequestMapping("/internal/users")

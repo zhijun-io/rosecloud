@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 /**
@@ -17,20 +18,30 @@ import org.springframework.core.Ordered;
 @AutoConfiguration
 public class TraceAutoConfiguration {
 
-    @Bean
+    @Configuration(proxyBeanMethods = false)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    public FilterRegistrationBean<TraceContextFilter> traceContextFilterRegistration() {
-        FilterRegistrationBean<TraceContextFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new TraceContextFilter());
-        registration.addUrlPatterns("/*");
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
-        return registration;
+    @ConditionalOnClass(name = "jakarta.servlet.Filter")
+    static class ServletTraceConfiguration {
+
+        @Bean
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        public FilterRegistrationBean traceContextFilterRegistration() {
+            FilterRegistrationBean registration = new FilterRegistrationBean();
+            registration.setFilter(new TraceContextFilter());
+            registration.addUrlPatterns("/*");
+            registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+            return registration;
+        }
     }
 
-    @Bean
+    @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass(name = "org.springframework.cloud.gateway.filter.GlobalFilter")
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
-    public Object traceIdGlobalFilter() {
-        return new io.rosecloud.starter.trace.gateway.TraceIdGlobalFilter();
+    static class ReactiveTraceConfiguration {
+
+        @Bean
+        public io.rosecloud.starter.trace.gateway.TraceIdGlobalFilter traceIdGlobalFilter() {
+            return new io.rosecloud.starter.trace.gateway.TraceIdGlobalFilter();
+        }
     }
 }

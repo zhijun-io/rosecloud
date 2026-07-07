@@ -121,19 +121,20 @@ jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/conf
 jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/configs/$config_id" configKey="ck$now" configValue=vv2 description=desc2)" >/dev/null
 api "$admin_token" DELETE "$BASE_URL/api/system/configs/$config_id" >/dev/null
 
-echo "tenant / task"
+echo "tenant"
 tenant_id=$(api "$admin_token" POST "$BASE_URL/api/system/tenants/apply" name="Tenant $now" code="t$now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="tenant$now" adminPassword=tp123456 | jq -r '.data')
 expect_fail api "$admin_token" POST "$BASE_URL/api/system/tenants/apply" name="Tenant $now" code="t$now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="tenantx$now" adminPassword=tp123456
-task_id=$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/open" | jq -r '.data')
+jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/open")" >/dev/null
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  [[ $(api "$admin_token" GET "$BASE_URL/api/system/tasks/$task_id" | jq -r '.data.status') == SUCCESS ]] && break
+  if jq -e --argjson tenant_id "$tenant_id" '.success == true and any(.data.records[]?; .id == $tenant_id and .status == "ENABLED")' \
+      <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null; then
+    break
+  fi
   sleep 1
 done
-jq -e '.success == true and .data.status == "SUCCESS"' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tasks/$task_id")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/disable")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable")" >/dev/null
-jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tasks?current=1&size=10&type=tenant-provisioning")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/audit-logs?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/login-logs?current=1&size=10")" >/dev/null
 

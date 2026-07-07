@@ -3,19 +3,19 @@ package io.rosecloud.monolith;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Monolith security wiring (active under the {@code monolith} profile). With no
- * gateway in front, {@link MonolithJwtFilter} verifies HS256 JWTs and lets the
- * shared trace and security filters populate request context in-process.
+ * Monolith security wiring. With no gateway in front, {@link MonolithJwtFilter}
+ * verifies HS256 JWTs and lets the shared trace and security filters populate
+ * request context in-process.
  *
  * <p>Because {@code rosecloud-starter-security} includes OAuth2 resource-server support, Spring
  * Boot would otherwise auto-configure a default {@link SecurityFilterChain} that
@@ -24,8 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * {@link MonolithJwtFilter} performs the real enforcement. Enable
  * {@code rosecloud.oauth2} to use the OAuth2 resource-server chain instead.
  */
-@Profile("monolith")
 @Configuration
+@ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
 @EnableConfigurationProperties(MonolithSecurityProperties.class)
 public class MonolithSecurityConfiguration {
 

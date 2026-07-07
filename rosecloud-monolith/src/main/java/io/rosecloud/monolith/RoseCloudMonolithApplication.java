@@ -13,9 +13,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Monolith entry point: aggregates auth, system and notice in one process for
- * local development and small deployments. The {@code monolith} profile
- * activates in-process wiring (e.g. {@link LocalSystemUserApi} is provided by
- * the system module). The gateway is bypassed, so {@link MonolithJwtFilter}
+ * local development and small deployments. In-process wiring is selected by
+ * the application name, and the gateway is bypassed so {@link MonolithJwtFilter}
  * verifies JWTs and injects identity headers.
  */
 @SpringBootApplication

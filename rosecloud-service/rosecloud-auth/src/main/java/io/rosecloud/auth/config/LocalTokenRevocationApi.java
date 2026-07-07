@@ -4,7 +4,7 @@ import io.rosecloud.api.session.RevokeRequest;
 import io.rosecloud.api.session.TokenRevocationApi;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -12,11 +12,10 @@ import java.time.ZoneId;
 
 /**
  * In-process {@link TokenRevocationApi} for monolith mode: delegates to the
- * shared {@link TokenRevocationService} instead of Feign. Only active under the
- * {@code monolith} profile.
+ * shared {@link TokenRevocationService} instead of Feign.
  */
-@Profile("monolith")
 @Component
+@ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
 public class LocalTokenRevocationApi implements TokenRevocationApi {
 
     private final TokenRevocationService tokenRevocationService;

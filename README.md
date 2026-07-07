@@ -54,7 +54,7 @@ starter 分成两个父模块：`rosecloud-starter-tech` 承载技术型 starter
 | rosecloud-starter-tenant | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传、MyBatis-Plus 行级隔离（`TenantLineInnerInterceptor`） |
 | rosecloud-starter-audit | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent`（含操作人/租户，内置日志监听器） |
 
-`rosecloud-monolith` 引入了业务型 starter 和需要的技术型 starter，并默认关闭可选能力，按需置 `enabled=true` 即激活。
+`rosecloud-monolith` 引入了业务型 starter 和需要的技术型 starter，并默认启用单体内联 wiring，不需要额外的 `monolith` profile 或开关；可选能力仍按需置 `enabled=true` 即激活。
 
 ## 快速开始
 
@@ -106,7 +106,7 @@ export ROSECLOUD_JWT_SECRET=rosecloud-dev-secret-please-change-me-0123456789
 
 各服务通过 `spring.config.import` 复用共享配置（`optional:` 表示共享文件不存在时不阻断启动）。共享文件位于 `rosecloud-common/rosecloud-common-core/src/main/resources/rosecloud-common.yaml`。
 
-导入顺序为 `classpath` 默认值 -> Nacos 公共配置 -> Nacos 服务配置 -> Nacos profile 配置，因此服务自己的 `application.yml` 和 Nacos 中的服务/profile 配置都可以覆盖共享文件中的任意项；单体模式同样适用，适合保留自己的 `spring.flyway.locations`、`spring.cloud.nacos.*` 和单体专属开关。
+导入顺序为 `classpath` 默认值 -> Nacos 公共配置 -> Nacos 服务配置 -> Nacos profile 配置（`dev/test/prod`），因此服务自己的 `application.yml` 和 Nacos 中的服务/profile 配置都可以覆盖共享文件中的任意项；单体模式同样适用，适合保留自己的 `spring.flyway.locations`、`spring.cloud.nacos.*` 和单体专属配置。
 
 ## 许可证
 

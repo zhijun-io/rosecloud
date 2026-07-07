@@ -3,10 +3,12 @@ spring:
     import:
       - optional:classpath:rosecloud-common.yaml
       - optional:nacos:rosecloud-common.yaml
-      - optional:nacos:${spring.application.name}.yaml
       - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+      - optional:nacos:${spring.application.name}.yaml
   application:
     name: rosecloud-system
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   cloud:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}

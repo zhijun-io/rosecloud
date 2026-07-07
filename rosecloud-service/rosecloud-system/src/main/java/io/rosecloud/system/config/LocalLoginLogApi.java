@@ -4,16 +4,15 @@ import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.service.LoginLogService;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * In-process {@link LoginLogApi} for monolith mode: delegates to
- * {@link LoginLogService} instead of Feign. Only active under the
- * {@code monolith} profile.
+ * {@link LoginLogService} instead of Feign.
  */
-@Profile("monolith")
 @Component
+@ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
 public class LocalLoginLogApi implements LoginLogApi {
 
     private final LoginLogService loginLogService;

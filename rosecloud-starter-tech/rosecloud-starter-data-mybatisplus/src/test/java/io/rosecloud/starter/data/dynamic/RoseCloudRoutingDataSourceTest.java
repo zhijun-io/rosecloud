@@ -2,6 +2,9 @@ package io.rosecloud.starter.data.dynamic;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -16,10 +19,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies the routing datasource selects the configured target by route key
- * and falls back to the primary for null/unknown keys. Uses in-memory H2 so no
- * external database is required.
+ * and falls back to the primary for null/unknown keys. Uses MySQL Testcontainers
+ * so the test exercises the same database family as production.
  */
+@Testcontainers
 class RoseCloudRoutingDataSourceTest {
+
+    @Container
+    static final MySQLContainer<?> primary = new MySQLContainer<>("mysql:8.0")
+            .withDatabaseName("primary")
+            .withUsername("rosecloud")
+            .withPassword("rosecloud123");
+
+    @Container
+    static final MySQLContainer<?> business = new MySQLContainer<>("mysql:8.0")
+            .withDatabaseName("business")
+            .withUsername("rosecloud")
+            .withPassword("rosecloud123");
 
     @Test
     void routesByKeyAndFallsBackToPrimary() throws Exception {
@@ -43,10 +59,10 @@ class RoseCloudRoutingDataSourceTest {
 
     private static DataSource markerDatasource(String name, String marker) throws SQLException {
         DataSource ds = DataSourceBuilder.create()
-                .driverClassName("org.h2.Driver")
-                .url("jdbc:h2:mem:" + name + ";DB_CLOSE_DELAY=-1")
-                .username("sa")
-                .password("")
+                .driverClassName("com.mysql.cj.jdbc.Driver")
+                .url(name.equals("primary") ? primary.getJdbcUrl() : business.getJdbcUrl())
+                .username(name.equals("primary") ? primary.getUsername() : business.getUsername())
+                .password(name.equals("primary") ? primary.getPassword() : business.getPassword())
                 .build();
         try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
             s.execute("CREATE TABLE marker(val VARCHAR(10))");
