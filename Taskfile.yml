@@ -48,7 +48,7 @@ tasks:
 
   nacos:publish:
     desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml（仅微服务需要）
-    deps: [infra:microservice]
+    deps: [ infra:microservice ]
     cmd: |
       curl -fsS -X POST 'http://127.0.0.1:8848/nacos/v3/admin/cs/config' \
         -H "${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}: ${NACOS_AUTH_IDENTITY_VALUE:-security}" \
@@ -59,30 +59,62 @@ tasks:
   db:load:
     desc: 导入 system/notice 建表与种子数据（单体/微服务通用）
     cmd: |
+      # 等待MySQL完全就绪（健康检查通过后可能还有短暂时间无法连接）
+      until docker exec rosecloud-mysql mysqladmin ping -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" --silent; do
+        echo "等待MySQL服务就绪..."
+        sleep 1
+      done
+
+      # 执行SQL脚本
       for f in rosecloud-services/rosecloud-system/src/main/resources/db/{schema,data}.sql \
                rosecloud-services/rosecloud-notice/src/main/resources/db/{schema,data}.sql; do
+        echo "导入SQL: $f"
         docker exec -i rosecloud-mysql mysql -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" "${MYSQL_DATABASE:-rosecloud}" < "$f"
-      done && echo 'db 数据已导入'
+        if [ $? -ne 0 ]; then
+          echo "❌ 导入失败: $f"
+          exit 1
+        fi
+      done && echo '✅ 数据库数据导入完成'
 
   init:monolith:
     desc: 单体模式初始化（仅启动 MySQL + 导入建表种子，幂等）
-    deps: [infra:monolith, db:load]
+    deps: [ infra:monolith, db:load ]
     cmd: echo '==> 单体模式基础设施就绪'
 
   init:microservice:
     desc: 微服务模式初始化（启动全部基础设施 + 发布 Nacos 配置 + 导入建表种子，幂等）
-    deps: [infra:microservice, nacos:publish, db:load]
+    deps: [ infra:microservice, nacos:publish, db:load ]
     cmd: echo '==> 微服务模式基础设施就绪'
 
   run:monolith:
     desc: 单体模式一键启动（自动完成初始化 + 并行构建 + 运行，:9160，admin/admin123）
-    deps: [init:monolith, build:monolith]  # 初始化和构建并行执行，节省时间
+    deps: [ init:monolith, build:monolith ]  # 初始化和构建并行执行，节省时间
     cmd: '{{.COMPOSE}} --profile monolith up --build'
 
   run:microservice:
     desc: 微服务模式一键启动（自动完成初始化 + 并行构建 + 运行，网关 :9110，admin/admin123）
-    deps: [init:microservice, build:microservice]  # 初始化和构建并行执行，节省时间
+    deps: [ init:microservice, build:microservice ]  # 初始化和构建并行执行，节省时间
     cmd: '{{.COMPOSE}} --profile microservice up --build'
+
+  stop:monolith:
+    desc: 停止单体模式运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} --profile monolith stop'
+
+  stop:microservice:
+    desc: 停止微服务模式运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} --profile microservice stop'
+
+  restart:monolith:
+    desc: 重启单体模式服务（保留数据）
+    cmd: '{{.COMPOSE}} --profile monolith restart'
+
+  restart:microservice:
+    desc: 重启微服务模式服务（保留数据）
+    cmd: '{{.COMPOSE}} --profile microservice restart'
+
+  stop:
+    desc: 停止全部运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} stop'
 
   down:
     desc: 停止并删除全部容器（保留数据卷，数据不会丢失）
@@ -103,23 +135,3 @@ tasks:
   logs:microservice:
     desc: 仅跟随微服务模式容器日志
     cmd: '{{.COMPOSE}} --profile microservice logs -f'
-
-  restart:monolith:
-    desc: 重启单体模式服务（保留数据）
-    cmd: '{{.COMPOSE}} --profile monolith restart'
-
-  restart:microservice:
-    desc: 重启微服务模式服务（保留数据）
-    cmd: '{{.COMPOSE}} --profile microservice restart'
-
-  stop:
-    desc: 停止全部运行中的容器（保留容器，下次启动更快）
-    cmd: '{{.COMPOSE}} stop'
-
-  stop:monolith:
-    desc: 停止单体模式运行中的容器（保留容器，下次启动更快）
-    cmd: '{{.COMPOSE}} --profile monolith stop'
-
-  stop:microservice:
-    desc: 停止微服务模式运行中的容器（保留容器，下次启动更快）
-    cmd: '{{.COMPOSE}} --profile microservice stop'
