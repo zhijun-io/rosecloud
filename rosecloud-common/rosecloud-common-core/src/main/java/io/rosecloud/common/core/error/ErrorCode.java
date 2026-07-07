@@ -12,4 +12,12 @@ public interface ErrorCode {
     String code();
 
     String message();
+
+    /**
+     * Suggested HTTP status for this error. Defaults to 400 (Bad Request);
+     * error codes representing authentication failures should override to 401.
+     */
+    default int httpStatus() {
+        return 400;
+    }
 }

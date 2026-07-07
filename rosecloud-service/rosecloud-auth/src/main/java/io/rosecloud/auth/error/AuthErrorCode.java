@@ -26,4 +26,9 @@ public enum AuthErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
+
+    @Override
+    public int httpStatus() {
+        return 401;
+    }
 }
