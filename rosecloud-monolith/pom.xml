@@ -23,14 +23,7 @@
             <artifactId>rosecloud-starter-web</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
+        <!-- 单体模式不需要Nacos，移除相关依赖 -->
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-auth</artifactId>

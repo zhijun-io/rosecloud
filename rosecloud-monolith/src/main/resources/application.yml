@@ -1,12 +1,9 @@
 spring:
-  config:
-    import:
-      - optional:nacos:rosecloud-common.yaml
   application:
     name: rosecloud-monolith
   profiles:
     active: monolith
-  # 单体模式数据库配置（不需要Nacos，直连MySQL）
+  # 单体模式数据库配置（直连MySQL）
   datasource:
     url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${MYSQL_USER:rosecloud}
@@ -18,18 +15,25 @@ spring:
     baseline-on-migrate: true  # 数据库已有表时自动创建基线，避免首次启动报错
     validate-on-migrate: true
     clean-disabled: true  # 禁用clean操作，防止误删数据
-    locations: classpath:db/migration  # 自动扫描所有模块的迁移脚本
+    locations: classpath*:db/migration  # 扫描所有依赖jar包中的迁移脚本（system/notice模块的SQL）
+    validate-migration-naming: false  # 允许不同模块使用相同版本号前缀（如system和notice都有V1.0__xxx）
+  # 日志配置
+  logging:
+    pattern:
+      level: '%5p [%X{traceId:-}]'
   cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false  # 禁用Nacos配置导入检查（Nacos包被服务模块传递依赖进来）
+      discovery:
+        enabled: false  # 禁用Nacos服务发现
+    discovery:
+      enabled: false  # 完全禁用Spring Cloud服务发现
     openfeign:
       autoconfiguration:
         jackson:
           enabled: false   # 用 Jackson 2，关闭 OpenFeign 的 Jackson 3 模块（见 auth application.yml 注释）
-    nacos:
-      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-      username: ${NACOS_USERNAME:}
-      password: ${NACOS_PASSWORD:}
-      discovery:
-        enabled: false
 
 server:
   port: 9160
