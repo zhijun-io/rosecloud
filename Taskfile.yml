@@ -75,13 +75,13 @@ tasks:
     cmd: echo '==> 微服务模式基础设施就绪'
 
   run:monolith:
-    desc: 单体模式一键启动（自动完成构建 + 初始化 + 运行，:9160，admin/admin123）
-    deps: [build:monolith, init:monolith]
+    desc: 单体模式一键启动（自动完成初始化 + 并行构建 + 运行，:9160，admin/admin123）
+    deps: [init:monolith, build:monolith]  # 初始化和构建并行执行，节省时间
     cmd: '{{.COMPOSE}} --profile monolith up --build'
 
   run:microservice:
-    desc: 微服务模式一键启动（自动完成构建 + 初始化 + 运行，网关 :9110，admin/admin123）
-    deps: [build:microservice, init:microservice]
+    desc: 微服务模式一键启动（自动完成初始化 + 并行构建 + 运行，网关 :9110，admin/admin123）
+    deps: [init:microservice, build:microservice]  # 初始化和构建并行执行，节省时间
     cmd: '{{.COMPOSE}} --profile microservice up --build'
 
   down:
