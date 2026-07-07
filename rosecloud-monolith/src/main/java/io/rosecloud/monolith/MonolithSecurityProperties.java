@@ -13,8 +13,8 @@ import java.util.List;
 public class MonolithSecurityProperties {
 
     private List<String> whiteList = List.of(
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh",
+            "/api/auth/login",
+            "/api/auth/refresh",
             "/actuator/**");
 
     public List<String> getWhiteList() {

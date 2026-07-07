@@ -87,11 +87,11 @@ task run:microservice    # 微服务模式，网关 :9110 + auth :9120 / system 
 
 ```bash
 BASE=http://127.0.0.1:9160            # 单体；微服务用 http://127.0.0.1:9110
-TOKEN=$(curl -s -X POST $BASE/api/v1/auth/login -H 'Content-Type: application/json' \
+TOKEN=$(curl -s -X POST $BASE/api/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["accessToken"])')
-curl -s $BASE/api/v1/system/depts/tree -H "Authorization: Bearer $TOKEN"   # 200 部门树
-curl -s -X POST $BASE/api/v1/auth/logout -H "Authorization: Bearer $TOKEN" # 200
+curl -s $BASE/api/system/depts/tree -H "Authorization: Bearer $TOKEN"   # 200 部门树
+curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 ```
 
 > 令牌吊销说明：共享配置默认 `type=redis`（auth/gateway 共享 Redis）。微服务模式登出后旧令牌在 gateway 侧即时失效（跨进程：auth 写入 Redis、gateway 读取校验）；单体模式无 Redis 依赖、回退 `in-memory`，登出后同进程即时失效。无 Redis 环境可设 `ROSECLOUD_TOKEN_REVOCATION_TYPE=in-memory`。

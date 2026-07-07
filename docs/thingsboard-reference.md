@@ -133,7 +133,7 @@
 
 ### A6.2 落地建议（分阶段，默认关闭）
 - **阶段 0（低成本增量）**：会话数上限（复用 `sys_login_session`，超限吊销最早 `jti`）；改密失效旧令牌（`sys_user.password_changed_at`，校验比 `iat`）；密码重置/激活令牌（`TokenType` 扩展，接入 `TenantProvisioner`）。
-- **阶段 1（MFA，P1 占位）**：新建 `rosecloud-mfa-starter`（`rosecloud.mfa.enabled` 门控）+ `TwoFactorAuthProvider` SPI；先 TOTP + BackupCode，SMS/Email 调 notice；`TokenType.PRE_AUTH` 短 TTL + `/api/v1/auth/mfa/verify`；限频复用 Redis；存 `sys_user_mfa`。
+- **阶段 1（MFA，P1 占位）**：新建 `rosecloud-mfa-starter`（`rosecloud.mfa.enabled` 门控）+ `TwoFactorAuthProvider` SPI；先 TOTP + BackupCode，SMS/Email 调 notice；`TokenType.PRE_AUTH` 短 TTL + `/api/auth/mfa/verify`；限频复用 Redis；存 `sys_user_mfa`。
 - **阶段 2（OAuth2 客户端登录，P1）**：新建 `rosecloud-oauth2-client-starter`；`sys_oauth2_client` 表 + `ClientRegistrationRepository` 动态构造；`OAuth2ClientMapper` SPI(BASIC/CUSTOM)；Cookie 仓库；成功处理器签本站 JWT；如需 MFA 在此补 `isTwoFaEnabled` 分支；登录页元数据 API + 网关白名单加回调。
 - **阶段 3（暂缓）**：OAuth2 Authorization Server(M2M)、非对称签名+JWKS、`enforceTwoFa`、public 令牌——仅预留边界。
 
