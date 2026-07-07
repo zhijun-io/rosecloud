@@ -85,7 +85,7 @@ tasks:
     cmd: '{{.COMPOSE}} --profile microservice up --build'
 
   down:
-    desc: 停止全部容器（保留卷）
+    desc: 停止并删除全部容器（保留数据卷，数据不会丢失）
     cmd: '{{.COMPOSE}} down'
 
   reset:
@@ -111,3 +111,15 @@ tasks:
   restart:microservice:
     desc: 重启微服务模式服务（保留数据）
     cmd: '{{.COMPOSE}} --profile microservice restart'
+
+  stop:
+    desc: 停止全部运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} stop'
+
+  stop:monolith:
+    desc: 停止单体模式运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} --profile monolith stop'
+
+  stop:microservice:
+    desc: 停止微服务模式运行中的容器（保留容器，下次启动更快）
+    cmd: '{{.COMPOSE}} --profile microservice stop'
