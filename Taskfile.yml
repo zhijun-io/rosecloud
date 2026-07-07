@@ -1,8 +1,8 @@
 version: '3'
 
 # RoseCloud 任务编排。安装 task：brew install go-task/tap/go-task（或见 https://taskfile.dev）
-# 快速开始：task init → task build → task run:monolith | task run:microservice
-# 服务以 Docker 容器运行。
+# 快速开始（二选一，一键启动）：task run:monolith | task run:microservice
+# 服务以 Docker 容器运行，自动完成构建、初始化、启动全流程。
 # 前置：sdkman 已安装配置（.sdkmanrc 锁定 Java 21；首次 `sdk env install` 装 JDK）。Maven 经 `mvnw` 包装器提供（版本见 .mvn/wrapper/）。
 # 注：task 内置 shell（gosh）无法 source sdkman，故构建经 `bash -lc` 激活 sdkman 后调用 ./mvnw。
 
@@ -17,16 +17,24 @@ tasks:
     cmd: task --list
 
   build:
-    desc: 全量构建（跳过测试）
+    desc: 全量构建所有模块（跳过测试）
     cmd: '{{.MVN}} clean install -DskipTests'
 
-  build:module:
-    desc: 构建单模块及依赖（MODULE=rosecloud-services/rosecloud-auth）
-    cmd: '[ -n "{{.MODULE}}" ] || { echo "❌ 用法：task build:module MODULE=<模块路径>"; exit 1; }; {{.MVN}} -pl {{.MODULE}} -am install -DskipTests'
+  build:monolith:
+    desc: 仅构建单体模式所需模块（节省时间）
+    cmd: '{{.MVN}} -pl rosecloud-monolith -am install -DskipTests'
+
+  build:microservice:
+    desc: 仅构建微服务模式所需模块（节省时间）
+    cmd: '{{.MVN}} -pl rosecloud-services/rosecloud-auth,rosecloud-services/rosecloud-system,rosecloud-services/rosecloud-notice,rosecloud-services/rosecloud-gateway -am install -DskipTests'
 
   test:
     desc: 构建并运行测试
     cmd: '{{.MVN}} clean install'
+
+  clean:
+    desc: 清理本地构建产物
+    cmd: '{{.MVN}} clean'
 
   infra:monolith:
     desc: 启动并等待单体基础设施（仅 mysql）就绪
@@ -37,10 +45,6 @@ tasks:
     desc: 启动并等待微服务基础设施（mysql/nacos/redis/rabbitmq）就绪
     run: once
     cmd: '{{.COMPOSE}} up -d --wait mysql nacos redis rabbitmq'
-
-  infra:up:
-    desc: 【兼容】启动全部基础设施（同 infra:microservice）
-    deps: [infra:microservice]
 
   nacos:publish:
     desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml（仅微服务需要）
@@ -61,25 +65,23 @@ tasks:
       done && echo 'db 数据已导入'
 
   init:monolith:
-    desc: 单体模式初始化（仅启动 MySQL + 导入建表种子，克隆后执行一次）
+    desc: 单体模式初始化（仅启动 MySQL + 导入建表种子，幂等）
     deps: [infra:monolith, db:load]
-    cmd: echo '==> 单体模式就绪。下一步：task build && task run:monolith'
+    cmd: echo '==> 单体模式基础设施就绪'
 
   init:microservice:
-    desc: 微服务模式初始化（启动全部基础设施 + 发布 Nacos 配置 + 导入建表种子，克隆后执行一次）
+    desc: 微服务模式初始化（启动全部基础设施 + 发布 Nacos 配置 + 导入建表种子，幂等）
     deps: [infra:microservice, nacos:publish, db:load]
-    cmd: echo '==> 微服务模式就绪。下一步：task build && task run:microservice'
-
-  init:
-    desc: 【兼容】默认初始化（同 init:microservice）
-    deps: [init:microservice]
+    cmd: echo '==> 微服务模式基础设施就绪'
 
   run:monolith:
-    desc: 单体模式启动（Docker，仅依赖 MySQL，:9160，admin/admin123）
+    desc: 单体模式一键启动（自动完成构建 + 初始化 + 运行，:9160，admin/admin123）
+    deps: [build:monolith, init:monolith]
     cmd: '{{.COMPOSE}} --profile monolith up --build'
 
   run:microservice:
-    desc: 微服务模式启动（Docker，网关 :9110 + auth/system/notice，admin/admin123）
+    desc: 微服务模式一键启动（自动完成构建 + 初始化 + 运行，网关 :9110，admin/admin123）
+    deps: [build:microservice, init:microservice]
     cmd: '{{.COMPOSE}} --profile microservice up --build'
 
   down:
@@ -93,3 +95,19 @@ tasks:
   logs:
     desc: 跟随全部容器日志
     cmd: '{{.COMPOSE}} logs -f'
+
+  logs:monolith:
+    desc: 仅跟随单体模式容器日志
+    cmd: '{{.COMPOSE}} --profile monolith logs -f'
+
+  logs:microservice:
+    desc: 仅跟随微服务模式容器日志
+    cmd: '{{.COMPOSE}} --profile microservice logs -f'
+
+  restart:monolith:
+    desc: 重启单体模式服务（保留数据）
+    cmd: '{{.COMPOSE}} --profile monolith restart'
+
+  restart:microservice:
+    desc: 重启微服务模式服务（保留数据）
+    cmd: '{{.COMPOSE}} --profile microservice restart'
