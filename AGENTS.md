@@ -21,21 +21,21 @@ RoseCloud 是企业后台 + SaaS 平台底座，基于 Spring Boot 4.1 + Spring 
 ## 开发命令
 
 ```bash
-sdk env install                       # 切到 .sdkmanrc 指定的 Java 21
-mvn clean install -DskipTests         # 全量构建
-mvn clean install -pl rosecloud-services/rosecloud-auth -am -DskipTests   # 构建单模块及其依赖
-bash deploy/init.sh                   # 本地基础设施一键初始化（容器+Nacos 共享配置+建表种子），克隆后执行一次
-bash deploy/run-monolith.sh           # 单体模式启动 :9160（轮询就绪后打印登录信息）
-bash deploy/run-microservice.sh       # 微服务模式启动（网关 :9110 + auth/system/notice）
-cd rosecloud-services/rosecloud-auth && mvn spring-boot:run               # 运行单个服务
-docker compose up -d                  # 仅启动容器（init.sh 已含）
-docker compose --profile jobs up -d   # 额外启动 XXL-Job Admin
-mvn test                              # 单元测试
+sdk env install                                    # 安装 .sdkmanrc 指定的 Java 21（仅首次；Maven 经 mvnw 提供）
+task init                                          # 启动基础设施 + 发布 Nacos 共享配置 + 导入建表种子（克隆后一次）
+task build                                         # 全量构建（经 mvnw，跳过测试）
+task build:module MODULE=rosecloud-services/rosecloud-auth   # 构建单模块及其依赖
+task run:monolith                                  # 单体模式启动 :9160（Docker，前台跟随日志）
+task run:microservice                              # 微服务模式启动（Docker，网关 :9110 + auth/system/notice）
+cd rosecloud-services/rosecloud-auth && ./mvnw spring-boot:run   # 运行单个服务（本机直跑，调试用）
+docker compose --profile jobs up -d                # 额外启动 XXL-Job Admin
+task test                                          # 构建并运行测试
+task down                                          # 停止全部容器
 ```
 
-选择覆盖变更的最小命令：行为改动通常 `mvn test` 足够；跨模块或自动配置改动用 `mvn verify -DskipITs`；完整校验用 `mvn verify`。
+选择覆盖变更的最小命令：行为改动通常 `./mvnw test` 足够；跨模块或自动配置改动用 `./mvnw verify -DskipITs`；完整校验用 `./mvnw verify`（或 `task test`）。
 
-本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`deploy/init.sh` 已自动发布共享配置与建表种子，无需手动初始化。
+本地基础设施端口与凭据见 `docker-compose.yml`，默认密码 `rosecloud123`。服务端口与 matecloud 错开，避免本地共存冲突。本地 Nacos 默认关闭鉴权（`NACOS_AUTH_ENABLE=false`，匿名访问），`task init` 已自动发布共享配置与建表种子，无需手动初始化。
 
 ## 模块结构
 
@@ -120,7 +120,7 @@ rosecloud/
 - **通知通道**：站内为拉取式（默认）；邮件/短信为推送通道，由 `NoticeChannelSender` SPI 实现——`EmailNoticeSender`（条件装配 `JavaMailSender`，无配置则跳过）、`SmsNoticeSender`（桩）。`NoticeDispatchService` 在即时/定时发布时按 `channels` 位掩码（站内1/邮件2/短信4）经 `NoticeRecipientApi`（Feign→system）解析接收人邮箱/手机后异步分发，失败仅记日志不影响发布；接收人联系存于 `sys_user.email/phone`，按全局/租户/角色解析
 - **网关路由**：动态路由由 `rosecloud-gateway` 的 `MetadataRouteDefinitionLocator` 按服务发现元数据 `rosecloud.gateway.path` 自动生成（`lb://` + Path 断言，路由 id `dyn-{serviceId}`，支持逗号分隔多路径）——新服务只需在自身 `spring.cloud.nacos.discovery.metadata.rosecloud.gateway.path` 声明路径即接入，无需改网关；`RouteRefreshScheduler` 启动时及每 30s 发布 `RefreshRoutesEvent` 刷新
 - **链路标识**：网关 `TraceIdGlobalFilter` 在入口为每个请求生成/复用 `X-Trace-Id` 并向下游与响应透传（先于鉴权，白名单亦追踪）；servlet 服务经 `SecurityContextFilter` 兜底生成（直连无网关时）并写入 `traceId` MDC、回写响应头，Feign 经 `SecurityHeaderFeignPropagator` 透传；共享配置 `logging.pattern.level` 带出 `traceId` 便于日志关联
-- **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置（各服务 `spring.config.import: optional:nacos:rosecloud-common.yaml` 拉取共享 `rosecloud-common.yaml`；内容见 `deploy/nacos/`，本地默认对齐 docker-compose）。本地 Nacos 默认关闭鉴权，故各服务 `nacos.username/password` 默认空（匿名）；开启鉴权时用 `NACOS_USERNAME`/`NACOS_PASSWORD` 覆盖。`deploy/init.sh` 已自动发布共享配置，无需手动在 Nacos 创建
+- **配置**：`application.yml` 保持精简，仅放 `spring.application.name`、`server.port`、`management` 与 Nacos 连接；所有可变值用 `${ENV:默认值}`，DB/Redis/MQ 等基础设施配置走 Nacos 共享配置（各服务 `spring.config.import: optional:nacos:rosecloud-common.yaml` 拉取共享 `rosecloud-common.yaml`；内容见 `deploy/nacos/`，本地默认对齐 docker-compose）。本地 Nacos 默认关闭鉴权，故各服务 `nacos.username/password` 默认空（匿名）；开启鉴权时用 `NACOS_USERNAME`/`NACOS_PASSWORD` 覆盖。`task init` 已自动发布共享配置，无需手动在 Nacos 创建
 - **不引入**：Sa-Token（用 Spring Security）、Dubbo（用 OpenFeign，待后续演进）、Swagger/Smart-Doc（API 文档方案未定，暂不引入）
 - **Jackson**：统一用 Jackson 2（`com.fasterxml.jackson`），不用 Spring Boot 4 默认的 Jackson 3（`tools.jackson`）。servlet 服务通过 `rosecloud-starter-web` 接入（已排除 `spring-boot-starter-jackson` 并提供 Jackson 2 `ObjectMapper`），不要直接依赖 `spring-boot-starter-web`/`spring-boot-starter-jackson`；reactive 网关暂仍为 Jackson 3（codec 切换待跟进）。注意：OpenFeign 的 `FeignJacksonConfiguration`（`PageJacksonModule` 继承 Jackson 3 的 `tools.jackson.databind.JacksonModule`）在 Feign 服务类路径出现 `spring-data-commons`（如引入 redis）时被 `@ConditionalOnClass(Page,Sort)` 激活并加载，仅 Jackson 2 下抛 `ClassNotFoundException`；故各 Feign 服务 `application.yml` 设 `spring.cloud.openfeign.autoconfiguration.jackson.enabled=false`（rosecloud 用自有 `PageResult`，不需要该模块）
 - **依赖方向**：`common-core` 为最底层零依赖；`common-security`、`common-web` 依赖 `common-core`；`api` 依赖 `common-core` + `common-security`；服务依赖 `api` + 所需 common；禁止反向依赖与 common 之间的循环
