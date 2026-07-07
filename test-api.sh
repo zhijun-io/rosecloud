@@ -28,6 +28,10 @@ expect_fail() {
   jq -e '.success == false' <<<"$resp" >/dev/null
 }
 
+is_monolith() {
+  [[ "$BASE_URL" == "http://127.0.0.1:9160" ]]
+}
+
 jti_of() {
   printf '%s' "$1" | jq -Rr 'split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson | .jti'
 }
@@ -146,19 +150,25 @@ tenant_token=$(login_token "tenant$now" tp123456)
 jq -e '.success == true and .data.user.tenantId != null and .data.roles[0] == "tenant-admin"' <<<"$(api "$tenant_token" GET "$BASE_URL/api/system/users/me")" >/dev/null
 jq -e '.success == true' <<<"$(api "$tenant_token" GET "$BASE_URL/api/notice/notices/me?current=1&size=10")" >/dev/null
 
-echo "internal"
-jq -e '.success == true and .data.username == "admin"' <<<"$(api "$admin_token" GET "$BASE_URL/internal/users/auth/admin")" >/dev/null
-jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
-jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
-
 echo "session / revoke"
-session_token=$(login_token admin admin123)
-record_jti="rec-$now"
-jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/sessions" "$(jq -nc --arg jti "$record_jti" --argjson uid 1 --arg exp "${future}T23:59:59" '{jti:$jti,userId:$uid,username:"admin",tenantId:null,expireTime:$exp,ip:"127.0.0.1",userAgent:"xh"}')")" >/dev/null
-jq -e '.success == true' <<<"$(api "$session_token" POST "$BASE_URL/internal/sessions/logout-by-jti?jti=$record_jti")" >/dev/null
-access_jti=$(jti_of "$session_token")
-jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/revoke" "$(jq -nc --arg jti "$access_jti" --arg exp "${future}T23:59:59" '{jti:$jti,expireTime:$exp}')")" >/dev/null
-expect_401 api "$session_token" GET "$BASE_URL/api/system/users/me"
+logout_token=$(login_token admin admin123)
+jq -e '.success == true' <<<"$(api "$logout_token" POST "$BASE_URL/api/auth/logout")" >/dev/null
+expect_401 api "$logout_token" GET "$BASE_URL/api/system/users/me"
+
+if is_monolith && [[ "${RUN_INTERNAL:-0}" == "1" ]]; then
+  echo "internal"
+  jq -e '.success == true and .data.username == "admin"' <<<"$(api "$admin_token" GET "$BASE_URL/internal/users/auth/admin")" >/dev/null
+  jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
+  jq -e '.success == true' <<<"$(post_json "$admin_token" "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
+
+  session_token=$(login_token admin admin123)
+  record_jti="rec-$now"
+  jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/sessions" "$(jq -nc --arg jti "$record_jti" --argjson uid 1 --arg exp "${future}T23:59:59" '{jti:$jti,userId:$uid,username:"admin",tenantId:null,expireTime:$exp,ip:"127.0.0.1",userAgent:"xh"}')")" >/dev/null
+  jq -e '.success == true' <<<"$(api "$session_token" POST "$BASE_URL/internal/sessions/logout-by-jti?jti=$record_jti")" >/dev/null
+  access_jti=$(jti_of "$session_token")
+  jq -e '.success == true' <<<"$(post_json "$session_token" "$BASE_URL/internal/revoke" "$(jq -nc --arg jti "$access_jti" --arg exp "${future}T23:59:59" '{jti:$jti,expireTime:$exp}')")" >/dev/null
+  expect_401 api "$session_token" GET "$BASE_URL/api/system/users/me"
+fi
 
 echo "kick / logout"
 kick_token=$(login_token admin admin123)

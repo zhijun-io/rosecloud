@@ -61,7 +61,12 @@
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-security-jwt</artifactId>
+            <artifactId>rosecloud-starter-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-trace</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

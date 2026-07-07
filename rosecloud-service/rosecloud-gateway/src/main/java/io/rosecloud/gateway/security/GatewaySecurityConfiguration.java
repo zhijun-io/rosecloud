@@ -16,9 +16,4 @@ public class GatewaySecurityConfiguration {
             TokenRevocationService tokenRevocationService) {
         return new JwtAuthenticationGlobalFilter(jwtTokenCodec, properties, tokenRevocationService);
     }
-
-    @Bean
-    public TraceIdGlobalFilter traceIdGlobalFilter() {
-        return new TraceIdGlobalFilter();
-    }
 }

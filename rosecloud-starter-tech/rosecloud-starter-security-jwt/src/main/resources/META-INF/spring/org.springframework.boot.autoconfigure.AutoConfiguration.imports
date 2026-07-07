@@ -1,2 +1,0 @@
-io.rosecloud.starter.security.jwt.JwtAutoConfiguration
-io.rosecloud.starter.security.jwt.RedisTokenRevocationAutoConfiguration

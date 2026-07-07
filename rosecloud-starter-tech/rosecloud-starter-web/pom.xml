@@ -13,7 +13,7 @@
 
     <artifactId>rosecloud-starter-web</artifactId>
     <name>RoseCloud Web Starter</name>
-    <description>Servlet web 入口：排除 Jackson 3、使用 Jackson 2，并提供安全上下文过滤/全局异常/Feign 头透传。</description>
+    <description>Servlet web 入口：排除 Jackson 3、使用 Jackson 2，并提供全局异常处理。</description>
 
     <dependencies>
         <!-- Web：排除 Jackson 3 starter，改用 Jackson 2 -->
@@ -52,16 +52,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-security</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- Feign 头透传（可选，避免强制 servlet 服务引入 openfeign 之外的消费者） -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

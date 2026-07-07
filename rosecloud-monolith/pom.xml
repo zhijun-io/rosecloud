@@ -24,6 +24,16 @@
             <artifactId>rosecloud-starter-web</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-trace</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- 单体模式不需要Nacos，移除相关依赖 -->
         <dependency>
             <groupId>io.rosecloud</groupId>
@@ -52,11 +62,6 @@
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-starter-tenant</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-oauth2</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

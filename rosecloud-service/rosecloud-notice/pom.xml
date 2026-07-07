@@ -57,12 +57,22 @@
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-starter-audit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-trace</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- 可选：邮件通道；引入但不激活，无 mail 配置时邮件通道跳过 -->

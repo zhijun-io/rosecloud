@@ -14,10 +14,10 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Monolith security wiring (active under the {@code monolith} profile). With no
- * gateway in front, {@link MonolithJwtFilter} verifies HS256 JWTs and injects
- * identity headers ahead of the shared {@code SecurityContextFilter}.
+ * gateway in front, {@link MonolithJwtFilter} verifies HS256 JWTs and lets the
+ * shared trace and security filters populate request context in-process.
  *
- * <p>Because the OAuth2 starter puts Spring Security on the classpath, Spring
+ * <p>Because {@code rosecloud-starter-security} includes OAuth2 resource-server support, Spring
  * Boot would otherwise auto-configure a default {@link SecurityFilterChain} that
  * blocks every route (including login). When OAuth2 is disabled (the default),
  * a permissive chain is registered so the default one does not activate; the
@@ -45,9 +45,9 @@ public class MonolithSecurityConfiguration {
         FilterRegistrationBean<MonolithJwtFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(new MonolithJwtFilter(jwtTokenCodec, tokenRevocationService, properties));
         registration.addUrlPatterns("/*");
-        // Run before the shared SecurityContextFilter (HIGHEST_PRECEDENCE + 20) so the
-        // injected identity headers are present before they are decoded.
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+        // Run after the trace filter (HIGHEST_PRECEDENCE + 10) but before the
+        // shared SecurityContextFilter (HIGHEST_PRECEDENCE + 20).
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 15);
         return registration;
     }
 }

@@ -444,7 +444,7 @@ AssetProfile 字段：`name`、`description`、`image`、`isDefault`、`defaultR
 - **默认关闭**：MFA/OAuth2 客户端均以 `rosecloud.{name}.enabled=true` 门控，关闭时零装配，符合 §5.4；不可让默认路径回归。
 - **双模式兼容**：认证增强须在微服务与单体均可用——OAuth2 客户端登录、pre-auth 令牌校验在 `rosecloud-auth`/`MonolithJwtFilter` 两端一致。
 - **不引入过度抽象**：MFA provider SPI、OAuth2 mapper SPI 是稳定接缝；其余策略以最小改动实现。
-- **依赖方向**：MFA/OAuth2 客户端 starter 依赖 `rosecloud-api`+`common-security`+`starter-security-jwt`，禁止反向；SMS/Email 经 Feign/`NoticeChannelSender` 调 notice。
+- **依赖方向**：MFA/OAuth2 客户端 starter 依赖 `rosecloud-api`+`common-security`+`starter-security`，禁止反向；SMS/Email 经 Feign/`NoticeChannelSender` 调 notice。
 - **OAuth2↔MFA 一致性**：ThingsBoard 本版本 OAuth2 登录不触发 MFA；RoseCloud 若要统一安全策略需在成功处理器显式补 `isTwoFaEnabled` 分支。
 - **密钥管理**：ThingsBoard 配置入库 + `reload()`；RoseCloud 现走 Nacos 共享配置跨实例一致性已较好，按需权衡是否再入库。
 

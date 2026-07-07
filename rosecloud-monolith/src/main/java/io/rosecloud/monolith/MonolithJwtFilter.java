@@ -1,6 +1,5 @@
 package io.rosecloud.monolith;
 
-import io.rosecloud.common.security.SecurityHeaders;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -11,7 +10,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,21 +19,12 @@ import org.springframework.util.PathMatcher;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
- * Monolith stand-in for the gateway: verifies the bearer JWT and injects the
- * decoded identity as {@link SecurityHeaders} on the request, so the shared
- * {@code SecurityContextFilter} populates {@code UserContext} exactly as it does
- * downstream of the gateway in microservice mode. Non-white-listed requests
- * without a valid, non-revoked token are rejected with 401, so logout (which
- * revokes the access-token jti) takes effect in-process.
+ * Monolith stand-in for the gateway: verifies the bearer JWT before the shared
+ * trace and security filters run. Non-white-listed requests without a valid,
+ * non-revoked token are rejected with 401, so logout (which revokes the
+ * access-token jti) takes effect in-process.
  */
 public class MonolithJwtFilter implements Filter {
 
@@ -77,7 +66,7 @@ public class MonolithJwtFilter implements Filter {
             unauthorized(httpResponse, "token revoked");
             return;
         }
-        chain.doFilter(new IdentityHeaderRequestWrapper(http, claims), response);
+        chain.doFilter(http, response);
     }
 
     private boolean isWhiteListed(String path) {
@@ -105,55 +94,4 @@ public class MonolithJwtFilter implements Filter {
                 + message + "\",\"data\":null}");
     }
 
-    /**
-     * Overrides the identity headers with the JWT-derived values (and leaves all
-     * other headers untouched), so a client cannot spoof {@link SecurityHeaders}.
-     */
-    private static final class IdentityHeaderRequestWrapper extends HttpServletRequestWrapper {
-
-        private final Map<String, List<String>> extra;
-
-        IdentityHeaderRequestWrapper(HttpServletRequest request, TokenClaims claims) {
-            super(request);
-            Map<String, List<String>> headers = new HashMap<>();
-            if (claims.userId() != null) {
-                headers.put(SecurityHeaders.USER_ID, List.of(String.valueOf(claims.userId())));
-            }
-            if (claims.username() != null) {
-                headers.put(SecurityHeaders.USERNAME, List.of(claims.username()));
-            }
-            if (claims.tenantId() != null) {
-                headers.put(SecurityHeaders.TENANT_ID, List.of(String.valueOf(claims.tenantId())));
-            }
-            headers.put(SecurityHeaders.ROLES, List.of(String.join(",", claims.roles())));
-            this.extra = headers;
-        }
-
-        @Override
-        public String getHeader(String name) {
-            if (extra.containsKey(name)) {
-                return extra.get(name).get(0);
-            }
-            return super.getHeader(name);
-        }
-
-        @Override
-        public Enumeration<String> getHeaders(String name) {
-            if (extra.containsKey(name)) {
-                return Collections.enumeration(extra.get(name));
-            }
-            return super.getHeaders(name);
-        }
-
-        @Override
-        public Enumeration<String> getHeaderNames() {
-            Set<String> names = new LinkedHashSet<>();
-            Enumeration<String> superNames = super.getHeaderNames();
-            while (superNames.hasMoreElements()) {
-                names.add(superNames.nextElement());
-            }
-            names.addAll(extra.keySet());
-            return Collections.enumeration(names);
-        }
-    }
 }

@@ -24,9 +24,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Verifies the bearer JWT on every non-white-listed request and injects the
- * decoded identity as {@link SecurityHeaders} for downstream services, which
- * read them via the security-context filter. Inbound identity headers are
- * stripped first so a client cannot spoof them.
+ * decoded identity for access control. Downstream servlet services decode the
+ * same bearer token themselves, so no user headers are injected.
  */
 public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
@@ -58,22 +57,14 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         } catch (InvalidTokenException e) {
             return unauthorized(exchange, "invalid token");
         }
-        ServerHttpRequest mutated = request.mutate()
-                .headers(this::stripIdentityHeaders)
-                .header(SecurityHeaders.USER_ID, String.valueOf(claims.userId()))
-                .header(SecurityHeaders.USERNAME, String.valueOf(claims.username()))
-                .header(SecurityHeaders.TENANT_ID,
-                        claims.tenantId() == null ? "" : String.valueOf(claims.tenantId()))
-                .header(SecurityHeaders.ROLES, String.join(",", claims.roles()))
-                .build();
         if (claims.jti() != null) {
             return Mono.fromCallable(() -> tokenRevocationService.isRevoked(claims.jti()))
                     .subscribeOn(Schedulers.boundedElastic())
                     .flatMap(revoked -> revoked
                             ? unauthorized(exchange, "token revoked")
-                            : chain.filter(exchange.mutate().request(mutated).build()));
+                            : chain.filter(exchange));
         }
-        return chain.filter(exchange.mutate().request(mutated).build());
+        return chain.filter(exchange);
     }
 
     @Override
@@ -88,13 +79,6 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             }
         }
         return false;
-    }
-
-    private void stripIdentityHeaders(HttpHeaders headers) {
-        headers.remove(SecurityHeaders.USER_ID);
-        headers.remove(SecurityHeaders.USERNAME);
-        headers.remove(SecurityHeaders.TENANT_ID);
-        headers.remove(SecurityHeaders.ROLES);
     }
 
     private static String extractToken(ServerHttpRequest request) {

@@ -7,7 +7,7 @@
 RoseCloud 是一个企业后台 + SaaS 平台底座，基于 Spring Boot 4.1、Spring Cloud 2025.1、Spring Cloud Alibaba 2025.1、Nacos 3 和 Java 21。
 
 - 服务间通信使用 OpenFeign
-- 认证授权使用 Spring Security + JWT
+- 认证授权使用 Spring Security + JWT，统一收口到 `rosecloud-starter-security`，其内承载 JWT、OAuth2 JWT 资源服务器和后续 MFA hooks
 - 持久化使用 MyBatis-Plus
 - 运行形态分为单体 `rosecloud-monolith` 和微服务 `rosecloud-service/*`
 - 共享技术模块分为 `rosecloud-common/`、`rosecloud-api/`、`rosecloud-starter-tech/`、`rosecloud-starter-business/`
@@ -52,7 +52,7 @@ cd rosecloud-service/rosecloud-auth && ./mvnw spring-boot:run
 ## Conventions
 
 - 包根使用 `io.rosecloud.*`
-- API 前缀统一使用 `WebConstants.API_PREFIX` 和 `ServiceMetadata.API_PREFIX`
+- API 前缀统一使用 `ServiceMetadata.API_PREFIX`
 - 统一返回体使用 `ApiResponse<T>`
 - 分页统一使用 `ApiResponse<PageResult<T>>`
 - 错误码使用 `ErrorCode`，业务异常使用 `BizException`
@@ -70,8 +70,6 @@ cd rosecloud-service/rosecloud-auth && ./mvnw spring-boot:run
 
 ## Agent notes
 
-- 不要把 `rosecloud-services/` 和 `rosecloud-starters/` 当成当前结构，它们已被新的 `rosecloud-service/`、`rosecloud-starter-tech/`、`rosecloud-starter-business/` 替代。
-- 不要在根 `pom.xml` 导入 `rosecloud-bom`，它会阻塞首次 reactor 构建。
 - 不要随意扩大公开 API 面，优先复用现有常量和契约。
 - 不要改动与当前任务无关的未请求文件。
 - 只在确有必要时新增子目录 `AGENTS.md`；当前仓库没有需要单独覆盖的子目录规则。

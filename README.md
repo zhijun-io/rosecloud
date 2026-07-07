@@ -23,13 +23,13 @@ rosecloud
 ├── rosecloud-api
 ├── rosecloud-starter-tech        # 技术型 starter 父模块
 │   ├── rosecloud-starter-web
-│   ├── rosecloud-starter-security-jwt
+│   ├── rosecloud-starter-security
+│   ├── rosecloud-starter-trace
 │   ├── rosecloud-starter-data-mybatisplus
 │   ├── rosecloud-starter-lock
 │   ├── rosecloud-starter-cache
 │   ├── rosecloud-starter-sequence
-│   ├── rosecloud-starter-storage
-│   └── rosecloud-starter-oauth2
+│   └── rosecloud-starter-storage
 ├── rosecloud-starter-business    # 业务型 starter 父模块
 │   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）
 │   └── rosecloud-starter-audit   # 审计（rosecloud.audit.enabled）
@@ -43,16 +43,16 @@ rosecloud
 
 ## 可插拔能力
 
-starter 分成两个父模块：`rosecloud-starter-tech` 承载技术型 starter，`rosecloud-starter-business` 承载业务型 starter。二者都通过 `@AutoConfiguration` 装配；业务型 starter（tenant/audit）用 `rosecloud.{name}.enabled=true` 门控，核心基建 starter（`rosecloud-starter-security-jwt`）按 classpath 引入即装配：
+starter 分成两个父模块：`rosecloud-starter-tech` 承载技术型 starter，`rosecloud-starter-business` 承载业务型 starter。二者都通过 `@AutoConfiguration` 装配；业务型 starter（tenant/audit）用 `rosecloud.{name}.enabled=true` 门控，核心基建 starter（`rosecloud-starter-security`、`rosecloud-starter-trace`）按 classpath 引入即装配：
 
 | starter | 开关 | 说明 |
 |---|---|---|
-| rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 安全上下文过滤 + 全局异常 + Feign 头透传 |
-| rosecloud-starter-security-jwt | 引入即装配 | JWT(HS256) access/refresh 签发与校验，claims 对齐 CurrentUser；auth 签发、gateway 校验共享 |
+| rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 全局异常 |
+| rosecloud-starter-security | 引入即装配 | JWT(HS256) access/refresh 签发与校验，claims 对齐 CurrentUser；安全上下文与 Feign 透传；OAuth2 JWT 资源服务器；预留 MFA hooks |
+| rosecloud-starter-trace | 引入即装配 | 服务端 traceId 生成与透传，便于日志链路追踪 |
 | rosecloud-starter-data-mybatisplus | 服务按需接入 | MyBatis-Plus 持久化（可换 JPA）+ 审计自动填充 + 分页拦截器 |
 | rosecloud-starter-tenant | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传、MyBatis-Plus 行级隔离（`TenantLineInnerInterceptor`） |
 | rosecloud-starter-audit | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent`（含操作人/租户，内置日志监听器） |
-| rosecloud-starter-oauth2 | `rosecloud.oauth2.enabled` | OAuth2 JWT 资源服务器，需配 `rosecloud.oauth2.jwk-set-uri` |
 
 `rosecloud-monolith` 引入了业务型 starter 和需要的技术型 starter，并默认关闭可选能力，按需置 `enabled=true` 即激活。
 
