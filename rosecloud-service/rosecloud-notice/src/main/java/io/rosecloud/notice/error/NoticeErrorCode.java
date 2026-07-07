@@ -2,28 +2,27 @@ package io.rosecloud.notice.error;
 
 import io.rosecloud.common.core.error.ErrorCode;
 
-/** Notice-service error codes (module prefix {@code NTC}). */
+/** Notice-service error codes (module prefix {@code notice}). */
 public enum NoticeErrorCode implements ErrorCode {
 
-    NOTICE_NOT_FOUND("NTCA001", "通知不存在"),
-    NOTICE_NOT_VISIBLE("NTCA002", "无权查看该通知"),
-    NOTICE_NOT_CONFIRMABLE("NTCA003", "该通知无需确认");
+    NOTICE_NOT_FOUND("通知不存在"),
+    NOTICE_NOT_VISIBLE("无权查看该通知"),
+    NOTICE_NOT_CONFIRMABLE("该通知无需确认");
 
-    private final String code;
     private final String message;
 
-    NoticeErrorCode(String code, String message) {
-        this.code = code;
+    NoticeErrorCode(String message) {
         this.message = message;
-    }
-
-    @Override
-    public String code() {
-        return code;
     }
 
     @Override
     public String message() {
         return message;
     }
+
+    @Override
+    public String modulePrefix() {
+        return "notice";
+    }
+
 }

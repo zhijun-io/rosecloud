@@ -102,7 +102,7 @@ public class SecurityContextFilter implements Filter {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"success\":false,\"code\":\"AUTHA003\",\"message\":\""
+        response.getWriter().write("{\"success\":false,\"code\":\"" + SecurityErrorCode.INVALID_TOKEN.code() + "\",\"message\":\""
                 + message + "\",\"data\":null}");
     }
 

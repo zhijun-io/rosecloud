@@ -46,7 +46,7 @@ public class InternalApiKeyFilter implements Filter {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"success\":false,\"code\":\"AUTHA004\",\"message\":\""
+        response.getWriter().write("{\"success\":false,\"code\":\"" + SecurityErrorCode.INTERNAL_API_KEY_INVALID.code() + "\",\"message\":\""
                 + message + "\",\"data\":null}");
     }
 }

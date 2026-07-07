@@ -2,6 +2,7 @@ package io.rosecloud.gateway.security;
 
 import io.rosecloud.starter.security.PublicPathsProperties;
 import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
@@ -98,7 +99,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        String body = "{\"success\":false,\"code\":\"AUTHA003\",\"message\":\""
+        String body = "{\"success\":false,\"code\":\"" + SecurityErrorCode.INVALID_TOKEN.code() + "\",\"message\":\""
                 + message + "\",\"data\":null}";
         DataBuffer buffer = response.bufferFactory()
                 .wrap(body.getBytes(StandardCharsets.UTF_8));

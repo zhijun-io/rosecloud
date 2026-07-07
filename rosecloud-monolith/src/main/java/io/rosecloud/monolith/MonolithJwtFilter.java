@@ -1,6 +1,7 @@
 package io.rosecloud.monolith;
 
 import io.rosecloud.starter.security.PublicPathsProperties;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -96,7 +97,7 @@ public class MonolithJwtFilter implements Filter {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"success\":false,\"code\":\"AUTHA003\",\"message\":\""
+        response.getWriter().write("{\"success\":false,\"code\":\"" + SecurityErrorCode.INVALID_TOKEN.code() + "\",\"message\":\""
                 + message + "\",\"data\":null}");
     }
 
