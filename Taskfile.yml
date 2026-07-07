@@ -7,7 +7,8 @@ version: '3'
 # 注：task 内置 shell（gosh）无法 source sdkman，故构建经 `bash -lc` 激活 sdkman 后调用 ./mvnw。
 
 vars:
-  MVN: bash ./mvnw "$@"
+  # 构建前自动激活 sdkman 环境，使用 .sdkmanrc 指定的 Java 版本
+  MVN: bash -lc 'source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env install && ./mvnw "$@"' _
   COMPOSE: docker compose
 
 tasks:
@@ -56,49 +57,19 @@ tasks:
         --data-urlencode 'namespaceId=public' --data-urlencode 'type=yaml' \
         --data-urlencode "content@deploy/nacos/rosecloud-common.yaml" >/dev/null && echo 'nacos 配置已发布'
 
-  db:load:
-    desc: 导入 system/notice 建表与种子数据（单体/微服务通用）
-    cmd: |
-      # 等待MySQL完全就绪（健康检查通过后可能还有短暂时间无法连接）
-      until docker exec rosecloud-mysql mysqladmin ping -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" --silent; do
-        echo "等待MySQL服务就绪..."
-        sleep 1
-      done
-
-      # 执行SQL脚本
-      for f in rosecloud-services/rosecloud-system/src/main/resources/db/{schema,data}.sql \
-               rosecloud-services/rosecloud-notice/src/main/resources/db/{schema,data}.sql; do
-        echo "导入SQL: $f"
-        docker exec -i rosecloud-mysql mysql -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" "${MYSQL_DATABASE:-rosecloud}" < "$f"
-        if [ $? -ne 0 ]; then
-          echo "❌ 导入失败: $f"
-          exit 1
-        fi
-      done && echo '✅ 数据库数据导入完成'
-
-  init:monolith:
-    desc: 单体模式初始化（仅启动 MySQL + 导入建表种子，幂等）
-    deps: [ infra:monolith, db:load ]
-    cmd: echo '==> 单体模式基础设施就绪'
-
-  init:microservice:
-    desc: 微服务模式初始化（启动全部基础设施 + 发布 Nacos 配置 + 导入建表种子，幂等）
-    deps: [ infra:microservice, nacos:publish, db:load ]
-    cmd: echo '==> 微服务模式基础设施就绪'
-
   run:monolith:
     desc: 单体模式一键启动（自动完成初始化 → 构建 → 运行，:9160，admin/admin123）
-    deps: [ init:monolith ]
+    deps: [ infra:monolith ]  # 仅启动MySQL，SQL由Flyway在服务启动时自动执行
     cmds:
-      - task: build:monolith  # 等初始化100%完成后再构建
-      - '{{.COMPOSE}} --profile monolith up -d --build'  # 构建成功后再启动服务
+      - task: build:monolith  # 等MySQL就绪后再构建
+      - '{{.COMPOSE}} --profile monolith up -d --build'  # 构建成功后启动服务，自动执行数据库迁移
 
   run:microservice:
     desc: 微服务模式一键启动（自动完成初始化 → 构建 → 运行，网关 :9110，admin/admin123）
-    deps: [ init:microservice ]
+    deps: [ infra:microservice, nacos:publish ]  # 启动基础设施+发布Nacos配置，SQL由Flyway自动执行
     cmds:
-      - task: build:microservice  # 等初始化100%完成后再构建
-      - '{{.COMPOSE}} --profile microservice up -d --build'  # 构建成功后再启动服务
+      - task: build:microservice  # 等基础设施就绪后再构建
+      - '{{.COMPOSE}} --profile microservice up -d --build'  # 构建成功后启动服务，自动执行数据库迁移
 
   stop:monolith:
     desc: 停止单体模式运行中的容器（保留容器，下次启动更快）

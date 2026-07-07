@@ -6,6 +6,19 @@ spring:
     name: rosecloud-monolith
   profiles:
     active: monolith
+  # 单体模式数据库配置（不需要Nacos，直连MySQL）
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${MYSQL_USER:rosecloud}
+    password: ${MYSQL_PASSWORD:rosecloud123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # Flyway 数据库版本化迁移配置
+  flyway:
+    enabled: true
+    baseline-on-migrate: true  # 数据库已有表时自动创建基线，避免首次启动报错
+    validate-on-migrate: true
+    clean-disabled: true  # 禁用clean操作，防止误删数据
+    locations: classpath:db/migration  # 自动扫描所有模块的迁移脚本
   cloud:
     openfeign:
       autoconfiguration:

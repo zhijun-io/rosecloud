@@ -9,6 +9,13 @@ spring:
     url: '${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}'
     username: ${MYSQL_USER:rosecloud}
     password: ${MYSQL_PASSWORD:rosecloud123}
+  # Flyway 数据库版本化迁移配置（所有微服务共享）
+  flyway:
+    enabled: true
+    baseline-on-migrate: true  # 数据库已有表时自动创建基线，避免首次启动报错
+    validate-on-migrate: true
+    clean-disabled: true  # 禁用clean操作，防止误删数据
+    locations: classpath:db/migration
 
   # Redis：跨实例令牌吊销（type=redis）与缓存/锁/序列号等 starter 的可选后端。
   # 本地默认对齐 docker-compose（127.0.0.1:6379，无密码）。
