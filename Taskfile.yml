@@ -44,7 +44,7 @@ tasks:
   infra:microservice:
     desc: 启动并等待微服务基础设施（mysql/nacos/redis/rabbitmq）就绪
     run: once
-    cmd: '{{.COMPOSE}} up -d --wait mysql nacos redis rabbitmq'
+    cmd: '{{.COMPOSE}} --profile microservice up -d --wait mysql nacos redis rabbitmq'
 
   nacos:publish:
     desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml（仅微服务需要）
