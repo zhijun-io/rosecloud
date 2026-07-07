@@ -3,7 +3,6 @@ package io.rosecloud.notice.config;
 import io.rosecloud.notice.service.NoticeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,8 +20,6 @@ public class NoticePublishScheduler {
         this.noticeService = noticeService;
     }
 
-    @Scheduled(fixedDelayString = "${rosecloud.notice.publish-check-ms:60000}",
-            initialDelayString = "${rosecloud.notice.publish-check-ms:60000}")
     public void publishDue() {
         int published = noticeService.publishScheduledNotices();
         if (published > 0) {
