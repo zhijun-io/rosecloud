@@ -16,7 +16,7 @@ spring:
       password: ${NACOS_PASSWORD:}
       discovery:
         metadata:
-          rosecloud.gateway.path: /api/auth/**
+          gateway.path: /api/auth/**
 
 server:
   port: 9090

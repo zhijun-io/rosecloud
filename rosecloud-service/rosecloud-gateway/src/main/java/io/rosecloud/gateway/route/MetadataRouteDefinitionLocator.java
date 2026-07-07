@@ -25,7 +25,7 @@ import java.util.List;
 public class MetadataRouteDefinitionLocator implements RouteDefinitionLocator {
 
     /** Discovery metadata key a service sets to opt into auto-routing (comma-separated path patterns). */
-    public static final String PATH_META = "rosecloud.gateway.path";
+    public static final String PATH_META = "gateway.path";
 
     private final ReactiveDiscoveryClient discoveryClient;
 
