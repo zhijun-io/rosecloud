@@ -28,14 +28,23 @@ tasks:
     desc: 构建并运行测试
     cmd: '{{.MVN}} clean install'
 
-  infra:up:
-    desc: 启动并等待基础设施（mysql/nacos/redis/rabbitmq）就绪
+  infra:monolith:
+    desc: 启动并等待单体基础设施（仅 mysql）就绪
+    run: once
+    cmd: '{{.COMPOSE}} up -d --wait mysql'
+
+  infra:microservice:
+    desc: 启动并等待微服务基础设施（mysql/nacos/redis/rabbitmq）就绪
     run: once
     cmd: '{{.COMPOSE}} up -d --wait mysql nacos redis rabbitmq'
 
+  infra:up:
+    desc: 【兼容】启动全部基础设施（同 infra:microservice）
+    deps: [infra:microservice]
+
   nacos:publish:
-    desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml
-    deps: [infra:up]
+    desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml（仅微服务需要）
+    deps: [infra:microservice]
     cmd: |
       curl -fsS -X POST 'http://127.0.0.1:8848/nacos/v3/admin/cs/config' \
         -H "${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}: ${NACOS_AUTH_IDENTITY_VALUE:-security}" \
@@ -44,21 +53,29 @@ tasks:
         --data-urlencode "content@deploy/nacos/rosecloud-common.yaml" >/dev/null && echo 'nacos 配置已发布'
 
   db:load:
-    desc: 导入 system/notice 建表与种子数据
-    deps: [infra:up]
+    desc: 导入 system/notice 建表与种子数据（单体/微服务通用）
     cmd: |
       for f in rosecloud-services/rosecloud-system/src/main/resources/db/{schema,data}.sql \
                rosecloud-services/rosecloud-notice/src/main/resources/db/{schema,data}.sql; do
         docker exec -i rosecloud-mysql mysql -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" "${MYSQL_DATABASE:-rosecloud}" < "$f"
       done && echo 'db 数据已导入'
 
+  init:monolith:
+    desc: 单体模式初始化（仅启动 MySQL + 导入建表种子，克隆后执行一次）
+    deps: [infra:monolith, db:load]
+    cmd: echo '==> 单体模式就绪。下一步：task build && task run:monolith'
+
+  init:microservice:
+    desc: 微服务模式初始化（启动全部基础设施 + 发布 Nacos 配置 + 导入建表种子，克隆后执行一次）
+    deps: [infra:microservice, nacos:publish, db:load]
+    cmd: echo '==> 微服务模式就绪。下一步：task build && task run:microservice'
+
   init:
-    desc: 启动基础设施 + 发布 Nacos 配置 + 导入建表种子（克隆后执行一次）
-    deps: [nacos:publish, db:load]
-    cmd: echo '==> 就绪。下一步：task build && (task run:monolith | task run:microservice)'
+    desc: 【兼容】默认初始化（同 init:microservice）
+    deps: [init:microservice]
 
   run:monolith:
-    desc: 单体模式启动（Docker，:9160，admin/admin123）
+    desc: 单体模式启动（Docker，仅依赖 MySQL，:9160，admin/admin123）
     cmd: '{{.COMPOSE}} --profile monolith up --build'
 
   run:microservice:
