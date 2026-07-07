@@ -1,5 +1,6 @@
 package io.rosecloud.monolith;
 
+import io.rosecloud.starter.security.ErrorJson;
 import io.rosecloud.starter.security.PublicPathsProperties;
 import io.rosecloud.starter.security.SecurityErrorCode;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
@@ -16,12 +17,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Monolith stand-in for the gateway: verifies the bearer JWT before the shared
@@ -94,11 +93,7 @@ public class MonolithJwtFilter implements Filter {
     }
 
     private static void unauthorized(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write("{\"success\":false,\"code\":\"" + SecurityErrorCode.INVALID_TOKEN.code() + "\",\"message\":\""
-                + message + "\",\"data\":null}");
+        ErrorJson.write(response, HttpStatus.UNAUTHORIZED.value(), SecurityErrorCode.INVALID_TOKEN, message);
     }
 
 }
