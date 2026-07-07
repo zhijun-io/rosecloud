@@ -1,6 +1,6 @@
 package io.rosecloud.starter.trace.web;
 
-import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.trace.TraceHeaders;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -33,7 +33,7 @@ public class TraceContextFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String traceId = generateTraceId();
         MDC.put(MDC_TRACE_ID, traceId);
-        httpResponse.setHeader(SecurityHeaders.TRACE_ID, traceId);
+        httpResponse.setHeader(TraceHeaders.TRACE_ID, traceId);
         try {
             chain.doFilter(new TraceIdRequestWrapper(http, traceId), response);
         } finally {
@@ -56,7 +56,7 @@ public class TraceContextFilter implements Filter {
 
         @Override
         public String getHeader(String name) {
-            if (SecurityHeaders.TRACE_ID.equalsIgnoreCase(name)) {
+            if (TraceHeaders.TRACE_ID.equalsIgnoreCase(name)) {
                 return traceId;
             }
             return super.getHeader(name);
@@ -64,7 +64,7 @@ public class TraceContextFilter implements Filter {
 
         @Override
         public Enumeration<String> getHeaders(String name) {
-            if (SecurityHeaders.TRACE_ID.equalsIgnoreCase(name)) {
+            if (TraceHeaders.TRACE_ID.equalsIgnoreCase(name)) {
                 return Collections.enumeration(java.util.List.of(traceId));
             }
             return super.getHeaders(name);
@@ -77,7 +77,7 @@ public class TraceContextFilter implements Filter {
             while (superNames.hasMoreElements()) {
                 names.add(superNames.nextElement());
             }
-            names.add(SecurityHeaders.TRACE_ID);
+            names.add(TraceHeaders.TRACE_ID);
             return Collections.enumeration(names);
         }
     }

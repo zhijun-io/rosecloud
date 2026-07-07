@@ -1,6 +1,6 @@
 package io.rosecloud.starter.trace.web;
 
-import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.trace.TraceHeaders;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -19,14 +19,14 @@ class TraceContextFilterTest {
         TraceContextFilter filter = new TraceContextFilter();
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(SecurityHeaders.TRACE_ID, "client-trace");
+        request.addHeader(TraceHeaders.TRACE_ID, "client-trace");
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<String> seen = new AtomicReference<>();
 
         FilterChain chain = new FilterChain() {
             @Override
             public void doFilter(ServletRequest req, ServletResponse res) {
-                seen.set(((jakarta.servlet.http.HttpServletRequest) req).getHeader(SecurityHeaders.TRACE_ID));
+                seen.set(((jakarta.servlet.http.HttpServletRequest) req).getHeader(TraceHeaders.TRACE_ID));
             }
         };
 
@@ -34,7 +34,7 @@ class TraceContextFilterTest {
 
         assertThat(seen.get()).isNotBlank();
         assertThat(seen.get()).isNotEqualTo("client-trace");
-        assertThat(response.getHeader(SecurityHeaders.TRACE_ID)).isEqualTo(seen.get());
+        assertThat(response.getHeader(TraceHeaders.TRACE_ID)).isEqualTo(seen.get());
         assertThat(seen.get()).hasSize(32);
     }
 }

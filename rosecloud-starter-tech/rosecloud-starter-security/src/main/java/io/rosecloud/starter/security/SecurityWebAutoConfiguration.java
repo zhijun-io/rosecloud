@@ -1,6 +1,7 @@
 package io.rosecloud.starter.security;
 
 import feign.RequestInterceptor;
+import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -18,9 +19,10 @@ import org.springframework.core.Ordered;
 public class SecurityWebAutoConfiguration {
 
     @Bean
-    public FilterRegistrationBean<SecurityContextFilter> securityContextFilterRegistration(JwtTokenCodec jwtTokenCodec) {
+    public FilterRegistrationBean<SecurityContextFilter> securityContextFilterRegistration(JwtTokenCodec jwtTokenCodec,
+                                                                                         SystemUserApi systemUserApi) {
         FilterRegistrationBean<SecurityContextFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new SecurityContextFilter(jwtTokenCodec));
+        registration.setFilter(new SecurityContextFilter(jwtTokenCodec, systemUserApi));
         registration.addUrlPatterns("/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         return registration;

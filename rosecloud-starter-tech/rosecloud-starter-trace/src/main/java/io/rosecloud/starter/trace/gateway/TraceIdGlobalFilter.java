@@ -1,6 +1,6 @@
 package io.rosecloud.starter.trace.gateway;
 
-import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.trace.TraceHeaders;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -20,9 +20,9 @@ public class TraceIdGlobalFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String traceId = generateTraceId();
         ServerHttpRequest mutated = exchange.getRequest().mutate()
-                .header(SecurityHeaders.TRACE_ID, traceId)
+                .header(TraceHeaders.TRACE_ID, traceId)
                 .build();
-        exchange.getResponse().getHeaders().set(SecurityHeaders.TRACE_ID, traceId);
+        exchange.getResponse().getHeaders().set(TraceHeaders.TRACE_ID, traceId);
         return chain.filter(exchange.mutate().request(mutated).build());
     }
 

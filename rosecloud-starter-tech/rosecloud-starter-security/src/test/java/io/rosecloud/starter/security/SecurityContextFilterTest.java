@@ -1,6 +1,8 @@
 package io.rosecloud.starter.security;
 
-import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.api.user.SystemUserApi;
+import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.security.jwt.JwtProperties;
@@ -21,14 +23,18 @@ class SecurityContextFilterTest {
     @Test
     void decodesIdentityFromBearerTokenAndIgnoresUserHeaders() throws Exception {
         JwtTokenCodec codec = jwtTokenCodec();
-        SecurityContextFilter filter = new SecurityContextFilter(codec);
+        SecurityContextFilter filter = new SecurityContextFilter(codec, new SystemUserApi() {
+            @Override
+            public ApiResponse<UserAuthInfo> getAuthInfo(String username) {
+                return ApiResponse.ok(new UserAuthInfo(42L, username, "ignored", 1, 99L, List.of("tenant-admin")));
+            }
+        });
 
-        CurrentUser tokenUser = new CurrentUser(42L, "token-user", 99L, List.of("tenant-admin"), null);
+        CurrentUser tokenUser = new CurrentUser(42L, "token-user", 99L, List.of("tenant-admin"));
         String token = codec.issueAccessToken(tokenUser);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer " + token);
-        request.addHeader(SecurityHeaders.TRACE_ID, "trace-123");
 
         AtomicReference<CurrentUser> seen = new AtomicReference<>();
         FilterChain chain = new FilterChain() {
@@ -46,7 +52,6 @@ class SecurityContextFilterTest {
         assertThat(user.username()).isEqualTo("token-user");
         assertThat(user.tenantId()).isEqualTo(99L);
         assertThat(user.roles()).containsExactly("tenant-admin");
-        assertThat(user.traceId()).isEqualTo("trace-123");
     }
 
     private static JwtTokenCodec jwtTokenCodec() {

@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Signs and verifies HS256 JWTs carrying the caller identity. Used by the auth
- * service to issue access/refresh tokens and by the gateway to verify them and
- * rebuild the identity for header injection.
+ * Signs and verifies HS256 JWTs carrying the caller username. Used by the auth
+ * service to issue access/refresh tokens and by servlet services to verify them
+ * before hydrating the full caller context.
  *
  * <p>JSON (de)serialization runs through jjwt's gson bridge, so this codec is
  * independent of the host app's Jackson flavor (2 or 3).
@@ -48,19 +48,11 @@ public class JwtTokenCodec {
         var builder = Jwts.builder()
                 .issuer(properties.getIssuer())
                 .id(UUID.randomUUID().toString())
-                .claim("username", user.username())
-                .claim("roles", user.roles())
+                .subject(user.username())
                 .claim("type", type.name())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ttlMillis))
                 .signWith(key, Jwts.SIG.HS256);
-        if (user.userId() != null) {
-            builder.subject(String.valueOf(user.userId()))
-                    .claim("uid", String.valueOf(user.userId()));
-        }
-        if (user.tenantId() != null) {
-            builder.claim("tid", String.valueOf(user.tenantId()));
-        }
         return builder.compact();
     }
 
@@ -82,16 +74,21 @@ public class JwtTokenCodec {
                     .parseSignedClaims(token)
                     .getPayload();
             return new TokenClaims(
-                    parseLong(claims.get("uid", String.class)),
-                    claims.get("username", String.class),
-                    parseLong(claims.get("tid", String.class)),
-                    roles(claims),
+                    subject(claims),
                     parseType(claims.get("type", String.class)),
                     claims.getId(),
                     claims.getExpiration() == null ? null : claims.getExpiration().toInstant());
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidTokenException("invalid token", e);
         }
+    }
+
+    private static String subject(Claims claims) {
+        String subject = claims.getSubject();
+        if (subject == null || subject.isBlank()) {
+            throw new InvalidTokenException("missing token subject", null);
+        }
+        return subject;
     }
 
     private static TokenType parseType(String value) {
@@ -105,23 +102,4 @@ public class JwtTokenCodec {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<String> roles(Claims claims) {
-        Object raw = claims.get("roles");
-        if (raw instanceof List<?> list) {
-            return list.stream().map(String::valueOf).toList();
-        }
-        return List.of();
-    }
-
-    private static Long parseLong(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.valueOf(value.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }

@@ -16,14 +16,12 @@ class JwtTokenCodecTest {
         properties.setSecret("01234567890123456789012345678901");
         JwtTokenCodec codec = new JwtTokenCodec(properties);
 
-        CurrentUser user = new CurrentUser(1L, "alice", null, List.of("admin"), null);
+        CurrentUser user = new CurrentUser(1L, "alice", null, List.of("admin"));
         TokenClaims claims = codec.parse(codec.issueAccessToken(user));
 
         assertThat(claims.jti()).isNotBlank();
         assertThat(claims.expiresAt()).isAfter(Instant.now());
-        assertThat(claims.userId()).isEqualTo(1L);
         assertThat(claims.username()).isEqualTo("alice");
-        assertThat(claims.roles()).containsExactly("admin");
         assertThat(claims.type()).isEqualTo(TokenType.ACCESS);
     }
 }

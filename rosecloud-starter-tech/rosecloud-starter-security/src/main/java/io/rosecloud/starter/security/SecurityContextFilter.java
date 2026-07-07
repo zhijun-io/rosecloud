@@ -1,6 +1,8 @@
 package io.rosecloud.starter.security;
 
-import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.api.user.SystemUserApi;
+import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
@@ -19,16 +21,17 @@ import java.util.List;
 
 /**
  * Decodes the bearer JWT into a {@link CurrentUser} bound to {@link UserContext}
- * for the request duration. Identity no longer comes from client-controlled
- * headers. The trace id is expected to be provided by the dedicated trace
- * starter before this filter runs.
+ * for the request duration. The token only carries the unique username; the
+ * full user snapshot is resolved from the system user source after validation.
  */
 public class SecurityContextFilter implements Filter {
 
     private final JwtTokenCodec jwtTokenCodec;
+    private final SystemUserApi systemUserApi;
 
-    public SecurityContextFilter(JwtTokenCodec jwtTokenCodec) {
+    public SecurityContextFilter(JwtTokenCodec jwtTokenCodec, SystemUserApi systemUserApi) {
         this.jwtTokenCodec = jwtTokenCodec;
+        this.systemUserApi = systemUserApi;
     }
 
     @Override
@@ -45,15 +48,19 @@ public class SecurityContextFilter implements Filter {
 
     private CurrentUser decode(HttpServletRequest request) {
         String token = extractBearer(request.getHeader(HttpHeaders.AUTHORIZATION));
-        String traceId = request.getHeader(SecurityHeaders.TRACE_ID);
         if (token == null) {
-            return new CurrentUser(null, null, null, List.of(), traceId);
+            return new CurrentUser(null, null, null, List.of());
         }
         try {
             TokenClaims claims = jwtTokenCodec.parse(token);
-            return new CurrentUser(claims.userId(), claims.username(), claims.tenantId(), claims.roles(), traceId);
+            ApiResponse<UserAuthInfo> response = systemUserApi.getAuthInfo(claims.username());
+            UserAuthInfo user = response.success() ? response.data() : null;
+            if (user == null) {
+                return new CurrentUser(null, claims.username(), null, List.of());
+            }
+            return new CurrentUser(user.userId(), user.username(), user.tenantId(), user.roles());
         } catch (InvalidTokenException e) {
-            return new CurrentUser(null, null, null, List.of(), traceId);
+            return new CurrentUser(null, null, null, List.of());
         }
     }
 

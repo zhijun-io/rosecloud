@@ -1,20 +1,11 @@
 package io.rosecloud.starter.security.jwt;
 
-import io.rosecloud.common.security.context.CurrentUser;
-
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * Decoded JWT claims, aligned with {@link CurrentUser} so the same identity
- * flows end to end: JWT -> gateway headers -> {@code UserContext}. Carries the
- * token id ({@code jti}) and expiry for revocation tracking.
+ * Minimal decoded JWT claims. The token carries only the unique username plus
+ * token metadata; servlet services hydrate the full {@code CurrentUser} after
+ * validation.
  */
-public record TokenClaims(Long userId, String username, Long tenantId, List<String> roles, TokenType type,
-                          String jti, Instant expiresAt) {
-
-    public TokenClaims {
-        roles = roles == null ? Collections.emptyList() : List.copyOf(roles);
-    }
+public record TokenClaims(String username, TokenType type, String jti, Instant expiresAt) {
 }
