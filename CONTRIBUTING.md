@@ -30,7 +30,7 @@
 RoseCloud 所有自有配置统一收口在 `rosecloud.*` 命名空间下，按功能域分层、不按部署形态分层。新增配置必须遵循本节规则；存量配置正逐步向其对齐。
 
 - **分层归属**：
-  - 技术能力层：各 starter 顶层平级 `rosecloud.<能力>`，如 `rosecloud.cache` / `rosecloud.lock` / `rosecloud.sequence` / `rosecloud.storage` / `rosecloud.datasource.dynamic` / `rosecloud.tenant` / `rosecloud.audit` / `rosecloud.trace`
+  - 技术能力层：各 starter 顶层平级 `rosecloud.<能力>`，如 `rosecloud.cache` / `rosecloud.lock` / `rosecloud.storage` / `rosecloud.datasource.dynamic` / `rosecloud.tenant` / `rosecloud.audit` / `rosecloud.trace`
   - 安全机制层：收口 `rosecloud.security.*`，含 `jwt`（签发/校验/生命周期）、`oauth2`（资源服务器）、`internal`（服务间 `/internal` 共享密钥）、`public-paths`（免鉴权路径）。令牌吊销从属 jwt，挂在 `rosecloud.security.jwt.revocation`
   - 认证业务层：`rosecloud.auth.*`，如 `login-protection`、`mfa`。认证流程消费安全机制层，二者平级、不互相嵌套
   - 服务业务层：`rosecloud.<服务>.*`，如 `rosecloud.notice`

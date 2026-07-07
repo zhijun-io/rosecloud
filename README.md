@@ -28,7 +28,6 @@ rosecloud
 │   ├── rosecloud-starter-data-mybatisplus
 │   ├── rosecloud-starter-lock
 │   ├── rosecloud-starter-cache
-│   ├── rosecloud-starter-sequence
 │   └── rosecloud-starter-storage
 ├── rosecloud-starter-business    # 业务型 starter 父模块
 │   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）

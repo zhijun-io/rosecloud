@@ -14,7 +14,7 @@
     <artifactId>rosecloud-starter-tech</artifactId>
     <packaging>pom</packaging>
     <name>RoseCloud Tech Starters</name>
-    <description>Aggregator for technical starters such as web, security, persistence, cache, lock, sequence, and storage.</description>
+    <description>Aggregator for technical starters such as web, security, persistence, cache, lock, and storage.</description>
 
     <modules>
         <module>rosecloud-starter-web</module>
@@ -23,7 +23,6 @@
         <module>rosecloud-starter-data-mybatisplus</module>
         <module>rosecloud-starter-lock</module>
         <module>rosecloud-starter-cache</module>
-        <module>rosecloud-starter-sequence</module>
         <module>rosecloud-starter-storage</module>
     </modules>
 </project>
