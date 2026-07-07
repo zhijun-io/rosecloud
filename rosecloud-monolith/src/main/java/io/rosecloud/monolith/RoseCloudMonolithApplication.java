@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * verifies JWTs and injects identity headers.
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"io.rosecloud.auth", "io.rosecloud.system", "io.rosecloud.notice"},
+@ComponentScan(basePackages = {"io.rosecloud.monolith", "io.rosecloud.auth", "io.rosecloud.system", "io.rosecloud.notice"},
         excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
                 classes = {RoseCloudAuthApplication.class, RoseCloudSystemApplication.class,
                         RoseCloudNoticeApplication.class}))
