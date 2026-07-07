@@ -28,8 +28,10 @@ expect_fail() {
   jq -e '.success == false' <<<"$resp" >/dev/null
 }
 
+# monolith 与 gateway 同为宿主 8080（profile 互斥），无法用端口区分，改用 ROSECLOUD_MODE
+# 取值：monolith | microservice（默认 microservice）
 is_monolith() {
-  [[ "$BASE_URL" == "http://127.0.0.1:9160" ]]
+  [[ "${ROSECLOUD_MODE:-microservice}" == "monolith" ]]
 }
 
 jti_of() {
@@ -44,22 +46,13 @@ login_token() {
   jq -r '.data.accessToken' <<<"$resp"
 }
 
-pick_mode() {
-  if up "http://127.0.0.1:9160"; then
-    BASE_URL="http://127.0.0.1:9160"
-    return
-  fi
-
-  if up "http://127.0.0.1:8080"; then
-    BASE_URL="http://127.0.0.1:8080"
-    return
-  fi
-
-  echo "cannot detect a running RoseCloud mode" >&2
+# 两种模式均监听宿主 8080，先确认实例在跑，再按 ROSECLOUD_MODE 区分
+if ! up "http://127.0.0.1:8080"; then
+  echo "no RoseCloud instance detected on :8080 (start monolith/microservice, set ROSECLOUD_MODE=monolith|microservice)" >&2
   exit 1
-}
-
-pick_mode
+fi
+BASE_URL="http://127.0.0.1:8080"
+echo "mode=${ROSECLOUD_MODE:-microservice}"
 
 echo "BASE_URL=$BASE_URL"
 

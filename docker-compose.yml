@@ -5,7 +5,9 @@
 #   - 中间件（mysql / redis / rabbitmq / nacos / xxl-job）的宿主端口仅绑定
 #     127.0.0.1，仅供本机 / 跳板访问，不暴露到公网。
 #     生产部署应将这些组件置于独立内网 / VPC，不要依赖宿主端口暴露。
-#   - 业务入口 gateway(8080) / monolith(9160) 仍映射宿主端口，靠防火墙 / WAF 保护。
+#   - 业务入口 gateway(8080) / monolith(8080) 仍映射宿主端口，靠防火墙 / WAF 保护。
+#     gateway 与 monolith 同用 8080，但二者属于互斥的 profile（microservice / monolith），
+#     运行期不会同时启动，因此不会争抢宿主端口。
 #   - 应用容器之间经 Docker 内部网络用服务名互访（mysql:3306 等），
 #     不依赖宿主端口映射，因此收敛宿主端口不影响应用互通。
 # ============================================================
@@ -99,7 +101,6 @@ services:
     ports:
       - "127.0.0.1:8848:8848"
       - "127.0.0.1:9848:9848"
-      - "127.0.0.1:38082:8080"
     volumes:
       - rosecloud-nacos-data:/home/nacos/data
     healthcheck:
@@ -125,7 +126,7 @@ services:
         --spring.datasource.password=${MYSQL_PASSWORD:-rosecloud123}
         --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-rosecloud-xxl-job-token}
     ports:
-      - "127.0.0.1:38081:8080"
+      - "127.0.0.1:9080:8080"
 
   # ---------- 应用服务（Docker 运行）----------
   rosecloud-auth:
@@ -164,7 +165,8 @@ services:
       ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
       ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
     depends_on: [mysql]
-    ports: ["9160:9160"]
+    # 与 gateway 同用宿主 8080；二者 profile（monolith / microservice）互斥，不会同时运行
+    ports: ["8080:8080"]
 
 volumes:
   rosecloud-mysql-data:

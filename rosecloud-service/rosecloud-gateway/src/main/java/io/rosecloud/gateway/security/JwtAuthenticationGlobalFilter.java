@@ -1,5 +1,6 @@
 package io.rosecloud.gateway.security;
 
+import io.rosecloud.starter.security.PublicPathsProperties;
 import io.rosecloud.common.security.SecurityHeaders;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
@@ -31,11 +32,11 @@ import java.nio.charset.StandardCharsets;
 public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtTokenCodec jwtTokenCodec;
-    private final GatewaySecurityProperties properties;
+    private final PublicPathsProperties properties;
     private final TokenRevocationService tokenRevocationService;
     private final PathMatcher pathMatcher = new AntPathMatcher();
 
-    public JwtAuthenticationGlobalFilter(JwtTokenCodec jwtTokenCodec, GatewaySecurityProperties properties,
+    public JwtAuthenticationGlobalFilter(JwtTokenCodec jwtTokenCodec, PublicPathsProperties properties,
                                          TokenRevocationService tokenRevocationService) {
         this.jwtTokenCodec = jwtTokenCodec;
         this.properties = properties;
@@ -77,7 +78,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isWhiteListed(String path) {
-        for (String pattern : properties.getWhiteList()) {
+        for (String pattern : properties.getPublicPaths()) {
             if (pathMatcher.match(pattern, path)) {
                 return true;
             }

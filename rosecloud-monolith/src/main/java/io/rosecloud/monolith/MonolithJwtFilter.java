@@ -1,5 +1,6 @@
 package io.rosecloud.monolith;
 
+import io.rosecloud.starter.security.PublicPathsProperties;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -31,11 +32,11 @@ public class MonolithJwtFilter implements Filter {
 
     private final JwtTokenCodec jwtTokenCodec;
     private final TokenRevocationService tokenRevocationService;
-    private final MonolithSecurityProperties properties;
+    private final PublicPathsProperties properties;
     private final PathMatcher pathMatcher = new AntPathMatcher();
 
     public MonolithJwtFilter(JwtTokenCodec jwtTokenCodec, TokenRevocationService tokenRevocationService,
-                             MonolithSecurityProperties properties) {
+                             PublicPathsProperties properties) {
         this.jwtTokenCodec = jwtTokenCodec;
         this.tokenRevocationService = tokenRevocationService;
         this.properties = properties;
@@ -75,7 +76,7 @@ public class MonolithJwtFilter implements Filter {
     }
 
     private boolean isWhiteListed(String path) {
-        for (String pattern : properties.getWhiteList()) {
+        for (String pattern : properties.getPublicPaths()) {
             if (pathMatcher.match(pattern, path)) {
                 return true;
             }

@@ -1,5 +1,6 @@
 package io.rosecloud.monolith;
 
+import io.rosecloud.starter.security.PublicPathsProperties;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenRevocationService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -26,7 +27,7 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @Configuration
 @ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
-@EnableConfigurationProperties(MonolithSecurityProperties.class)
+@EnableConfigurationProperties(PublicPathsProperties.class)
 public class MonolithSecurityConfiguration {
 
     @Bean
@@ -41,7 +42,7 @@ public class MonolithSecurityConfiguration {
     @Bean
     public FilterRegistrationBean<MonolithJwtFilter> monolithJwtFilterRegistration(
             JwtTokenCodec jwtTokenCodec, TokenRevocationService tokenRevocationService,
-            MonolithSecurityProperties properties) {
+            PublicPathsProperties properties) {
         FilterRegistrationBean<MonolithJwtFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(new MonolithJwtFilter(jwtTokenCodec, tokenRevocationService, properties));
         registration.addUrlPatterns("/*");

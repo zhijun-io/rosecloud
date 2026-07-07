@@ -22,7 +22,7 @@ spring:
       enabled: false  # 完全禁用Spring Cloud服务发现
 
 server:
-  port: 9160
+  port: 8080
 
 rosecloud:
   cache:

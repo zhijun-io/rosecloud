@@ -44,7 +44,7 @@ tasks:
     cmd: '{{.COMPOSE}} --profile microservice up -d --wait mysql nacos redis rabbitmq'
 
   run:monolith:
-    desc: 单体模式一键启动（自动完成初始化 → 构建 → 运行，:9160，admin/admin123）
+    desc: 单体模式一键启动（自动完成初始化 → 构建 → 运行，:8080，admin/admin123）
     deps: [ infra:monolith ]  # 仅启动MySQL，SQL由Flyway在服务启动时自动执行
     cmds:
       - task: build:monolith  # 等MySQL就绪后再构建

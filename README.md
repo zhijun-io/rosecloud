@@ -77,7 +77,7 @@ task build               # 全量构建（经 mvnw，跳过测试）
 任选对应模式启动（服务以 Docker 容器运行，前台跟随日志，Ctrl-C 停止）：
 
 ```bash
-task run:monolith        # 单体模式，单进程 :9160（无其他中间件依赖）
+task run:monolith        # 单体模式，单进程 :8080（无其他中间件依赖）
 # 或
 task run:microservice    # 微服务模式，网关 :8080 + auth :9090 / system :9110 / notice :9120
 ```
@@ -85,7 +85,7 @@ task run:microservice    # 微服务模式，网关 :8080 + auth :9090 / system 
 验证登录（管理员 `admin` / `admin123`）：
 
 ```bash
-BASE=http://127.0.0.1:9160            # 单体；微服务用 http://127.0.0.1:8080
+BASE=http://127.0.0.1:8080            # 单体与微服务同用 8080（两种模式互斥），测试脚本用 ROSECLOUD_MODE 区分
 TOKEN=$(curl -s -X POST $BASE/api/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["accessToken"])')
@@ -118,7 +118,7 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 | rosecloud-auth | 9090 |
 | rosecloud-system | 9110 |
 | rosecloud-notice | 9120 |
-| rosecloud-monolith | 9160 |
+| rosecloud-monolith | 8080 |
 
 ## 本地基础设施
 
