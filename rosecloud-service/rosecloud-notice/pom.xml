@@ -6,13 +6,13 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud</artifactId>
+        <artifactId>rosecloud-service</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-monolith</artifactId>
-    <description>Monolith entrypoint aggregating auth, system, notice, and shared starters.</description>
+    <artifactId>rosecloud-notice</artifactId>
+    <description>Notice service for announcements, inbox delivery, and channel dispatch.</description>
 
     <dependencies>
         <dependency>
@@ -24,49 +24,56 @@
             <artifactId>rosecloud-starter-web</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- 单体模式不需要Nacos，移除相关依赖 -->
         <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-auth</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <!-- 单体单进程用 in-memory 令牌吊销，不继承 auth 的 Redis：避免引入
-                     spring-data-commons 触发 OpenFeign 的 Jackson 3 模块加载冲突，且单体无需 Redis。
-                     auth/system/notice 保持 thin jar，单体这里直接依赖它们的普通 jar。 -->
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-redis</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-system</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-notice</artifactId>
+            <artifactId>rosecloud-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-tenant</artifactId>
+            <artifactId>rosecloud-common-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-oauth2</artifactId>
+            <artifactId>rosecloud-common-security</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-audit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- 可选：邮件通道；引入但不激活，无 mail 配置时邮件通道跳过 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -76,6 +83,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- 保留默认主产物为普通 jar，额外生成 exec 可执行包；
+                         monolith 直接依赖本模块时需要 thin jar。 -->
+                    <classifier>exec</classifier>
+                </configuration>
             </plugin>
         </plugins>
     </build>

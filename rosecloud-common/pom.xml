@@ -13,6 +13,7 @@
 
     <artifactId>rosecloud-common</artifactId>
     <packaging>pom</packaging>
+    <description>Shared base libraries for core, security, and web utilities.</description>
 
     <modules>
         <module>rosecloud-common-core</module>
@@ -20,4 +21,3 @@
         <module>rosecloud-common-web</module>
     </modules>
 </project>
-

@@ -23,8 +23,9 @@
         <module>rosecloud-bom</module>
         <module>rosecloud-common</module>
         <module>rosecloud-api</module>
-        <module>rosecloud-starters</module>
-        <module>rosecloud-services</module>
+        <module>rosecloud-starter-tech</module>
+        <module>rosecloud-starter-business</module>
+        <module>rosecloud-service</module>
         <module>rosecloud-monolith</module>
     </modules>
 
@@ -98,12 +99,24 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
-                        <release>${java.version}</release>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -1,0 +1,25 @@
+spring:
+  config:
+    import:
+      - optional:classpath:rosecloud-common.yaml
+      - optional:nacos:rosecloud-common.yaml
+      - optional:nacos:${spring.application.name}.yaml
+      - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+  application:
+    name: rosecloud-gateway
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:}
+      password: ${NACOS_PASSWORD:}
+
+server:
+  port: 9110
+
+rosecloud:
+  gateway:
+    security:
+      white-list:
+        - /api/v1/auth/login
+        - /api/v1/auth/refresh
+        - /actuator/**

@@ -12,5 +12,5 @@
     </parent>
 
     <artifactId>rosecloud-common-core</artifactId>
+    <description>Lowest-level shared core types with no framework dependencies.</description>
 </project>
-

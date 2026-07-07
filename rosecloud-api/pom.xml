@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>rosecloud-api</artifactId>
+    <description>Shared API contracts: Feign interfaces, DTOs, records, and enums used across services.</description>
 
     <dependencies>
         <dependency>

@@ -1,0 +1,55 @@
+package io.rosecloud.starter.tenant.mybatis;
+
+import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantProperties;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class RoseCloudTenantLineHandlerTest {
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
+
+    @Test
+    void ignoresGlobalTablesWhenTenantIsBound() {
+        TenantProperties properties = new TenantProperties();
+        properties.setIgnoreTables(List.of(
+                "sys_role",
+                "sys_user_role",
+                "sys_menu",
+                "sys_role_menu",
+                "sys_audit_log",
+                "sys_login_log",
+                "sys_config",
+                "sys_dict_type",
+                "sys_dict_data",
+                "sys_dept",
+                "sys_login_session"
+        ));
+
+        TenantContext.setTenantId(100L);
+        RoseCloudTenantLineHandler handler = new RoseCloudTenantLineHandler(properties);
+
+        assertTrue(handler.ignoreTable("sys_role"));
+        assertTrue(handler.ignoreTable("sys_login_log"));
+        assertEquals("100", handler.getTenantId().toString());
+    }
+
+    @Test
+    void ignoresEverythingWhenNoTenantIsBound() {
+        TenantProperties properties = new TenantProperties();
+        properties.setIgnoreTables(List.of("sys_role"));
+        RoseCloudTenantLineHandler handler = new RoseCloudTenantLineHandler(properties);
+
+        assertTrue(handler.ignoreTable("sys_user"));
+        assertNull(handler.getTenantId());
+    }
+}

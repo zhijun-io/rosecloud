@@ -1,0 +1,60 @@
+# RoseCloud 共享配置 —— 由各服务和单体通过 spring.config.import 复用。
+# 本文件提供通用默认值，应用自己的 application.yml 可以继续覆盖。
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: '${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/rosecloud?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}'
+    username: ${MYSQL_USER:rosecloud}
+    password: ${MYSQL_PASSWORD:rosecloud123}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rosecloud123}
+  cloud:
+    openfeign:
+      autoconfiguration:
+        jackson:
+          enabled: false
+
+logging:
+  pattern:
+    level: '%5p [%32.32X{traceId:-}]'
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+rosecloud:
+  audit:
+    enabled: true
+  jwt:
+    secret: ${ROSECLOUD_JWT_SECRET:rosecloud-dev-secret-please-change-me-0123456789}
+    issuer: ${ROSECLOUD_JWT_ISSUER:rosecloud}
+  tenant:
+    enabled: false
+    ignore-tables:
+      - sys_role
+      - sys_user_role
+      - sys_menu
+      - sys_role_menu
+      - sys_audit_log
+      - sys_login_log
+      - sys_config
+      - sys_dict_type
+      - sys_dict_data
+      - sys_dept
+      - sys_login_session
+  oauth2:
+    enabled: false
+  security:
+    token-revocation:
+      type: ${ROSECLOUD_TOKEN_REVOCATION_TYPE:redis}

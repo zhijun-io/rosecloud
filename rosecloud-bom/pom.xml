@@ -59,37 +59,37 @@
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-tenant-starter</artifactId>
+                <artifactId>rosecloud-starter-tenant</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-audit-starter</artifactId>
+                <artifactId>rosecloud-starter-audit</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-oauth2-starter</artifactId>
+                <artifactId>rosecloud-starter-oauth2</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-lock-starter</artifactId>
+                <artifactId>rosecloud-starter-lock</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-cache-starter</artifactId>
+                <artifactId>rosecloud-starter-cache</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-sequence-starter</artifactId>
+                <artifactId>rosecloud-starter-sequence</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-storage-starter</artifactId>
+                <artifactId>rosecloud-starter-storage</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
 

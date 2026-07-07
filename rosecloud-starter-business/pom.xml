@@ -6,19 +6,18 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud-common</artifactId>
+        <artifactId>rosecloud</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-common-web</artifactId>
-    <description>Shared web constants and servlet/web-layer support utilities.</description>
+    <artifactId>rosecloud-starter-business</artifactId>
+    <packaging>pom</packaging>
+    <name>RoseCloud Business Starters</name>
+    <description>Aggregator for business starters such as tenant and audit.</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>rosecloud-starter-tenant</module>
+        <module>rosecloud-starter-audit</module>
+    </modules>
 </project>

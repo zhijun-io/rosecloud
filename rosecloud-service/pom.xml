@@ -6,19 +6,19 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud-common</artifactId>
+        <artifactId>rosecloud</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-common-web</artifactId>
-    <description>Shared web constants and servlet/web-layer support utilities.</description>
+    <artifactId>rosecloud-service</artifactId>
+    <packaging>pom</packaging>
+    <description>Aggregator for application services: gateway, auth, system, and notice.</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>rosecloud-gateway</module>
+        <module>rosecloud-auth</module>
+        <module>rosecloud-system</module>
+        <module>rosecloud-notice</module>
+    </modules>
 </project>

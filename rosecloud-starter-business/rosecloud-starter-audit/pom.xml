@@ -6,18 +6,23 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud-common</artifactId>
+        <artifactId>rosecloud-starter-business</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-common-web</artifactId>
-    <description>Shared web constants and servlet/web-layer support utilities.</description>
+    <artifactId>rosecloud-starter-audit</artifactId>
+    <name>RoseCloud Audit Starter</name>
+    <description>Method-level audit logging via @AuditLog + AOP event publishing. Gated by rosecloud.audit.enabled.</description>
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-core</artifactId>
+            <artifactId>rosecloud-common-security</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

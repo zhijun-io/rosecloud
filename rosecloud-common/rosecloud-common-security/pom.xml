@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>rosecloud-common-security</artifactId>
+    <description>Shared security headers and context abstractions without Spring Security dependency.</description>
 
     <dependencies>
         <dependency>
@@ -21,4 +22,3 @@
         </dependency>
     </dependencies>
 </project>
-
