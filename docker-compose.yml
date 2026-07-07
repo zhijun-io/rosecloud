@@ -135,7 +135,7 @@ services:
         --server.port=8080
         --spring.datasource.url=jdbc:mysql://mysql:3306/${XXL_JOB_DATABASE:-xxl_job}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
         --spring.datasource.username=${MYSQL_USER:-rosecloud}
-        --spring.datasource.password=${MYSQL_PASSWORD:-rosecloud123}
+        --spring.datasource.password=${MYSQL_PASSWORD:-tVKoY6P7Bqm7TFCUOdneoq}
         --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-TmSSRBbXOD9AdyYFVvVJkKm8pyfwWR}
     ports:
       - "127.0.0.1:9080:8080"

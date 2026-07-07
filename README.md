@@ -132,6 +132,29 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 
 默认使用偏移端口，避免与当前 `matecloud` 本地环境直接冲突。
 
+## 密钥与安全
+
+> 安全加固基线见 `docs/audit-2026-07-07.md`（M2 登录防爆破 / M3 端口收敛 / Nacos 鉴权 + 弱密码治理）。
+
+`docker-compose.yml` 内所有密钥（MySQL / Redis / RabbitMQ / Nacos / xxl-job / JWT）**已替换为生成的非默认强值**，仅用于本地快速起站，**不是生产密钥**。
+
+- **生产部署**：必须把这些密钥通过 `.env`（已被 `.gitignore` 忽略）覆盖；变量清单与取值建议见仓库根 `.env.example`。
+- **Nacos 鉴权已开启**（`NACOS_AUTH_ENABLE=true`）。客户端凭证由 `NACOS_USERNAME` / `NACOS_PASSWORD` 注入（默认 `nacos` / `nacos`）。**生产必须把默认 `nacos` 用户改为独立强凭证**：
+
+  ```bash
+  # 1) 用默认账号登录拿到 token
+  TOKEN=$(curl -s -X POST 'http://127.0.0.1:8848/nacos/v1/auth/login' \
+    -d 'username=nacos&password=nacos' | jq -r .accessToken)
+  # 2) 修改 nacos 管理员密码
+  curl -X PUT "http://127.0.0.1:8848/nacos/v1/auth/users?accessToken=$TOKEN" \
+    -d "username=nacos&newPassword=<你的强密码>"
+  # 3) 在 .env 中设置 NACOS_USERNAME=nacos / NACOS_PASSWORD=<你的强密码> 后重建服务
+  ```
+
+- **已有本地数据卷注意**：本次把 MySQL / Redis / RabbitMQ 的默认密码从 `rosecloud123` 改成了新的强值。若你本地已有用旧密码初始化的数据卷，启动后会连接失败。两种处理：
+  1. 在 `.env` 里显式写回旧密码（`MYSQL_PASSWORD=rosecloud123` 等），保留现有数据；
+  2. 或 `docker compose down -v` 销毁卷后重新初始化（清空本地数据）。
+
 ## 开发环境
 
 - [sdkman](https://sdkman.io) + `.sdkmanrc`（锁定 Java 21）

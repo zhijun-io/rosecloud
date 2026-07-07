@@ -13,7 +13,7 @@ class AuthErrorCodeTest {
 
     @Test
     void codeDerivesForConstantWithBody() {
-        // ACCOUNT_LOCKED has an anonymous subclass body; modulePrefix must still
+        // ACCOUNT_LOCKED has an anonymous subclass body; module() must still
         // resolve to the enclosing AuthErrorCode, not the empty anonymous name.
         assertThat(AuthErrorCode.ACCOUNT_LOCKED.code()).isEqualTo("auth.account_locked");
         assertThat(AuthErrorCode.ACCOUNT_LOCKED.httpStatus()).isEqualTo(423);

@@ -5,10 +5,10 @@ package io.rosecloud.common.core.error;
  * this so business errors carry a machine-readable code plus a default message.
  *
  * <p>Code is derived as {@code <module>.<enum-name>}, e.g.
- * {@code auth.invalid_token} or {@code system.user_not_found}: the module prefix
- * is derived from the enum class name, the enum constant name gives the
- * specific error, so codes are self-describing and unique without sequence
- * numbers. Codes are part of the API contract — enum names and the
+ * {@code auth.invalid_token} or {@code system.user_not_found}: {@link #module()}
+ * gives the area (derived from the enum class name), the enum constant name
+ * gives the specific error, so codes are self-describing and unique without
+ * sequence numbers. Codes are part of the API contract — enum names and the
  * {@code <Name>ErrorCode} class naming must not change once released.
  *
  * <p>Implementations must be Java enums; {@link #name()} is satisfied by
@@ -20,12 +20,12 @@ public interface ErrorCode {
     String name();
 
     /**
-     * Lowercase module prefix, derived from the enum class name by stripping the
+     * Lowercase module name, derived from the enum class name by stripping the
      * {@code ErrorCode} suffix, e.g. {@code AuthErrorCode} → {@code auth}.
      * Constants with a body are anonymous subclasses, so the enclosing enum
      * class is used.
      */
-    default String modulePrefix() {
+    default String module() {
         Class<?> type = getClass();
         if (type.isAnonymousClass()) {
             type = type.getEnclosingClass();
@@ -35,10 +35,10 @@ public interface ErrorCode {
 
     /**
      * Stable code of the form {@code <module>.<name>}, derived from
-     * {@link #modulePrefix()} and {@link #name()}.
+     * {@link #module()} and {@link #name()}.
      */
     default String code() {
-        return modulePrefix() + "." + name().toLowerCase();
+        return module() + "." + name().toLowerCase();
     }
 
     String message();
