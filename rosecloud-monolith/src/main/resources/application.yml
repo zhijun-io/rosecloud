@@ -7,6 +7,10 @@ spring:
   profiles:
     active: monolith
   cloud:
+    openfeign:
+      autoconfiguration:
+        jackson:
+          enabled: false   # 用 Jackson 2，关闭 OpenFeign 的 Jackson 3 模块（见 auth application.yml 注释）
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       username: ${NACOS_USERNAME:}

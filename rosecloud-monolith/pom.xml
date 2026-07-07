@@ -35,6 +35,14 @@
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-auth</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <!-- 单体单进程用 in-memory 令牌吊销，不继承 auth 的 Redis：避免引入
+                     spring-data-commons 触发 OpenFeign 的 Jackson 3 模块加载冲突，且单体无需 Redis -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-redis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>

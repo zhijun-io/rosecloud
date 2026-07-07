@@ -5,6 +5,13 @@ spring:
   application:
     name: rosecloud-system
   cloud:
+    openfeign:
+      autoconfiguration:
+        jackson:
+          # 关闭 OpenFeign 的 Spring Data Page/Sort Jackson 模块（依赖 Jackson 3）。
+          # 引入 spring-data-commons（如 redis）后该模块的 @ConditionalOnClass 命中，
+          # 会触发加载引用 Jackson 3 的 PageJacksonModule 而抛 ClassNotFoundException。
+          enabled: false
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       username: ${NACOS_USERNAME:}

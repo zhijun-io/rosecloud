@@ -32,6 +32,12 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <!-- 跨进程令牌吊销后端（type=redis）。单体聚合 auth 时由 monolith 排除本依赖
+                 （单体单进程用 in-memory），故非 optional 以确保 auth 自身 fat jar 含 Redis -->
+        </dependency>
+        <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>

@@ -80,7 +80,7 @@ curl -s $BASE/api/v1/system/depts/tree -H "Authorization: Bearer $TOKEN"   # 200
 curl -s -X POST $BASE/api/v1/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 ```
 
-> 令牌吊销说明：默认 `in-memory` 吊销。单体模式登出后旧令牌立即失效（同进程）；微服务模式下 auth 与 gateway 是独立进程、吊销状态不共享，登出后旧令牌在 gateway 侧仍有效至过期。跨进程吊销需将 `rosecloud.security.token-revocation.type=redis` 并为相关服务引入 `spring-boot-starter-data-redis`（当前默认未启用，见 `docs/02-technical-requirements.md`）。
+> 令牌吊销说明：共享配置默认 `type=redis`（auth/gateway 共享 Redis）。微服务模式登出后旧令牌在 gateway 侧即时失效（跨进程：auth 写入 Redis、gateway 读取校验）；单体模式无 Redis 依赖、回退 `in-memory`，登出后同进程即时失效。无 Redis 环境可设 `ROSECLOUD_TOKEN_REVOCATION_TYPE=in-memory`。
 
 JWT 密钥默认用开发值；生产务必设置 `ROSECLOUD_JWT_SECRET`（≥32 字节，auth 与 gateway 必须一致）：
 

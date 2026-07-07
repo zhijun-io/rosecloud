@@ -14,7 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
  * present. Otherwise the in-memory default from {@link JwtAutoConfiguration}
  * applies. Requires the consumer to add {@code spring-boot-starter-data-redis}.
  */
-@AutoConfiguration
+@AutoConfiguration(before = JwtAutoConfiguration.class)
 @ConditionalOnClass(StringRedisTemplate.class)
 @ConditionalOnProperty(prefix = "rosecloud.security.token-revocation", name = "type", havingValue = "redis")
 @EnableConfigurationProperties(TokenRevocationProperties.class)
