@@ -139,8 +139,12 @@ services:
   rosecloud-monolith:
     profiles: [monolith]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-monolith/target/rosecloud-monolith-0.1.0-SNAPSHOT.jar } }
-    environment: { <<: *app-env }
-    depends_on: [mysql, nacos, redis]
+    environment:
+      # 单体仅依赖 MySQL，无 Nacos/Redis/RabbitMQ
+      MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+      ROSECLOUD_TOKEN_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
+    depends_on: [mysql]
     ports: ["9160:9160"]
 
 volumes:
