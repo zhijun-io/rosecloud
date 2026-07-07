@@ -1,0 +1,78 @@
+version: '3'
+
+# RoseCloud 任务编排。安装 task：brew install go-task/tap/go-task（或见 https://taskfile.dev）
+# 快速开始：task init → task build → task run:monolith | task run:microservice
+# 服务以 Docker 容器运行。
+# 前置：sdkman 已安装配置（.sdkmanrc 锁定 Java 21；首次 `sdk env install` 装 JDK）。Maven 经 `mvnw` 包装器提供（版本见 .mvn/wrapper/）。
+# 注：task 内置 shell（gosh）无法 source sdkman，故构建经 `bash -lc` 激活 sdkman 后调用 ./mvnw。
+
+vars:
+  MVN: bash ./mvnw "$@"
+  COMPOSE: docker compose
+
+tasks:
+  default:
+    desc: 列出任务
+    silent: true
+    cmd: task --list
+
+  build:
+    desc: 全量构建（跳过测试）
+    cmd: '{{.MVN}} clean install -DskipTests'
+
+  build:module:
+    desc: 构建单模块及依赖（MODULE=rosecloud-services/rosecloud-auth）
+    cmd: '[ -n "{{.MODULE}}" ] || { echo "❌ 用法：task build:module MODULE=<模块路径>"; exit 1; }; {{.MVN}} -pl {{.MODULE}} -am install -DskipTests'
+
+  test:
+    desc: 构建并运行测试
+    cmd: '{{.MVN}} clean install'
+
+  infra:up:
+    desc: 启动并等待基础设施（mysql/nacos/redis/rabbitmq）就绪
+    run: once
+    cmd: '{{.COMPOSE}} up -d --wait mysql nacos redis rabbitmq'
+
+  nacos:publish:
+    desc: 发布/更新 Nacos 共享配置 rosecloud-common.yaml
+    deps: [infra:up]
+    cmd: |
+      curl -fsS -X POST 'http://127.0.0.1:8848/nacos/v3/admin/cs/config' \
+        -H "${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}: ${NACOS_AUTH_IDENTITY_VALUE:-security}" \
+        --data-urlencode 'dataId=rosecloud-common.yaml' --data-urlencode 'groupName=DEFAULT_GROUP' \
+        --data-urlencode 'namespaceId=public' --data-urlencode 'type=yaml' \
+        --data-urlencode "content@deploy/nacos/rosecloud-common.yaml" >/dev/null && echo 'nacos 配置已发布'
+
+  db:load:
+    desc: 导入 system/notice 建表与种子数据
+    deps: [infra:up]
+    cmd: |
+      for f in rosecloud-services/rosecloud-system/src/main/resources/db/{schema,data}.sql \
+               rosecloud-services/rosecloud-notice/src/main/resources/db/{schema,data}.sql; do
+        docker exec -i rosecloud-mysql mysql -u"${MYSQL_USER:-rosecloud}" -p"${MYSQL_PASSWORD:-rosecloud123}" "${MYSQL_DATABASE:-rosecloud}" < "$f"
+      done && echo 'db 数据已导入'
+
+  init:
+    desc: 启动基础设施 + 发布 Nacos 配置 + 导入建表种子（克隆后执行一次）
+    deps: [nacos:publish, db:load]
+    cmd: echo '==> 就绪。下一步：task build && (task run:monolith | task run:microservice)'
+
+  run:monolith:
+    desc: 单体模式启动（Docker，:9160，admin/admin123）
+    cmd: '{{.COMPOSE}} --profile monolith up --build'
+
+  run:microservice:
+    desc: 微服务模式启动（Docker，网关 :9110 + auth/system/notice，admin/admin123）
+    cmd: '{{.COMPOSE}} --profile microservice up --build'
+
+  down:
+    desc: 停止全部容器（保留卷）
+    cmd: '{{.COMPOSE}} down'
+
+  reset:
+    desc: 停止容器并删除卷（清空数据，谨慎使用）
+    cmd: '{{.COMPOSE}} down -v'
+
+  logs:
+    desc: 跟随全部容器日志
+    cmd: '{{.COMPOSE}} logs -f'

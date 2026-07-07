@@ -1,0 +1,7 @@
+# RoseCloud 通用服务镜像：复制构建好的 jar 并以 JRE 21 运行。
+# jar 由 `task build`（mvn）产出；构建参数 JAR_PATH 指定各服务的 jar 路径。
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+ARG JAR_PATH
+COPY ${JAR_PATH} app.jar
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
