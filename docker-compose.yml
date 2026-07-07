@@ -12,7 +12,7 @@
 #     不依赖宿主端口映射，因此收敛宿主端口不影响应用互通。
 #
 # 密钥治理（安全加固：Nacos 鉴权 + 弱密码治理）：
-#   - 本文件内的密钥（MySQL/Redis/RabbitMQ/Nacos/xxl-job/JWT）均为「生成的非默认强值」，
+#   - 本文件内的密钥（MySQL/Redis/RabbitMQ/Nacos/xxl-job/JWT）均为弱默认值（便于本地快速起站），
 #     仅用于本地快速起站，不要当作生产密钥。
 #   - 生产部署必须把这些密钥通过 .env（git 忽略）覆盖；模板见仓库 .env.example。
 #   - Nacos 已开启鉴权（NACOS_AUTH_ENABLE=true），客户端用 NACOS_USERNAME/NACOS_PASSWORD
@@ -22,14 +22,16 @@
 x-app-env: &app-env
   # 服务在 Docker 网络内连接基础设施（容器名），覆盖 Nacos 共享配置里的 127.0.0.1 默认值
   MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+  MYSQL_USER: ${MYSQL_USER:-rosecloud}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
   REDIS_HOST: redis
-  REDIS_PASSWORD: ${REDIS_PASSWORD:-CvnnEHxiK5ldkOzU6cdMByk}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-rosecloud123}
   NACOS_SERVER_ADDR: nacos:8848
   # Nacos 客户端凭证（服务端已开启鉴权）。默认使用 Nacos 内置 nacos 用户，
   # 生产必须覆盖 NACOS_USERNAME/NACOS_PASSWORD 为独立强凭证（见 .env.example）。
   NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
   NACOS_PASSWORD: ${NACOS_PASSWORD:-nacos}
-  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-"EGpBkD0uIstmuaCTQF6KqiDPL9YTuRL1KFrCjoL+m0Q/1HqQPWxoQPxwNw2A2OBO"}
+  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
   # 本地开发显式允许仓库内置的 dev 默认密钥；生产部署必须覆盖 ROSECLOUD_SECURITY_JWT_SECRET 并删除此行
   ROSECLOUD_SECURITY_JWT_ALLOW_DEV_SECRET: "true"
   ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE: ${ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE:-redis}
@@ -42,10 +44,10 @@ services:
     container_name: rosecloud-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-9QoVnbtTpmhVRSY8cvKbQJB}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-rosecloud}
       MYSQL_USER: ${MYSQL_USER:-rosecloud}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-tVKoY6P7Bqm7TFCUOdneoq}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
@@ -66,13 +68,13 @@ services:
     container_name: rosecloud-redis
     restart: unless-stopped
     profiles: [microservice]  # 仅微服务模式需要Redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-CvnnEHxiK5ldkOzU6cdMByk}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-rosecloud123}
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
       - rosecloud-redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-CvnnEHxiK5ldkOzU6cdMByk}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-rosecloud123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,7 +86,7 @@ services:
     profiles: [microservice]  # 仅微服务模式需要RabbitMQ
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rosecloud}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-0zWVCucywsKc89YObSpkPbi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rosecloud123}
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -98,18 +100,18 @@ services:
       start_period: 20s
 
   nacos:
-    image: nacos/nacos-server:v3.2.1
+    image: nacos/nacos-server:v3.2.2
     container_name: rosecloud-nacos
     restart: unless-stopped
     profiles: [microservice]  # 仅微服务模式需要Nacos
     environment:
       MODE: standalone
-      # 鉴权默认开启（本地旧值 false 已弃用）。token / identity 为生成的非默认强值；
+      # 鉴权默认开启（本地旧值 false 已弃用）。token / identity 为弱默认值；
       # 生产必须覆盖 NACOS_AUTH_TOKEN / NACOS_AUTH_IDENTITY_KEY / NACOS_AUTH_IDENTITY_VALUE。
       NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-true}
-      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-tDsGfx6f4ZQLRHDaGda4DT/XJijrqp2qHJxFNZhnJsM=}
-      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-2e314b09f51f312dcd91067665006e9a}
-      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-96962ebcbe41e7a5014145ecba1563e9}
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-cm9zZWNsb3VkLWRldi1uYWNvcy1hdXRoLXRva2VuLTAxMjM0NTY3ODkwMTIzNDU2Nzg5}
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-rosecloud-dev-identity-key}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-rosecloud-dev-identity-value}
     ports:
       - "127.0.0.1:8848:8848"
       - "127.0.0.1:9848:9848"
@@ -123,7 +125,7 @@ services:
       start_period: 20s
 
   xxl-job-admin:
-    image: xuxueli/xxl-job-admin:2.4.1
+    image: xuxueli/xxl-job-admin:3.4.2
     container_name: rosecloud-xxl-job-admin
     restart: unless-stopped
     profiles:
@@ -135,8 +137,8 @@ services:
         --server.port=8080
         --spring.datasource.url=jdbc:mysql://mysql:3306/${XXL_JOB_DATABASE:-xxl_job}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
         --spring.datasource.username=${MYSQL_USER:-rosecloud}
-        --spring.datasource.password=${MYSQL_PASSWORD:-tVKoY6P7Bqm7TFCUOdneoq}
-        --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-TmSSRBbXOD9AdyYFVvVJkKm8pyfwWR}
+        --spring.datasource.password=${MYSQL_PASSWORD:-rosecloud123}
+        --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-rosecloud-dev-xxl-token}
     ports:
       - "127.0.0.1:9080:8080"
 
@@ -172,7 +174,9 @@ services:
     environment:
       # 单体仅依赖 MySQL，无 Nacos/Redis/RabbitMQ
       MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-"EGpBkD0uIstmuaCTQF6KqiDPL9YTuRL1KFrCjoL+m0Q/1HqQPWxoQPxwNw2A2OBO"}
+      MYSQL_USER: ${MYSQL_USER:-rosecloud}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
+      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
       ROSECLOUD_SECURITY_JWT_ALLOW_DEV_SECRET: "true"  # 本地单体开发允许 dev 默认密钥
       ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
       ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
