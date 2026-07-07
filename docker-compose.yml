@@ -1,3 +1,12 @@
+x-app-env: &app-env
+  # 服务在 Docker 网络内连接基础设施（容器名），覆盖 Nacos 共享配置里的 127.0.0.1 默认值
+  MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+  REDIS_HOST: redis
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-rosecloud123}
+  NACOS_SERVER_ADDR: nacos:8848
+  ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+  ROSECLOUD_TOKEN_REVOCATION_TYPE: ${ROSECLOUD_TOKEN_REVOCATION_TYPE:-redis}
+
 services:
   mysql:
     image: mysql:8.0
@@ -50,6 +59,12 @@ services:
       - "15672:15672"
     volumes:
       - rosecloud-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   nacos:
     image: nacos/nacos-server:v3.2.1
@@ -67,6 +82,12 @@ services:
       - "38082:8080"
     volumes:
       - rosecloud-nacos-data:/home/nacos/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
 
   xxl-job-admin:
     image: xuxueli/xxl-job-admin:2.4.1
@@ -85,6 +106,42 @@ services:
         --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-rosecloud-xxl-job-token}
     ports:
       - "38081:8080"
+
+  # ---------- 应用服务（Docker 运行）----------
+  rosecloud-auth:
+    profiles: [microservice]
+    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-services/rosecloud-auth/target/rosecloud-auth-0.1.0-SNAPSHOT-exec.jar } }
+    environment: { <<: *app-env }
+    depends_on: [mysql, nacos, redis]
+    ports: ["9120:9120"]
+
+  rosecloud-system:
+    profiles: [microservice]
+    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-services/rosecloud-system/target/rosecloud-system-0.1.0-SNAPSHOT-exec.jar } }
+    environment: { <<: *app-env }
+    depends_on: [mysql, nacos, redis]
+    ports: ["9130:9130"]
+
+  rosecloud-notice:
+    profiles: [microservice]
+    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-services/rosecloud-notice/target/rosecloud-notice-0.1.0-SNAPSHOT-exec.jar } }
+    environment: { <<: *app-env }
+    depends_on: [mysql, nacos, redis]
+    ports: ["9150:9150"]
+
+  rosecloud-gateway:
+    profiles: [microservice]
+    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-services/rosecloud-gateway/target/rosecloud-gateway-0.1.0-SNAPSHOT.jar } }
+    environment: { <<: *app-env }
+    depends_on: [mysql, nacos, redis, rosecloud-auth, rosecloud-system, rosecloud-notice]
+    ports: ["9110:9110"]
+
+  rosecloud-monolith:
+    profiles: [monolith]
+    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-monolith/target/rosecloud-monolith-0.1.0-SNAPSHOT.jar } }
+    environment: { <<: *app-env }
+    depends_on: [mysql, nacos, redis]
+    ports: ["9160:9160"]
 
 volumes:
   rosecloud-mysql-data:
