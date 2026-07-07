@@ -19,4 +19,4 @@ spring:
           rosecloud.gateway.path: /api/notice/**
 
 server:
-  port: 9150
+  port: 9120

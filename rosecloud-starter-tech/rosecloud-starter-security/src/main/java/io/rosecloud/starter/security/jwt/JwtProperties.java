@@ -5,11 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.time.Duration;
 
 /**
- * JWT configuration under {@code rosecloud.jwt.*}. Shared by the auth service
+ * JWT configuration under {@code rosecloud.security.jwt.*}. Shared by the auth service
  * (token issuance) and the gateway (token verification), so both must use the
  * same {@code secret} and {@code issuer}.
  */
-@ConfigurationProperties(prefix = "rosecloud.jwt")
+@ConfigurationProperties(prefix = "rosecloud.security.jwt")
 public class JwtProperties {
 
     /** HMAC-SHA signing secret (UTF-8 bytes). Must be at least 32 bytes for HS256. */

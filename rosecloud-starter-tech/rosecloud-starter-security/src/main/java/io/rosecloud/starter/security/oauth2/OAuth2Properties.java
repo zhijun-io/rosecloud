@@ -2,8 +2,8 @@ package io.rosecloud.starter.security.oauth2;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Configuration for {@code rosecloud.oauth2.*} (JWT resource server). */
-@ConfigurationProperties(prefix = "rosecloud.oauth2")
+/** Configuration for {@code rosecloud.security.oauth2.*} (JWT resource server). */
+@ConfigurationProperties(prefix = "rosecloud.security.oauth2")
 public class OAuth2Properties {
 
     /** JWK set URI for JWT signature validation. */

@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.nacos.discovery.enabled=false",
         "spring.cloud.discovery.enabled=false",
         "spring.cloud.service-registry.auto-registration.enabled=false",
-        "rosecloud.jwt.secret=01234567890123456789012345678901",
+        "rosecloud.security.jwt.secret=01234567890123456789012345678901",
         "rosecloud.audit.enabled=true",
         "rosecloud.notice.publish-check-ms=3600000"
 })

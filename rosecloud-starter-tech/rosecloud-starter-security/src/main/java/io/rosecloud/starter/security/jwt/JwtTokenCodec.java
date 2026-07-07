@@ -39,13 +39,13 @@ public class JwtTokenCodec {
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < 32) {
             throw new IllegalStateException(
-                    "rosecloud.jwt.secret must be at least 32 bytes for HS256");
+                    "rosecloud.security.jwt.secret must be at least 32 bytes for HS256");
         }
         if (DEV_DEFAULT_SECRET.equals(secret) && !properties.isAllowDevSecret()) {
             throw new IllegalStateException(
                     "Refusing to start with the committed dev-default JWT secret. "
-                            + "Override rosecloud.jwt.secret with a strong random value, "
-                            + "or set rosecloud.jwt.allow-dev-secret=true only for local dev.");
+                            + "Override rosecloud.security.jwt.secret with a strong random value, "
+                            + "or set rosecloud.security.jwt.allow-dev-secret=true only for local dev.");
         }
         this.key = Keys.hmacShaKeyFor(secretBytes);
     }

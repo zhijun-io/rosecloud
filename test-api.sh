@@ -50,8 +50,8 @@ pick_mode() {
     return
   fi
 
-  if up "http://127.0.0.1:9110"; then
-    BASE_URL="http://127.0.0.1:9110"
+  if up "http://127.0.0.1:8080"; then
+    BASE_URL="http://127.0.0.1:8080"
     return
   fi
 

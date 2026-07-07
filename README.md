@@ -79,13 +79,13 @@ task build               # 全量构建（经 mvnw，跳过测试）
 ```bash
 task run:monolith        # 单体模式，单进程 :9160（无其他中间件依赖）
 # 或
-task run:microservice    # 微服务模式，网关 :9110 + auth :9120 / system :9130 / notice :9150
+task run:microservice    # 微服务模式，网关 :8080 + auth :9090 / system :9110 / notice :9120
 ```
 
 验证登录（管理员 `admin` / `admin123`）：
 
 ```bash
-BASE=http://127.0.0.1:9160            # 单体；微服务用 http://127.0.0.1:9110
+BASE=http://127.0.0.1:9160            # 单体；微服务用 http://127.0.0.1:8080
 TOKEN=$(curl -s -X POST $BASE/api/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"admin123"}' \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["accessToken"])')
@@ -114,10 +114,10 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 
 | 模块 | 端口 |
 |---|---|
-| rosecloud-gateway | 9110 |
-| rosecloud-auth | 9120 |
-| rosecloud-system | 9130 |
-| rosecloud-notice | 9150 |
+| rosecloud-gateway | 8080 |
+| rosecloud-auth | 9090 |
+| rosecloud-system | 9110 |
+| rosecloud-notice | 9120 |
 | rosecloud-monolith | 9160 |
 
 ## 本地基础设施

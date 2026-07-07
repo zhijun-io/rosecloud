@@ -41,4 +41,13 @@ public class RedisRoseCloudCache implements RoseCloudCache {
     public boolean exists(String key) {
         return Boolean.TRUE.equals(redis.hasKey(key));
     }
+
+    @Override
+    public long increment(String key, Duration ttl) {
+        Long value = redis.opsForValue().increment(key);
+        if (ttl != null && value != null) {
+            redis.expire(key, ttl);
+        }
+        return value == null ? 0 : value;
+    }
 }

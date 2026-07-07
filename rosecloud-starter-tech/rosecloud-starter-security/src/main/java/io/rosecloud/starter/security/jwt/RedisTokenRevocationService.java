@@ -9,7 +9,7 @@ import java.time.Instant;
  * Redis-backed {@link TokenRevocationService}: stores {@code rosecloud:revoked:{jti}}
  * with a TTL matching the token's remaining lifetime, so revocations are shared
  * across instances and self-expire. Active only when
- * {@code rosecloud.security.token-revocation.type=redis} and a Redis client is
+ * {@code rosecloud.security.jwt.revocation.type=redis} and a Redis client is
  * on the classpath.
  */
 public class RedisTokenRevocationService implements TokenRevocationService {

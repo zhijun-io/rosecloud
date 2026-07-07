@@ -1,15 +1,27 @@
+# ============================================================
+# RoseCloud 本地编排（docker-compose）
+#
+# 端口收敛说明（安全加固 M3）：
+#   - 中间件（mysql / redis / rabbitmq / nacos / xxl-job）的宿主端口仅绑定
+#     127.0.0.1，仅供本机 / 跳板访问，不暴露到公网。
+#     生产部署应将这些组件置于独立内网 / VPC，不要依赖宿主端口暴露。
+#   - 业务入口 gateway(8080) / monolith(9160) 仍映射宿主端口，靠防火墙 / WAF 保护。
+#   - 应用容器之间经 Docker 内部网络用服务名互访（mysql:3306 等），
+#     不依赖宿主端口映射，因此收敛宿主端口不影响应用互通。
+# ============================================================
+
 x-app-env: &app-env
   # 服务在 Docker 网络内连接基础设施（容器名），覆盖 Nacos 共享配置里的 127.0.0.1 默认值
   MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
   REDIS_HOST: redis
   REDIS_PASSWORD: ${REDIS_PASSWORD:-rosecloud123}
   NACOS_SERVER_ADDR: nacos:8848
-  ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
-  # 本地开发显式允许仓库内置的 dev 默认密钥；生产部署必须覆盖 ROSECLOUD_JWT_SECRET 并删除此行
-  ROSECLOUD_JWT_ALLOW_DEV_SECRET: "true"
-  ROSECLOUD_TOKEN_REVOCATION_TYPE: ${ROSECLOUD_TOKEN_REVOCATION_TYPE:-redis}
-  # 服务间 /internal/** 调用共享密钥；生产必须覆盖 ROSECLOUD_INTERNAL_API_KEY 并删除此默认值
-  ROSECLOUD_INTERNAL_API_KEY: ${ROSECLOUD_INTERNAL_API_KEY:-rosecloud-dev-internal-key}
+  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+  # 本地开发显式允许仓库内置的 dev 默认密钥；生产部署必须覆盖 ROSECLOUD_SECURITY_JWT_SECRET 并删除此行
+  ROSECLOUD_SECURITY_JWT_ALLOW_DEV_SECRET: "true"
+  ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE: ${ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE:-redis}
+  # 服务间 /internal/** 调用共享密钥；生产必须覆盖 ROSECLOUD_SECURITY_INTERNAL_API_KEY 并删除此默认值
+  ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}
 
 services:
   mysql:
@@ -27,7 +39,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - rosecloud-mysql-data:/var/lib/mysql
     healthcheck:
@@ -43,7 +55,7 @@ services:
     profiles: [microservice]  # 仅微服务模式需要Redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-rosecloud123}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - rosecloud-redis-data:/data
     healthcheck:
@@ -61,8 +73,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rosecloud}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rosecloud123}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     volumes:
       - rosecloud-rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -85,9 +97,9 @@ services:
       NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}
       NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-security}
     ports:
-      - "8848:8848"
-      - "9848:9848"
-      - "38082:8080"
+      - "127.0.0.1:8848:8848"
+      - "127.0.0.1:9848:9848"
+      - "127.0.0.1:38082:8080"
     volumes:
       - rosecloud-nacos-data:/home/nacos/data
     healthcheck:
@@ -113,7 +125,7 @@ services:
         --spring.datasource.password=${MYSQL_PASSWORD:-rosecloud123}
         --xxl.job.accessToken=${XXL_JOB_ACCESS_TOKEN:-rosecloud-xxl-job-token}
     ports:
-      - "38081:8080"
+      - "127.0.0.1:38081:8080"
 
   # ---------- 应用服务（Docker 运行）----------
   rosecloud-auth:
@@ -139,7 +151,7 @@ services:
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-gateway/target/rosecloud-gateway-0.1.0-SNAPSHOT.jar } }
     environment: { <<: *app-env }
     depends_on: [mysql, nacos, redis, rosecloud-auth, rosecloud-system, rosecloud-notice]
-    ports: ["9110:9110"]
+    ports: ["8080:8080"]
 
   rosecloud-monolith:
     profiles: [monolith]
@@ -147,10 +159,10 @@ services:
     environment:
       # 单体仅依赖 MySQL，无 Nacos/Redis/RabbitMQ
       MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-      ROSECLOUD_JWT_SECRET: ${ROSECLOUD_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
-      ROSECLOUD_JWT_ALLOW_DEV_SECRET: "true"  # 本地单体开发允许 dev 默认密钥
-      ROSECLOUD_TOKEN_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
-      ROSECLOUD_INTERNAL_API_KEY: ${ROSECLOUD_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
+      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-rosecloud-dev-secret-please-change-me-0123456789}
+      ROSECLOUD_SECURITY_JWT_ALLOW_DEV_SECRET: "true"  # 本地单体开发允许 dev 默认密钥
+      ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE: memory  # 单体用内存存储吊销令牌，无需 Redis
+      ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
     depends_on: [mysql]
     ports: ["9160:9160"]
 

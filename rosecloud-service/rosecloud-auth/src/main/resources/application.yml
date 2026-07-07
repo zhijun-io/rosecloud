@@ -19,4 +19,18 @@ spring:
           rosecloud.gateway.path: /api/auth/**
 
 server:
-  port: 9120
+  port: 9090
+
+rosecloud:
+  cache:
+    enabled: true
+    type: redis
+  auth:
+    login-protection:
+      enabled: true
+      max-attempts: 5
+      lock-window: 15m
+      base-lock-duration: 15m
+      max-lock-duration: 24h
+      ip-max-attempts: 100
+      ip-window: 10m

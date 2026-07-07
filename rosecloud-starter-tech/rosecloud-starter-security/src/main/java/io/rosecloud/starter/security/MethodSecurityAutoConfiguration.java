@@ -30,7 +30,7 @@ public class MethodSecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(SecurityFilterChain.class)
-    @ConditionalOnProperty(prefix = "rosecloud.oauth2", name = "enabled", havingValue = "false", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "rosecloud.security.oauth2", name = "enabled", havingValue = "false", matchIfMissing = true)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(reg -> reg.anyRequest().permitAll());

@@ -2,8 +2,8 @@ package io.rosecloud.starter.security.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Configuration for {@code rosecloud.security.token-revocation.*}. */
-@ConfigurationProperties(prefix = "rosecloud.security.token-revocation")
+/** Configuration for {@code rosecloud.security.jwt.revocation.*}. */
+@ConfigurationProperties(prefix = "rosecloud.security.jwt.revocation")
 public class TokenRevocationProperties {
 
     /** Revocation store type: {@code in-memory} (default, single-instance) or {@code redis} (shared). */

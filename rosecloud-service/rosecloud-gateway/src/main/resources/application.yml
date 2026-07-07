@@ -16,7 +16,7 @@ spring:
       password: ${NACOS_PASSWORD:}
 
 server:
-  port: 9110
+  port: 8080
 
 rosecloud:
   gateway:

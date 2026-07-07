@@ -22,7 +22,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * blocks every route (including login). When OAuth2 is disabled (the default),
  * a permissive chain is registered so the default one does not activate; the
  * {@link MonolithJwtFilter} performs the real enforcement. Enable
- * {@code rosecloud.oauth2} to use the OAuth2 resource-server chain instead.
+ * {@code rosecloud.security.oauth2} to use the OAuth2 resource-server chain instead.
  */
 @Configuration
 @ConditionalOnProperty(prefix = "spring.application", name = "name", havingValue = "rosecloud-monolith")
@@ -31,7 +31,7 @@ public class MonolithSecurityConfiguration {
 
     @Bean
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
-            prefix = "rosecloud.oauth2", name = "enabled", havingValue = "false", matchIfMissing = true)
+            prefix = "rosecloud.security.oauth2", name = "enabled", havingValue = "false", matchIfMissing = true)
     public SecurityFilterChain monolithSecurityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(reg -> reg.anyRequest().permitAll());

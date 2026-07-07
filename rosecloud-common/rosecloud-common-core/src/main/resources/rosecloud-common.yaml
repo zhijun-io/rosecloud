@@ -36,9 +36,6 @@ management:
 rosecloud:
   audit:
     enabled: true
-  jwt:
-    secret: ${ROSECLOUD_JWT_SECRET:rosecloud-dev-secret-please-change-me-0123456789}
-    issuer: ${ROSECLOUD_JWT_ISSUER:rosecloud}
   tenant:
     enabled: false
     ignore-tables:
@@ -53,8 +50,11 @@ rosecloud:
       - sys_dict_data
       - sys_dept
       - sys_login_session
-  oauth2:
-    enabled: false
   security:
-    token-revocation:
-      type: ${ROSECLOUD_TOKEN_REVOCATION_TYPE:redis}
+    jwt:
+      secret: ${ROSECLOUD_SECURITY_JWT_SECRET:rosecloud-dev-secret-please-change-me-0123456789}
+      issuer: ${ROSECLOUD_SECURITY_JWT_ISSUER:rosecloud}
+      revocation:
+        type: ${ROSECLOUD_SECURITY_JWT_REVOCATION_TYPE:redis}
+    oauth2:
+      enabled: false

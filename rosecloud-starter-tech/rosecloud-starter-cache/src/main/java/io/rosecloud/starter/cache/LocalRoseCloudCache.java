@@ -52,4 +52,21 @@ public class LocalRoseCloudCache implements RoseCloudCache {
     public boolean exists(String key) {
         return get(key) != null;
     }
+
+    @Override
+    public synchronized long increment(String key, Duration ttl) {
+        CacheEntry entry = store.get(key);
+        long current = 0;
+        if (entry != null && !entry.isExpired(clock.millis())) {
+            try {
+                current = Long.parseLong(entry.value());
+            } catch (NumberFormatException ignored) {
+                current = 0;
+            }
+        }
+        long next = current + 1;
+        long expireAt = ttl == null ? -1 : clock.millis() + ttl.toMillis();
+        store.put(key, new CacheEntry(Long.toString(next), expireAt));
+        return next;
+    }
 }

@@ -11,6 +11,7 @@ import io.rosecloud.auth.service.AuthService;
 import io.rosecloud.auth.service.dto.LoginRequest;
 import io.rosecloud.auth.service.dto.RefreshRequest;
 import io.rosecloud.auth.service.dto.TokenResponse;
+import io.rosecloud.auth.service.security.LoginProtectionService;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.starter.security.jwt.InvalidTokenException;
@@ -38,10 +39,12 @@ public class AuthServiceImpl implements AuthService {
     private final LoginLogApi loginLogApi;
     private final TokenRevocationService tokenRevocationService;
     private final LoginSessionApi loginSessionApi;
+    private final LoginProtectionService loginProtection;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
                            JwtTokenCodec jwtTokenCodec, JwtProperties jwtProperties, LoginLogApi loginLogApi,
-                           TokenRevocationService tokenRevocationService, LoginSessionApi loginSessionApi) {
+                           TokenRevocationService tokenRevocationService, LoginSessionApi loginSessionApi,
+                           LoginProtectionService loginProtection) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenCodec = jwtTokenCodec;
@@ -49,17 +52,23 @@ public class AuthServiceImpl implements AuthService {
         this.loginLogApi = loginLogApi;
         this.tokenRevocationService = tokenRevocationService;
         this.loginSessionApi = loginSessionApi;
+        this.loginProtection = loginProtection;
     }
 
     @Override
     public TokenResponse login(LoginRequest request, String ip, String userAgent) {
+        loginProtection.checkAllowed(request.username(), ip);
         try {
-            AuthUser user = userRepository.findByUsername(request.username())
-                    .orElseThrow(() -> new BizException(AuthErrorCode.BAD_CREDENTIALS));
+            AuthUser user = userRepository.findByUsername(request.username()).orElse(null);
+            if (user == null) {
+                loginProtection.onFailure(request.username(), ip, false);
+                throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
+            }
             if (user.status() == null || user.status() != 1) {
                 throw new BizException(AuthErrorCode.ACCOUNT_DISABLED);
             }
             if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
+                loginProtection.onFailure(request.username(), ip, true);
                 throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
             }
             CurrentUser currentUser = new CurrentUser(user.userId(), user.username(), user.tenantId(),
@@ -67,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
             TokenResponse token = issue(currentUser);
             recordSession(token.accessToken(), currentUser, ip, userAgent);
             recordLogin(request.username(), true, null, ip, userAgent);
+            loginProtection.onSuccess(request.username(), ip);
             return token;
         } catch (BizException e) {
             recordLogin(request.username(), false, e.getErrorCode().message(), ip, userAgent);

@@ -19,4 +19,4 @@ spring:
           rosecloud.gateway.path: /api/system/**
 
 server:
-  port: 9130
+  port: 9110

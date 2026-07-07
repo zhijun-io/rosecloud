@@ -51,7 +51,7 @@ tasks:
       - '{{.COMPOSE}} --profile monolith up -d --build'  # 构建成功后启动服务，自动执行数据库迁移
 
   run:microservice:
-    desc: 微服务模式一键启动（自动完成初始化 → 构建 → 运行，网关 :9110，admin/admin123）
+    desc: 微服务模式一键启动（自动完成初始化 → 构建 → 运行，网关 :8080，admin/admin123）
     deps: [ infra:microservice ]  # 启动基础设施，SQL由Flyway自动执行
     cmds:
       - task: build:microservice  # 等基础设施就绪后再构建
