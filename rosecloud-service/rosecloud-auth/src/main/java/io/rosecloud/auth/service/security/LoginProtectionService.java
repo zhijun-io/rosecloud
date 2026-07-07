@@ -1,13 +1,14 @@
 package io.rosecloud.auth.service.security;
 
 import io.rosecloud.auth.config.LoginProtectionProperties;
-import io.rosecloud.auth.error.AuthErrorCode;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.starter.cache.RoseCloudCache;
-import java.time.Duration;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 /**
  * Stateful login brute-force protection. Two complementary layers:
@@ -50,10 +51,10 @@ public class LoginProtectionService {
         }
         try {
             if (cache.exists(lockKey(username))) {
-                throw new BizException(AuthErrorCode.ACCOUNT_LOCKED);
+                throw new BizException(SecurityErrorCode.ACCOUNT_LOCKED);
             }
             if (cache.exists(ipBlockKey(ip))) {
-                throw new BizException(AuthErrorCode.TOO_MANY_REQUESTS);
+                throw new BizException(SecurityErrorCode.TOO_MANY_REQUESTS);
             }
         } catch (BizException e) {
             throw e;

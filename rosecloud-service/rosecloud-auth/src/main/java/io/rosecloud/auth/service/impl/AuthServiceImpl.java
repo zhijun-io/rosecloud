@@ -6,7 +6,6 @@ import io.rosecloud.api.session.LoginSessionApi;
 import io.rosecloud.api.session.LoginSessionRequest;
 import io.rosecloud.auth.domain.AuthUser;
 import io.rosecloud.auth.domain.UserRepository;
-import io.rosecloud.auth.error.AuthErrorCode;
 import io.rosecloud.auth.service.AuthService;
 import io.rosecloud.auth.service.dto.LoginRequest;
 import io.rosecloud.auth.service.dto.RefreshRequest;
@@ -14,18 +13,15 @@ import io.rosecloud.auth.service.dto.TokenResponse;
 import io.rosecloud.auth.service.security.LoginProtectionService;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.starter.security.jwt.InvalidTokenException;
-import io.rosecloud.starter.security.jwt.JwtProperties;
-import io.rosecloud.starter.security.jwt.JwtTokenCodec;
-import io.rosecloud.starter.security.jwt.TokenClaims;
-import io.rosecloud.starter.security.jwt.TokenType;
-import io.rosecloud.starter.security.jwt.TokenRevocationService;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import io.rosecloud.starter.security.SecurityErrorCode;
+import io.rosecloud.starter.security.jwt.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -62,14 +58,14 @@ public class AuthServiceImpl implements AuthService {
             AuthUser user = userRepository.findByUsername(request.username()).orElse(null);
             if (user == null) {
                 loginProtection.onFailure(request.username(), ip, false);
-                throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
+                throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
             }
             if (user.status() == null || user.status() != 1) {
-                throw new BizException(AuthErrorCode.ACCOUNT_DISABLED);
+                throw new BizException(SecurityErrorCode.ACCOUNT_DISABLED);
             }
             if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
                 loginProtection.onFailure(request.username(), ip, true);
-                throw new BizException(AuthErrorCode.BAD_CREDENTIALS);
+                throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
             }
             CurrentUser currentUser = new CurrentUser(user.userId(), user.username(), user.tenantId(),
                     user.roles(), user.perms());
@@ -90,13 +86,13 @@ public class AuthServiceImpl implements AuthService {
         try {
             claims = jwtTokenCodec.parse(request.refreshToken());
         } catch (InvalidTokenException e) {
-            throw new BizException(AuthErrorCode.INVALID_TOKEN);
+            throw new BizException(SecurityErrorCode.INVALID_TOKEN);
         }
         if (claims.type() != TokenType.REFRESH) {
-            throw new BizException(AuthErrorCode.INVALID_TOKEN);
+            throw new BizException(SecurityErrorCode.INVALID_TOKEN);
         }
         AuthUser user = userRepository.findByUsername(claims.username())
-                .orElseThrow(() -> new BizException(AuthErrorCode.INVALID_TOKEN));
+                .orElseThrow(() -> new BizException(SecurityErrorCode.INVALID_TOKEN));
         return issue(new CurrentUser(user.userId(), user.username(), user.tenantId(),
                 user.roles(), user.perms()));
     }

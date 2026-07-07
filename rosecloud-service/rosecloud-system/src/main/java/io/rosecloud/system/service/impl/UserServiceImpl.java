@@ -6,6 +6,7 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -69,6 +70,7 @@ public class UserServiceImpl implements UserService {
     public Optional<UserAuthInfo> findAuthInfo(String username) {
         return userRepository.findAuthInfo(username);
     }
+
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
     @Override
     public void assignRoles(Long userId, List<Long> roleIds) {
@@ -87,7 +89,7 @@ public class UserServiceImpl implements UserService {
     public UserProfile me() {
         CurrentUser current = UserContext.get();
         if (current == null || current.userId() == null) {
-            return null;
+            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
         }
         User user = userRepository.findById(current.userId())
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));

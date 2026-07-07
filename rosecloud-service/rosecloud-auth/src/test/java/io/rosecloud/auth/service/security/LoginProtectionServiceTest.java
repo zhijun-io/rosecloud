@@ -1,10 +1,10 @@
 package io.rosecloud.auth.service.security;
 
 import io.rosecloud.auth.config.LoginProtectionProperties;
-import io.rosecloud.auth.error.AuthErrorCode;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.starter.cache.LocalRoseCloudCache;
 import io.rosecloud.starter.cache.RoseCloudCache;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +35,7 @@ class LoginProtectionServiceTest {
             s.onFailure("alice", "1.1.1.1", true);
         }
         BizException ex = assertThrows(BizException.class, () -> s.checkAllowed("alice", "1.1.1.1"));
-        assertEquals(AuthErrorCode.ACCOUNT_LOCKED, ex.getErrorCode());
+        assertEquals(SecurityErrorCode.ACCOUNT_LOCKED, ex.getErrorCode());
     }
 
     @Test
@@ -56,7 +56,7 @@ class LoginProtectionServiceTest {
             s.onFailure("ghost" + i, "9.9.9.9", false);
         }
         BizException ex = assertThrows(BizException.class, () -> s.checkAllowed("anyone", "9.9.9.9"));
-        assertEquals(AuthErrorCode.TOO_MANY_REQUESTS, ex.getErrorCode());
+        assertEquals(SecurityErrorCode.TOO_MANY_REQUESTS, ex.getErrorCode());
     }
 
     @Test

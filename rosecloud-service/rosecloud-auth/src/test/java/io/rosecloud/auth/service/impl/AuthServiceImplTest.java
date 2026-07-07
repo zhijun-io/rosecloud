@@ -5,7 +5,6 @@ import io.rosecloud.api.session.LoginSessionApi;
 import io.rosecloud.auth.config.LoginProtectionProperties;
 import io.rosecloud.auth.domain.UserRepository;
 import io.rosecloud.auth.domain.AuthUser;
-import io.rosecloud.auth.error.AuthErrorCode;
 import io.rosecloud.auth.service.dto.LoginRequest;
 import io.rosecloud.auth.service.dto.TokenResponse;
 import io.rosecloud.auth.service.security.LoginProtectionService;
@@ -13,6 +12,7 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.context.CurrentUser;
 import io.rosecloud.starter.cache.LocalRoseCloudCache;
 import io.rosecloud.starter.cache.RoseCloudCache;
+import io.rosecloud.starter.security.SecurityErrorCode;
 import io.rosecloud.starter.security.jwt.JwtProperties;
 import io.rosecloud.starter.security.jwt.JwtTokenCodec;
 import io.rosecloud.starter.security.jwt.TokenClaims;
@@ -71,11 +71,11 @@ class AuthServiceImplTest {
         for (int i = 0; i < 5; i++) {
             BizException ex = assertThrows(BizException.class,
                     () -> s.login(new LoginRequest("alice", "wrong"), "1.1.1.1", "ua"));
-            assertEquals(AuthErrorCode.BAD_CREDENTIALS, ex.getErrorCode());
+            assertEquals(SecurityErrorCode.BAD_CREDENTIALS, ex.getErrorCode());
         }
         BizException locked = assertThrows(BizException.class,
                 () -> s.login(new LoginRequest("alice", "wrong"), "1.1.1.1", "ua"));
-        assertEquals(AuthErrorCode.ACCOUNT_LOCKED, locked.getErrorCode());
+        assertEquals(SecurityErrorCode.ACCOUNT_LOCKED, locked.getErrorCode());
         // the locked attempt never reaches the password matcher
         verify(passwordEncoder, times(5)).matches(anyString(), anyString());
     }
@@ -103,10 +103,10 @@ class AuthServiceImplTest {
         for (int i = 0; i < 5; i++) {
             BizException ex = assertThrows(BizException.class,
                     () -> s.login(new LoginRequest("alice", "bad"), "1.1.1.1", "ua"));
-            assertEquals(AuthErrorCode.BAD_CREDENTIALS, ex.getErrorCode());
+            assertEquals(SecurityErrorCode.BAD_CREDENTIALS, ex.getErrorCode());
         }
         BizException locked = assertThrows(BizException.class,
                 () -> s.login(new LoginRequest("alice", "bad"), "1.1.1.1", "ua"));
-        assertEquals(AuthErrorCode.ACCOUNT_LOCKED, locked.getErrorCode());
+        assertEquals(SecurityErrorCode.ACCOUNT_LOCKED, locked.getErrorCode());
     }
 }
