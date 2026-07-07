@@ -12,7 +12,9 @@ import org.springframework.scheduling.annotation.Scheduled;
  * Periodically refreshes gateway routes so newly-registered services (see
  * {@link MetadataRouteDefinitionLocator}) become routable without a restart,
  * and refreshes once on startup so dynamic routes are present from the first
- * request.
+ * request. A short fixed delay (15s, first at 5s) keeps local dev snappy: a
+ * backend registering just after startup is routable within seconds rather
+ * than half a minute.
  */
 @Configuration
 @EnableScheduling
@@ -29,7 +31,7 @@ public class RouteRefreshScheduler {
         publisher.publishEvent(new RefreshRoutesEvent(this));
     }
 
-    @Scheduled(fixedDelay = 30_000, initialDelay = 15_000)
+    @Scheduled(fixedDelay = 15_000, initialDelay = 5_000)
     public void refresh() {
         publisher.publishEvent(new RefreshRoutesEvent(this));
     }
