@@ -7,6 +7,6 @@ import java.time.LocalDateTime;
  * token's {@code jti}; {@code expireTime} mirrors the token expiry so stale
  * sessions can be excluded from the online list.
  */
-public record LoginSessionRequest(String jti, Long userId, String username, Long tenantId,
+public record LoginSessionRequest(String jti, Long userId, String username, String tenantId,
                                   LocalDateTime expireTime, String ip, String userAgent) {
 }

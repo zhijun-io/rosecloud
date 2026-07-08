@@ -10,6 +10,8 @@
    当前开发计划，包含后端闭环的阶段划分、验收点和推荐执行顺序。
 4. [configuration-model-decision.md](/Users/zhijunio/github/rosecloud/docs/adr/configuration-model-decision.md)
    配置模型决策，定义 `setting_key`、`system_setting` / `user_setting` / `tenant_profile` 的最小配置模型。
+5. [id-and-tenant-model-decision.md](/Users/zhijunio/github/rosecloud/docs/adr/id-and-tenant-model-decision.md)
+   主键与租户标识决策，定义雪花 ID 与字符串 `tenantId` 的分工。
 
 参考资料：
 

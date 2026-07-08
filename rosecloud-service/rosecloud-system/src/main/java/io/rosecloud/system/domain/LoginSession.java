@@ -15,14 +15,14 @@ public final class LoginSession implements HasId, HasUserId, HasTenantId, HasSta
     private final String jti;
     private final Long userId;
     private final String username;
-    private final Long tenantId;
+    private final String tenantId;
     private final LocalDateTime loginTime;
     private final LocalDateTime expireTime;
     private final String ip;
     private final String userAgent;
     private final Integer status;
 
-    public LoginSession(Long id, String jti, Long userId, String username, Long tenantId, LocalDateTime loginTime,
+    public LoginSession(Long id, String jti, Long userId, String username, String tenantId, LocalDateTime loginTime,
                         LocalDateTime expireTime, String ip, String userAgent, Integer status) {
         this.id = id;
         this.jti = jti;
@@ -40,7 +40,7 @@ public final class LoginSession implements HasId, HasUserId, HasTenantId, HasSta
     public String getJti() { return jti; }
     public Long getUserId() { return userId; }
     public String getUsername() { return username; }
-    public Long getTenantId() { return tenantId; }
+    public String getTenantId() { return tenantId; }
     public LocalDateTime getLoginTime() { return loginTime; }
     public LocalDateTime getExpireTime() { return expireTime; }
     public String getIp() { return ip; }

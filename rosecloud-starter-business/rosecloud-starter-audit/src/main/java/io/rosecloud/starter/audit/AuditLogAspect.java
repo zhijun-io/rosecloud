@@ -52,7 +52,7 @@ public class AuditLogAspect {
         }
     }
 
-    private static Long currentTenantId() {
+    private static String currentTenantId() {
         CurrentUser user = UserContext.get();
         return user == null ? null : user.tenantId();
     }

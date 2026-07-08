@@ -25,18 +25,17 @@ class TenantRepositoryImplTest {
     @Test
     void findByIdMarksEnabledTenantAsExpiredAfterExpireDate() {
         TenantEntity po = new TenantEntity();
-        po.setId(7L);
+        po.setId("tenant-7");
         po.setName("Acme");
-        po.setCode("acme");
         po.setStatus(TenantStatus.ENABLED.code());
         po.setExpireTime(LocalDate.now().minusDays(1));
         po.setExtra("{\"tier\":\"gold\"}");
 
-        when(mapper.selectById(7L)).thenReturn(po);
+        when(mapper.selectById("tenant-7")).thenReturn(po);
 
         TenantRepositoryImpl repository = new TenantRepositoryImpl(mapper, new ObjectMapper());
 
-        Tenant tenant = repository.findById(7L).orElseThrow();
+        Tenant tenant = repository.findById("tenant-7").orElseThrow();
 
         assertEquals(TenantStatus.EXPIRED, tenant.getStatus());
         assertEquals(LocalDate.now().minusDays(1), tenant.getExpireTime());
@@ -46,9 +45,8 @@ class TenantRepositoryImplTest {
     @Test
     void pageMapsTenantRecords() {
         TenantEntity po = new TenantEntity();
-        po.setId(8L);
+        po.setId("tenant-8");
         po.setName("Beta");
-        po.setCode("beta");
         po.setStatus(TenantStatus.PENDING.code());
         po.setExpireTime(LocalDate.now().plusDays(10));
 

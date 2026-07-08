@@ -19,11 +19,11 @@ public final class AuthUser implements HasUserId, HasStatus<Integer>, HasTenantI
     private final String username;
     private final String passwordHash;
     private final Integer status;
-    private final Long tenantId;
+    private final String tenantId;
     private final List<String> roles;
     private final List<String> perms;
 
-    public AuthUser(Long userId, String username, String passwordHash, Integer status, Long tenantId,
+    public AuthUser(Long userId, String username, String passwordHash, Integer status, String tenantId,
                     List<String> roles, List<String> perms) {
         this.userId = userId;
         this.username = username;
@@ -50,7 +50,7 @@ public final class AuthUser implements HasUserId, HasStatus<Integer>, HasTenantI
         return status;
     }
 
-    public Long getTenantId() {
+    public String getTenantId() {
         return tenantId;
     }
 

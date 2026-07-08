@@ -17,9 +17,9 @@ class HeaderTenantResolverTest {
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("X-Custom-Tenant", "200");
-        request.addHeader(SecurityHeaders.TENANT_ID, "100");
+        request.addHeader(SecurityHeaders.TENANT_ID, "tenant-100");
 
-        assertEquals(100L, resolver.resolve(request));
+        assertEquals("tenant-100", resolver.resolve(request));
     }
 
     @Test

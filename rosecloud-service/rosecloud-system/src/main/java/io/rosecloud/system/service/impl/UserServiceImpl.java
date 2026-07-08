@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Long createWithHash(String username, String passwordHash, String nickname, Long tenantId) {
+    public Long createWithHash(String username, String passwordHash, String nickname, String tenantId) {
         if (userRepository.existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }

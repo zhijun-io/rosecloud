@@ -24,7 +24,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal) {
+    public PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal) {
         return auditLogRepository.page(current, size, tenantId, action, principal);
     }
 }

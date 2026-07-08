@@ -7,18 +7,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public class HeaderTenantResolver implements TenantResolver {
 
     @Override
-    public Long resolve(HttpServletRequest request) {
+    public String resolve(HttpServletRequest request) {
         return parse(request.getHeader(SecurityHeaders.TENANT_ID));
     }
 
-    static Long parse(String value) {
+    static String parse(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
-        try {
-            return Long.valueOf(value.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return value.trim();
     }
 }

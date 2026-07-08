@@ -10,7 +10,7 @@ public class AuditLogEntity extends BaseEntity {
     private String action;
     private String description;
     private String principal;
-    private Long tenantId;
+    private String tenantId;
     private String target;
     private Long elapsedMillis;
     private Integer success;
@@ -22,8 +22,8 @@ public class AuditLogEntity extends BaseEntity {
     public void setDescription(String description) { this.description = description; }
     public String getPrincipal() { return principal; }
     public void setPrincipal(String principal) { this.principal = principal; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public String getTarget() { return target; }
     public void setTarget(String target) { this.target = target; }
     public Long getElapsedMillis() { return elapsedMillis; }

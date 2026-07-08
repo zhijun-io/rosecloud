@@ -33,5 +33,5 @@ public interface UserRepository {
     void assignRoles(Long userId, Collection<Long> roleIds);
 
     /** Resolves recipient contacts (email/phone) for a notice target. */
-    List<NoticeRecipient> findContacts(Integer targetType, Long tenantId, String roleCode);
+    List<NoticeRecipient> findContacts(Integer targetType, String tenantId, String roleCode);
 }

@@ -60,7 +60,7 @@ public class LoginSessionServiceImpl implements LoginSessionService {
     }
 
     /** Returns the caller's tenant id, or null for platform admins (who see all sessions). */
-    private static Long scopeTenantId() {
+    private static String scopeTenantId() {
         CurrentUser user = UserContext.get();
         return user == null ? null : user.tenantId();
     }

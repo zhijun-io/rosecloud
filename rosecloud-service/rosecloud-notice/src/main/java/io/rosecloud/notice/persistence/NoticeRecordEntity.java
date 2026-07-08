@@ -11,7 +11,7 @@ public class NoticeRecordEntity extends BaseEntity {
 
     private Long noticeId;
     private Long userId;
-    private Long tenantId;
+    private String tenantId;
     private LocalDateTime readTime;
     private LocalDateTime confirmTime;
 
@@ -19,8 +19,8 @@ public class NoticeRecordEntity extends BaseEntity {
     public void setNoticeId(Long noticeId) { this.noticeId = noticeId; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public LocalDateTime getReadTime() { return readTime; }
     public void setReadTime(LocalDateTime readTime) { this.readTime = readTime; }
     public LocalDateTime getConfirmTime() { return confirmTime; }

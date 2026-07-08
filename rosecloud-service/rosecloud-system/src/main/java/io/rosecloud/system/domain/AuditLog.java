@@ -13,14 +13,14 @@ public final class AuditLog implements HasId, HasTenantId {
     private final String action;
     private final String description;
     private final String principal;
-    private final Long tenantId;
+    private final String tenantId;
     private final String target;
     private final long elapsedMillis;
     private final boolean success;
     private final String error;
     private final LocalDateTime createTime;
 
-    public AuditLog(Long id, String action, String description, String principal, Long tenantId, String target,
+    public AuditLog(Long id, String action, String description, String principal, String tenantId, String target,
                     long elapsedMillis, boolean success, String error, LocalDateTime createTime) {
         this.id = id;
         this.action = action;
@@ -38,7 +38,7 @@ public final class AuditLog implements HasId, HasTenantId {
     public String getAction() { return action; }
     public String getDescription() { return description; }
     public String getPrincipal() { return principal; }
-    public Long getTenantId() { return tenantId; }
+    public String getTenantId() { return tenantId; }
     public String getTarget() { return target; }
     public long getElapsedMillis() { return elapsedMillis; }
     public boolean isSuccess() { return success; }

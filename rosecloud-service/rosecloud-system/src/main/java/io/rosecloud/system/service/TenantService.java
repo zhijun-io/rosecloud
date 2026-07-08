@@ -6,15 +6,15 @@ import io.rosecloud.system.service.dto.TenantApplyRequest;
 
 public interface TenantService {
 
-    Long apply(TenantApplyRequest request);
+    String apply(TenantApplyRequest request);
 
-    Tenant get(Long id);
+    Tenant get(String id);
 
-    Long open(Long id);
+    String open(String id);
 
-    void disable(Long id);
+    void disable(String id);
 
-    void enable(Long id);
+    void enable(String id);
 
     PageResult<Tenant> page(long current, long size, String keyword);
 }

@@ -26,7 +26,7 @@ public class TenantWebFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        Long tenantId = resolver.resolve((HttpServletRequest) request);
+        String tenantId = resolver.resolve((HttpServletRequest) request);
         try {
             if (tenantId != null) {
                 TenantContext.setTenantId(tenantId);

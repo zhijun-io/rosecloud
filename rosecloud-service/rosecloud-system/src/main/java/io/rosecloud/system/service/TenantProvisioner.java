@@ -44,7 +44,7 @@ public class TenantProvisioner {
 
     @Async("tenantProvisioningExecutor")
     @Transactional
-    public void provision(Long tenantId) {
+    public void provision(String tenantId) {
         TenantAdminCredentials creds = tenantRepository.findAdminCredentials(tenantId).orElse(null);
         if (creds == null || creds.getUsername() == null || creds.getUsername().isBlank()
                 || creds.getPasswordHash() == null) {
@@ -62,7 +62,7 @@ public class TenantProvisioner {
         publishTenantNotice(tenantId, "租户已开通", "租户已完成开通，首个管理员账号已初始化。");
     }
 
-    private void publishTenantNotice(Long tenantId, String title, String content) {
+    private void publishTenantNotice(String tenantId, String title, String content) {
         try {
             noticePublishApi.publish(new NoticePublishRequest(title, content, NoticeTargetType.TENANT.code(),
                     tenantId, null, null, LocalDateTime.now(), null, null, false, null));

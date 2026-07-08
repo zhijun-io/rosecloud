@@ -18,5 +18,5 @@ public interface LoginSessionRepository {
     void markLoggedOutById(Long id);
 
     /** Active (online, not expired) sessions; scoped to {@code tenantId} when non-null. */
-    PageResult<LoginSession> onlinePage(long current, long size, Long tenantId, java.time.LocalDateTime now);
+    PageResult<LoginSession> onlinePage(long current, long size, String tenantId, java.time.LocalDateTime now);
 }

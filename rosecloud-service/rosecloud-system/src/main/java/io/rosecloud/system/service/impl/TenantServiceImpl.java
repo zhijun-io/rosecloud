@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Service
 public class TenantServiceImpl implements TenantService {
@@ -37,22 +38,20 @@ public class TenantServiceImpl implements TenantService {
 
     @AuditLog(action = "tenant-apply", description = "申请租户")
     @Override
-    public Long apply(TenantApplyRequest request) {
-        if (tenantRepository.existsByCode(request.code())) {
-            throw new BizException(SystemErrorCode.TENANT_CODE_EXISTS);
-        }
-        Tenant tenant = new Tenant(null, request.name(), request.code(), TenantStatus.PENDING,
+    public String apply(TenantApplyRequest request) {
+        String tenantId = UUID.randomUUID().toString();
+        Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
                 request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(), null);
         String passwordHash = request.adminPassword() == null || request.adminPassword().isBlank()
                 ? null : passwordEncoder.encode(request.adminPassword());
-        Long id = tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
-        publishPlatformNotice("新租户申请待审核", request.name() + "（" + request.code() + "）已提交申请，等待审核。",
+        String id = tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
+        publishPlatformNotice("新租户申请待审核", request.name() + "（" + id + "）已提交申请，等待审核。",
                 NoticeTargetType.ROLE.code(), null, "platform-admin");
         return id;
     }
 
     @Override
-    public Tenant get(Long id) {
+    public Tenant get(String id) {
         return load(id);
     }
 
@@ -63,7 +62,7 @@ public class TenantServiceImpl implements TenantService {
      */
     @AuditLog(action = "tenant-open", description = "开通租户")
     @Override
-    public Long open(Long id) {
+    public String open(String id) {
         Tenant tenant = load(id);
         if (tenant.getStatus() != TenantStatus.PENDING) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
@@ -74,7 +73,7 @@ public class TenantServiceImpl implements TenantService {
 
     @AuditLog(action = "tenant-disable", description = "停用租户")
     @Override
-    public void disable(Long id) {
+    public void disable(String id) {
         Tenant tenant = load(id);
         if (tenant.getStatus() != TenantStatus.ENABLED) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
@@ -84,7 +83,7 @@ public class TenantServiceImpl implements TenantService {
 
     @AuditLog(action = "tenant-enable", description = "启用租户")
     @Override
-    public void enable(Long id) {
+    public void enable(String id) {
         Tenant tenant = load(id);
         if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDate.now())) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
@@ -100,12 +99,12 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.page(current, size, keyword);
     }
 
-    private Tenant load(Long id) {
+    private Tenant load(String id) {
         return tenantRepository.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_NOT_FOUND));
     }
 
-    private void publishPlatformNotice(String title, String content, Integer targetType, Long targetTenantId,
+    private void publishPlatformNotice(String title, String content, Integer targetType, String targetTenantId,
                                        String targetRoleCode) {
         try {
             noticePublishApi.publish(new NoticePublishRequest(title, content, targetType, targetTenantId,

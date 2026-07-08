@@ -50,14 +50,14 @@ class NoticeDispatchServiceTest {
         };
         NoticeDispatchService service = new NoticeDispatchService(api,
                 List.of(capturingSender(NoticeChannel.EMAIL, new AtomicInteger())), SYNC);
-        Notice notice = new Notice(7L, "t", "c", NoticeTargetType.TENANT.code(), 99L, "admin",
+        Notice notice = new Notice(7L, "t", "c", NoticeTargetType.TENANT.code(), "tenant-99", "admin",
                 NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
                 null, null, NoticeChannel.EMAIL.code());
 
         service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
         assertThat(captured[0].targetType()).isEqualTo(NoticeTargetType.TENANT.code());
-        assertThat(captured[0].targetTenantId()).isEqualTo(99L);
+        assertThat(captured[0].targetTenantId()).isEqualTo("tenant-99");
         assertThat(captured[0].targetRoleCode()).isEqualTo("admin");
     }
 

@@ -31,32 +31,32 @@ public class TenantController {
 
     @PreAuthorize("hasAuthority('system:tenant:open')")
     @PostMapping("/apply")
-    public ApiResponse<Long> apply(@RequestBody TenantApplyRequest request) {
+    public ApiResponse<String> apply(@RequestBody TenantApplyRequest request) {
         return ApiResponse.ok(tenantService.apply(request));
     }
 
     @PreAuthorize("hasAuthority('system:tenant:open')")
     @PostMapping("/{id}/open")
-    public ApiResponse<Long> open(@PathVariable Long id) {
+    public ApiResponse<String> open(@PathVariable String id) {
         return ApiResponse.ok(tenantService.open(id));
     }
 
     @PreAuthorize("hasAuthority('system:tenant:list')")
     @GetMapping("/{id}")
-    public ApiResponse<Tenant> get(@PathVariable Long id) {
+    public ApiResponse<Tenant> get(@PathVariable String id) {
         return ApiResponse.ok(tenantService.get(id));
     }
 
     @PreAuthorize("hasAuthority('system:tenant:toggle')")
     @PostMapping("/{id}/disable")
-    public ApiResponse<Void> disable(@PathVariable Long id) {
+    public ApiResponse<Void> disable(@PathVariable String id) {
         tenantService.disable(id);
         return ApiResponse.ok();
     }
 
     @PreAuthorize("hasAuthority('system:tenant:toggle')")
     @PostMapping("/{id}/enable")
-    public ApiResponse<Void> enable(@PathVariable Long id) {
+    public ApiResponse<Void> enable(@PathVariable String id) {
         tenantService.enable(id);
         return ApiResponse.ok();
     }
@@ -71,7 +71,7 @@ public class TenantController {
 
     @PreAuthorize("hasAuthority('system:audit:list')")
     @GetMapping("/{id}/audit")
-    public ApiResponse<PageResult<AuditLog>> audit(@PathVariable Long id,
+    public ApiResponse<PageResult<AuditLog>> audit(@PathVariable String id,
                                                    @RequestParam(defaultValue = "1") long current,
                                                    @RequestParam(defaultValue = "10") long size,
                                                    @RequestParam(required = false) String action,

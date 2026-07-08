@@ -16,8 +16,8 @@ public final class User extends BaseDataWithAdditionalInfo implements HasAdditio
     private final String username;
     private final String nickname;
     private final Integer status;
-    private final Long tenantId;
-    public User(Long id, String username, String nickname, Integer status, Long tenantId, JsonNode additionalInfo) {
+    private final String tenantId;
+    public User(Long id, String username, String nickname, Integer status, String tenantId, JsonNode additionalInfo) {
         super(additionalInfo);
         this.id = id;
         this.username = username;
@@ -30,7 +30,7 @@ public final class User extends BaseDataWithAdditionalInfo implements HasAdditio
     public String getUsername() { return username; }
     public String getNickname() { return nickname; }
     public Integer getStatus() { return status; }
-    public Long getTenantId() { return tenantId; }
+    public String getTenantId() { return tenantId; }
 
     @Override
     public boolean equals(Object o) {

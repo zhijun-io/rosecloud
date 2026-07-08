@@ -11,7 +11,7 @@ public record AuditLogEvent(
         String action,
         String description,
         String principal,
-        Long tenantId,
+        String tenantId,
         String target,
         long elapsedMillis,
         Instant timestamp,

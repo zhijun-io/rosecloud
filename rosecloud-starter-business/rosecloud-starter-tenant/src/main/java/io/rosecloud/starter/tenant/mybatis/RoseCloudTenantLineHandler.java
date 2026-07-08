@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import io.rosecloud.starter.tenant.core.TenantContext;
 import io.rosecloud.starter.tenant.core.TenantProperties;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
 
 /**
  * MyBatis-Plus tenant-line handler backed by {@link TenantContext}. Row-level
@@ -23,8 +23,8 @@ public class RoseCloudTenantLineHandler implements TenantLineHandler {
 
     @Override
     public Expression getTenantId() {
-        Long tenantId = TenantContext.getTenantId();
-        return tenantId == null ? null : new LongValue(tenantId);
+        String tenantId = TenantContext.getTenantId();
+        return tenantId == null ? null : new StringValue(tenantId);
     }
 
     @Override

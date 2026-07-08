@@ -40,7 +40,7 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal) {
+    public PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal) {
         Page<AuditLogEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
         if (tenantId != null) {

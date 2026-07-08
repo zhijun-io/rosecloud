@@ -12,7 +12,7 @@ public class LoginSessionEntity extends BaseEntity {
     private String jti;
     private Long userId;
     private String username;
-    private Long tenantId;
+    private String tenantId;
     private LocalDateTime loginTime;
     private LocalDateTime expireTime;
     private String ip;
@@ -25,8 +25,8 @@ public class LoginSessionEntity extends BaseEntity {
     public void setUserId(Long userId) { this.userId = userId; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public LocalDateTime getLoginTime() { return loginTime; }
     public void setLoginTime(LocalDateTime loginTime) { this.loginTime = loginTime; }
     public LocalDateTime getExpireTime() { return expireTime; }

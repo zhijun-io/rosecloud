@@ -162,7 +162,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public List<NoticeRecipient> findContacts(Integer targetType, Long tenantId, String roleCode) {
+    public List<NoticeRecipient> findContacts(Integer targetType, String tenantId, String roleCode) {
         int type = targetType == null ? NoticeTargetType.GLOBAL.code() : targetType;
         List<UserEntity> users;
         if (type == NoticeTargetType.TENANT.code()) {

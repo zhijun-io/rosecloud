@@ -13,7 +13,7 @@ public class TenantContextTaskDecorator implements TaskDecorator {
     @Override
     @NonNull
     public Runnable decorate(@NonNull Runnable runnable) {
-        Long tenantId = TenantContext.getTenantId();
+        String tenantId = TenantContext.getTenantId();
         return () -> {
             try {
                 if (tenantId != null) {

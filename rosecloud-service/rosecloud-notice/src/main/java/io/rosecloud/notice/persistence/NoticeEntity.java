@@ -12,7 +12,7 @@ public class NoticeEntity extends BaseEntity {
     private String title;
     private String content;
     private Integer targetType;
-    private Long targetTenantId;
+    private String targetTenantId;
     private String targetRoleCode;
     private Integer publishType;
     private LocalDateTime publishTime;
@@ -21,7 +21,7 @@ public class NoticeEntity extends BaseEntity {
     private Integer status;
     private Boolean needConfirm;
     private Long senderId;
-    private Long tenantId;
+    private String tenantId;
     private Integer channels;
 
     public String getTitle() { return title; }
@@ -30,8 +30,8 @@ public class NoticeEntity extends BaseEntity {
     public void setContent(String content) { this.content = content; }
     public Integer getTargetType() { return targetType; }
     public void setTargetType(Integer targetType) { this.targetType = targetType; }
-    public Long getTargetTenantId() { return targetTenantId; }
-    public void setTargetTenantId(Long targetTenantId) { this.targetTenantId = targetTenantId; }
+    public String getTargetTenantId() { return targetTenantId; }
+    public void setTargetTenantId(String targetTenantId) { this.targetTenantId = targetTenantId; }
     public String getTargetRoleCode() { return targetRoleCode; }
     public void setTargetRoleCode(String targetRoleCode) { this.targetRoleCode = targetRoleCode; }
     public Integer getPublishType() { return publishType; }
@@ -48,8 +48,8 @@ public class NoticeEntity extends BaseEntity {
     public void setNeedConfirm(Boolean needConfirm) { this.needConfirm = needConfirm; }
     public Long getSenderId() { return senderId; }
     public void setSenderId(Long senderId) { this.senderId = senderId; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public Integer getChannels() { return channels; }
     public void setChannels(Integer channels) { this.channels = channels; }
 }

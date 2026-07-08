@@ -9,16 +9,16 @@ package io.rosecloud.starter.tenant.core;
  */
 public final class TenantContext {
 
-    private static final ThreadLocal<Long> TENANT_ID = new ThreadLocal<>();
+    private static final ThreadLocal<String> TENANT_ID = new ThreadLocal<>();
 
     private TenantContext() {
     }
 
-    public static Long getTenantId() {
+    public static String getTenantId() {
         return TENANT_ID.get();
     }
 
-    public static void setTenantId(Long tenantId) {
+    public static void setTenantId(String tenantId) {
         TENANT_ID.set(tenantId);
     }
 

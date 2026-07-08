@@ -72,7 +72,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
-    public PageResult<Notice> myNotices(long current, long size, Long tenantId,
+    public PageResult<Notice> myNotices(long current, long size, String tenantId,
                                         Collection<String> roleCodes, LocalDateTime now) {
         Page<NoticeEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<NoticeEntity> wrapper = new LambdaQueryWrapper<>();
@@ -109,7 +109,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
-    public void upsertRead(Long noticeId, Long userId, Long tenantId, LocalDateTime now) {
+    public void upsertRead(Long noticeId, Long userId, String tenantId, LocalDateTime now) {
         NoticeRecordEntity existing = recordMapper.selectOne(new LambdaQueryWrapper<NoticeRecordEntity>()
                 .eq(NoticeRecordEntity::getNoticeId, noticeId)
                 .eq(NoticeRecordEntity::getUserId, userId));
@@ -128,7 +128,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
-    public void upsertConfirm(Long noticeId, Long userId, Long tenantId, LocalDateTime now) {
+    public void upsertConfirm(Long noticeId, Long userId, String tenantId, LocalDateTime now) {
         NoticeRecordEntity existing = recordMapper.selectOne(new LambdaQueryWrapper<NoticeRecordEntity>()
                 .eq(NoticeRecordEntity::getNoticeId, noticeId)
                 .eq(NoticeRecordEntity::getUserId, userId));

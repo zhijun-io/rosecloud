@@ -11,7 +11,7 @@ public class UserEntity extends BaseEntity {
     private String password;
     private String nickname;
     private Integer status;
-    private Long tenantId;
+    private String tenantId;
     private String email;
     private String phone;
     private String extra;
@@ -24,8 +24,8 @@ public class UserEntity extends BaseEntity {
     public void setNickname(String nickname) { this.nickname = nickname; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }

@@ -46,17 +46,16 @@ class TenantServiceImplTest {
 
     @Test
     void applyEncodesAdminPasswordAndSendsPendingNotice() {
-        TenantApplyRequest request = new TenantApplyRequest("Acme", "acme", "Owner", "13800000000",
+        TenantApplyRequest request = new TenantApplyRequest("Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", "admin", "plain");
-        when(tenantRepository.existsByCode("acme")).thenReturn(false);
         when(passwordEncoder.encode("plain")).thenReturn("hashed");
-        when(tenantRepository.insert(any(Tenant.class), any(), any())).thenReturn(99L);
+        when(tenantRepository.insert(any(Tenant.class), any(), any())).thenReturn("tenant-99");
         when(noticePublishApi.publish(any(NoticePublishRequest.class)))
                 .thenReturn(ApiResponse.ok(1L));
 
-        Long id = service().apply(request);
+        String id = service().apply(request);
 
-        assertEquals(99L, id);
+        assertEquals("tenant-99", id);
         ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
         verify(tenantRepository).insert(tenantCaptor.capture(), any(), any());
         assertEquals(TenantStatus.PENDING, tenantCaptor.getValue().getStatus());
@@ -69,11 +68,11 @@ class TenantServiceImplTest {
 
     @Test
     void enableRejectsExpiredTenant() {
-        Tenant tenant = new Tenant(7L, "Acme", "acme", TenantStatus.DISABLED,
+        Tenant tenant = new Tenant("tenant-7", "Acme", TenantStatus.DISABLED,
                 "Owner", "13800000000", LocalDate.now().minusDays(1), "remark", null);
-        when(tenantRepository.findById(7L)).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("tenant-7")).thenReturn(Optional.of(tenant));
 
-        BizException ex = assertThrows(BizException.class, () -> service().enable(7L));
+        BizException ex = assertThrows(BizException.class, () -> service().enable("tenant-7"));
 
         assertEquals("system.tenant_status_invalid", ex.getErrorCode().code());
         verify(tenantRepository, never()).updateStatus(any(), any());
@@ -81,10 +80,10 @@ class TenantServiceImplTest {
 
     @Test
     void getReturnsRepositoryValue() {
-        Tenant tenant = new Tenant(8L, "Beta", "beta", TenantStatus.ENABLED,
+        Tenant tenant = new Tenant("tenant-8", "Beta", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(1), "remark", null);
-        when(tenantRepository.findById(8L)).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("tenant-8")).thenReturn(Optional.of(tenant));
 
-        assertEquals(tenant, service().get(8L));
+        assertEquals(tenant, service().get("tenant-8"));
     }
 }

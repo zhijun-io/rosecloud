@@ -59,7 +59,7 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
     }
 
     @Override
-    public PageResult<LoginSession> onlinePage(long current, long size, Long tenantId, LocalDateTime now) {
+    public PageResult<LoginSession> onlinePage(long current, long size, String tenantId, LocalDateTime now) {
         Page<LoginSessionEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<LoginSessionEntity> wrapper = new LambdaQueryWrapper<LoginSessionEntity>()
                 .eq(LoginSessionEntity::getStatus, LoginSessionStatus.ONLINE.code())

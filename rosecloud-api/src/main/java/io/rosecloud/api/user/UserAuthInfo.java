@@ -9,7 +9,7 @@ import java.util.List;
  * is reachable only via direct service-to-service calls).
  */
 public record UserAuthInfo(Long userId, String username, String passwordHash,
-                           Integer status, Long tenantId, List<String> roles, List<String> perms) {
+                           Integer status, String tenantId, List<String> roles, List<String> perms) {
 
     public UserAuthInfo {
         perms = perms == null ? List.of() : List.copyOf(perms);

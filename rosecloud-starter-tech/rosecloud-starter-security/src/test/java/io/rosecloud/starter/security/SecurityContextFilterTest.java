@@ -37,12 +37,12 @@ class SecurityContextFilterTest {
             public ApiResponse<UserAuthInfo> getAuthInfo(String username) {
                 // getAuthInfo returns its own perms, but the filter must use the
                 // perms embedded in the JWT (see tokenUser below), not these.
-                return ApiResponse.ok(new UserAuthInfo(42L, username, "ignored", 1, 99L,
+                return ApiResponse.ok(new UserAuthInfo(42L, username, "ignored", 1, "tenant-99",
                         List.of("tenant-admin"), List.of("system:role:perm")));
             }
         });
 
-        CurrentUser tokenUser = new CurrentUser(42L, "token-user", 99L,
+        CurrentUser tokenUser = new CurrentUser(42L, "token-user", "tenant-99",
                 List.of("tenant-admin"), List.of("system:user:add", "system:user:edit"));
         String token = codec.issueAccessToken(tokenUser);
 
@@ -67,7 +67,7 @@ class SecurityContextFilterTest {
         assertThat(user).isNotNull();
         assertThat(user.userId()).isEqualTo(42L);
         assertThat(user.username()).isEqualTo("token-user");
-        assertThat(user.tenantId()).isEqualTo(99L);
+        assertThat(user.tenantId()).isEqualTo("tenant-99");
         assertThat(user.roles()).containsExactly("tenant-admin");
         // Perms come from the JWT, not from getAuthInfo (which returned system:role:perm).
         assertThat(user.perms()).containsExactly("system:user:add", "system:user:edit");

@@ -19,7 +19,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     private final String title;
     private final String content;
     private final Integer targetType;
-    private final Long targetTenantId;
+    private final String targetTenantId;
     private final String targetRoleCode;
     private final Integer publishType;
     private final LocalDateTime publishTime;
@@ -28,13 +28,13 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     private final Integer status;
     private final Boolean needConfirm;
     private final Long senderId;
-    private final Long tenantId;
+    private final String tenantId;
     private final Integer channels;
 
-    public Notice(Long id, String title, String content, Integer targetType, Long targetTenantId,
+    public Notice(Long id, String title, String content, Integer targetType, String targetTenantId,
                   String targetRoleCode, Integer publishType, LocalDateTime publishTime,
                   LocalDateTime effectiveTime, LocalDateTime expireTime, Integer status,
-                  Boolean needConfirm, Long senderId, Long tenantId, Integer channels) {
+                  Boolean needConfirm, Long senderId, String tenantId, Integer channels) {
         this.id = id;
         this.title = title;
         this.content = content;
@@ -56,7 +56,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     public String getTitle() { return title; }
     public String getContent() { return content; }
     public Integer getTargetType() { return targetType; }
-    public Long getTargetTenantId() { return targetTenantId; }
+    public String getTargetTenantId() { return targetTenantId; }
     public String getTargetRoleCode() { return targetRoleCode; }
     public Integer getPublishType() { return publishType; }
     public LocalDateTime getPublishTime() { return publishTime; }
@@ -65,7 +65,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     public Integer getStatus() { return status; }
     public Boolean getNeedConfirm() { return needConfirm; }
     public Long getSenderId() { return senderId; }
-    public Long getTenantId() { return tenantId; }
+    public String getTenantId() { return tenantId; }
     public Integer getChannels() { return channels; }
 
     /** Copy with the persisted id set (for dispatch after insert). */

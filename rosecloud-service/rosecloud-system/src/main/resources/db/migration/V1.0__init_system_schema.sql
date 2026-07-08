@@ -1,8 +1,7 @@
 -- RoseCloud system: tenant table. Apply manually (or via a migration tool).
 CREATE TABLE IF NOT EXISTS sys_tenant (
-  id            BIGINT       NOT NULL              COMMENT '主键',
+  id            VARCHAR(64)  NOT NULL              COMMENT '主键/租户标识',
   name          VARCHAR(128) NOT NULL              COMMENT '租户名',
-  code          VARCHAR(64)  NOT NULL              COMMENT '租户编码',
   status        TINYINT      NOT NULL DEFAULT 0    COMMENT '状态:0待开通 1启用 2停用',
   contact_user  VARCHAR(64)  DEFAULT NULL          COMMENT '联系人',
   contact_phone VARCHAR(32)  DEFAULT NULL          COMMENT '联系电话',
@@ -15,8 +14,7 @@ CREATE TABLE IF NOT EXISTS sys_tenant (
   create_by     BIGINT       DEFAULT NULL          COMMENT '创建人',
   update_by     BIGINT       DEFAULT NULL          COMMENT '更新人',
   deleted       TINYINT      NOT NULL DEFAULT 0    COMMENT '逻辑删除',
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_code (code)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户表';
 
 -- User / role tables. The user store is owned by the system service; the auth
@@ -28,7 +26,7 @@ CREATE TABLE IF NOT EXISTS sys_user (
   password    VARCHAR(128) NOT NULL                   COMMENT '密码(BCrypt)',
   nickname    VARCHAR(64)  DEFAULT NULL               COMMENT '昵称',
   status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
-  tenant_id   BIGINT       DEFAULT NULL               COMMENT '租户ID(平台账号为空)',
+  tenant_id   VARCHAR(64)  DEFAULT NULL               COMMENT '租户ID(平台账号为空)',
   email       VARCHAR(128) DEFAULT NULL               COMMENT '邮箱',
   phone       VARCHAR(32)  DEFAULT NULL               COMMENT '手机号',
   create_time DATETIME     DEFAULT NULL               COMMENT '创建时间',
@@ -100,7 +98,7 @@ CREATE TABLE IF NOT EXISTS sys_audit_log (
   action         VARCHAR(64)  NOT NULL                   COMMENT '操作动作',
   description    VARCHAR(255) DEFAULT NULL               COMMENT '描述',
   principal      VARCHAR(64)  DEFAULT NULL               COMMENT '操作人',
-  tenant_id      BIGINT       DEFAULT NULL               COMMENT '租户ID',
+  tenant_id      VARCHAR(64)  DEFAULT NULL               COMMENT '租户ID',
   target         VARCHAR(128) DEFAULT NULL               COMMENT '目标方法',
   elapsed_millis BIGINT       DEFAULT NULL               COMMENT '耗时(毫秒)',
   success        TINYINT      NOT NULL                   COMMENT '是否成功:1是 0否',
@@ -190,7 +188,7 @@ CREATE TABLE IF NOT EXISTS sys_login_session (
   jti         VARCHAR(64)  NOT NULL                   COMMENT '访问令牌ID',
   user_id     BIGINT       DEFAULT NULL               COMMENT '用户ID',
   username    VARCHAR(64)  DEFAULT NULL               COMMENT '用户名',
-  tenant_id   BIGINT       DEFAULT NULL               COMMENT '租户ID',
+  tenant_id   VARCHAR(64)  DEFAULT NULL               COMMENT '租户ID',
   login_time  DATETIME     DEFAULT NULL               COMMENT '登录时间',
   expire_time DATETIME     DEFAULT NULL               COMMENT '令牌过期时间',
   ip          VARCHAR(64)  DEFAULT NULL               COMMENT '登录IP',

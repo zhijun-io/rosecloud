@@ -56,7 +56,7 @@ public class NoticeServiceImpl implements NoticeService {
         }
         CurrentUser sender = UserContext.get();
         Long senderId = sender == null ? null : sender.userId();
-        Long senderTenantId = sender == null ? null : sender.tenantId();
+        String senderTenantId = sender == null ? null : sender.tenantId();
         int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), publishType, publishTime,

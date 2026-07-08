@@ -32,7 +32,7 @@ public class AuditLogController {
     @GetMapping
     public ApiResponse<PageResult<AuditLog>> page(@RequestParam(defaultValue = "1") long current,
                                                    @RequestParam(defaultValue = "10") long size,
-                                                   @RequestParam(required = false) Long tenantId,
+                                                   @RequestParam(required = false) String tenantId,
                                                    @RequestParam(required = false) String action,
                                                    @RequestParam(required = false) String principal) {
         return ApiResponse.ok(auditLogService.page(current, size, tenantId, action, principal));

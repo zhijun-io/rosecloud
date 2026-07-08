@@ -25,12 +25,12 @@ public interface NoticeRepository {
 
     Optional<Notice> findById(Long id);
 
-    PageResult<Notice> myNotices(long current, long size, Long tenantId,
+    PageResult<Notice> myNotices(long current, long size, String tenantId,
                                  Collection<String> roleCodes, LocalDateTime now);
 
     List<NoticeRecord> findRecords(Collection<Long> noticeIds, Long userId);
 
-    void upsertRead(Long noticeId, Long userId, Long tenantId, LocalDateTime now);
+    void upsertRead(Long noticeId, Long userId, String tenantId, LocalDateTime now);
 
-    void upsertConfirm(Long noticeId, Long userId, Long tenantId, LocalDateTime now);
+    void upsertConfirm(Long noticeId, Long userId, String tenantId, LocalDateTime now);
 }

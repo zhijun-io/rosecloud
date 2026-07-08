@@ -16,11 +16,11 @@ public final class NoticeRecord implements HasId, HasUserId, HasTenantId {
     private final Long id;
     private final Long noticeId;
     private final Long userId;
-    private final Long tenantId;
+    private final String tenantId;
     private final LocalDateTime readTime;
     private final LocalDateTime confirmTime;
 
-    public NoticeRecord(Long id, Long noticeId, Long userId, Long tenantId,
+    public NoticeRecord(Long id, Long noticeId, Long userId, String tenantId,
                         LocalDateTime readTime, LocalDateTime confirmTime) {
         this.id = id;
         this.noticeId = noticeId;
@@ -33,7 +33,7 @@ public final class NoticeRecord implements HasId, HasUserId, HasTenantId {
     public Long getId() { return id; }
     public Long getNoticeId() { return noticeId; }
     public Long getUserId() { return userId; }
-    public Long getTenantId() { return tenantId; }
+    public String getTenantId() { return tenantId; }
     public LocalDateTime getReadTime() { return readTime; }
     public LocalDateTime getConfirmTime() { return confirmTime; }
 

@@ -29,19 +29,13 @@ public class TenantRepositoryImpl implements TenantRepository {
     }
 
     @Override
-    public Optional<Tenant> findById(Long id) {
+    public Optional<Tenant> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
     }
 
     @Override
-    public boolean existsByCode(String code) {
-        return mapper.exists(new LambdaQueryWrapper<TenantEntity>().eq(TenantEntity::getCode, code));
-    }
-
-    @Override
-    public Long insert(Tenant tenant, String adminUsername, String adminPasswordHash) {
+    public String insert(Tenant tenant, String adminUsername, String adminPasswordHash) {
         TenantEntity po = toEntity(tenant);
-        po.setId(null);
         po.setAdminUsername(adminUsername);
         po.setAdminPassword(adminPasswordHash);
         mapper.insert(po);
@@ -49,20 +43,20 @@ public class TenantRepositoryImpl implements TenantRepository {
     }
 
     @Override
-    public Optional<TenantAdminCredentials> findAdminCredentials(Long id) {
+    public Optional<TenantAdminCredentials> findAdminCredentials(String id) {
         return Optional.ofNullable(mapper.selectById(id))
                 .map(po -> new TenantAdminCredentials(po.getAdminUsername(), po.getAdminPassword()));
     }
 
     @Override
-    public void clearAdminPassword(Long id) {
+    public void clearAdminPassword(String id) {
         mapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
                 .eq(TenantEntity::getId, id)
                 .set(TenantEntity::getAdminPassword, null));
     }
 
     @Override
-    public void updateStatus(Long id, TenantStatus status) {
+    public void updateStatus(String id, TenantStatus status) {
         mapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
                 .eq(TenantEntity::getId, id)
                 .set(TenantEntity::getStatus, status.code()));
@@ -73,7 +67,7 @@ public class TenantRepositoryImpl implements TenantRepository {
         Page<TenantEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(TenantEntity::getName, keyword).or().like(TenantEntity::getCode, keyword);
+            wrapper.like(TenantEntity::getName, keyword);
         }
         wrapper.orderByDesc(TenantEntity::getCreateTime);
         IPage<TenantEntity> result = mapper.selectPage(page, wrapper);
@@ -82,7 +76,7 @@ public class TenantRepositoryImpl implements TenantRepository {
     }
 
     private Tenant toDomain(TenantEntity po) {
-        return new Tenant(po.getId(), po.getName(), po.getCode(),
+        return new Tenant(po.getId(), po.getName(),
                 resolveStatus(po.getStatus(), po.getExpireTime()), po.getContactUser(), po.getContactPhone(),
                 po.getExpireTime(), po.getRemark(), readJson(po.getExtra()));
     }
@@ -101,7 +95,6 @@ public class TenantRepositoryImpl implements TenantRepository {
         TenantEntity po = new TenantEntity();
         po.setId(t.getId());
         po.setName(t.getName());
-        po.setCode(t.getCode());
         po.setStatus(t.getStatus() == null ? null : t.getStatus().code());
         po.setContactUser(t.getContactUser());
         po.setContactPhone(t.getContactPhone());

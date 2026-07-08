@@ -10,17 +10,15 @@ import java.util.Optional;
  */
 public interface TenantRepository {
 
-    Optional<Tenant> findById(Long id);
+    Optional<Tenant> findById(String id);
 
     PageResult<Tenant> page(long current, long size, String keyword);
 
-    boolean existsByCode(String code);
+    String insert(Tenant tenant, String adminUsername, String adminPasswordHash);
 
-    Long insert(Tenant tenant, String adminUsername, String adminPasswordHash);
+    Optional<TenantAdminCredentials> findAdminCredentials(String id);
 
-    Optional<TenantAdminCredentials> findAdminCredentials(Long id);
+    void clearAdminPassword(String id);
 
-    void clearAdminPassword(Long id);
-
-    void updateStatus(Long id, TenantStatus status);
+    void updateStatus(String id, TenantStatus status);
 }

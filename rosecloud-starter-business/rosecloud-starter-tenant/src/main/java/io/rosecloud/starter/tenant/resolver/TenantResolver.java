@@ -11,5 +11,5 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface TenantResolver {
 
     /** @return the resolved tenant id, or {@code null} if none could be determined */
-    Long resolve(HttpServletRequest request);
+    String resolve(HttpServletRequest request);
 }

@@ -7,5 +7,5 @@ public interface AuditLogService {
 
     AuditLog get(Long id);
 
-    PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal);
+    PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal);
 }
