@@ -101,7 +101,7 @@ jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/dept
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/depts/tree")" >/dev/null
 api "$admin_token" DELETE "$BASE_URL/api/system/depts/$dept_id" >/dev/null
 
-echo "dict / config"
+echo "dict"
 dict_type_id=$(api "$admin_token" POST "$BASE_URL/api/system/dict-types" code="dt$now" name="dt$now" status=1 remark=foo | jq -r '.data')
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/dict-types/$dict_type_id")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/dict-types?current=1&size=10")" >/dev/null
@@ -113,12 +113,6 @@ jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/dict
 jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/dict-data/$dict_data_id" dictCode="dt$now" label=foo2 value=bar2 sort=2 status=0 remark=bye)" >/dev/null
 api "$admin_token" DELETE "$BASE_URL/api/system/dict-data/$dict_data_id" >/dev/null
 api "$admin_token" DELETE "$BASE_URL/api/system/dict-types/$dict_type_id" >/dev/null
-config_id=$(api "$admin_token" POST "$BASE_URL/api/system/configs" configKey="ck$now" configValue=vv description=desc | jq -r '.data')
-jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/configs/$config_id")" >/dev/null
-jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/configs/keys/ck$now")" >/dev/null
-jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/configs?current=1&size=10")" >/dev/null
-jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/configs/$config_id" configKey="ck$now" configValue=vv2 description=desc2)" >/dev/null
-api "$admin_token" DELETE "$BASE_URL/api/system/configs/$config_id" >/dev/null
 
 echo "tenant"
 tenant_id=$(api "$admin_token" POST "$BASE_URL/api/system/tenants/apply" name="Tenant $now" code="t$now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="tenant$now" adminPassword=tp123456 | jq -r '.data')

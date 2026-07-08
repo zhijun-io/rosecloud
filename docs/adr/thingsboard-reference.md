@@ -4,7 +4,7 @@
 >
 > 对照基准：RoseCloud 现状见 `rosecloud-starter-tech/`、`rosecloud-starter-business/`、`rosecloud-service/`（auth/gateway/system/notice/monolith）。
 >
-> 路线图基线（`docs/01-requirements.md` §4.12、§5.2、§5.4、§5.5）：OAuth2 与 MFA 属 P1，**默认关闭但必须预留**；完整 OAuth2 Authorization Server 与全量 MFA 不在第一阶段做满。
+> 路线图基线（`docs/prd/product-requirements.md` §4.12、§5.2、§5.4、§5.5）：OAuth2 与 MFA 属 P1，**默认关闭但必须预留**；完整 OAuth2 Authorization Server 与全量 MFA 不在第一阶段做满。
 >
 > 用途：认证体系（JWT/OAuth2/MFA）做"可借鉴分析"；系统/用户/通知等做"功能实现参考清单"。
 
@@ -37,7 +37,8 @@
   - B15 设备管理（Device/DeviceProfile）
   - B16 资产管理（Asset/AssetProfile）
   - B17 客户与临时令牌登录（新方向借鉴）
-- Part C 风险取舍与结论
+- Part C 配置管理设计
+- Part D 风险取舍与结论
 
 ---
 
@@ -438,7 +439,110 @@ AssetProfile 字段：`name`、`description`、`image`、`isDefault`、`defaultR
 
 > 借鉴价值：Customer 实体 + token-access 思路 + 开关门控可借鉴；"自助临时令牌（短 TTL / 可吊销 / scope 受限）"为 RoseCloud 自研扩展，ThingsBoard 无现成方案。
 
-# Part C 风险取舍与结论
+---
+
+# Part C 配置管理设计
+
+ThingsBoard 的配置管理不是一个统一的通用表，而是按配置域拆成多种模型：平台管理设置、租户画像、用户偏好、通知设置、白标设置、版本控制设置。它的特点是：**先定配置归属，再定数据形态，再定继承规则**。这比“所有配置都装进一张表”更接近真实业务边界。citeturn0search1turn0search4turn0search11turn0search15
+
+## C1 平台级设置：`AdminSettings`
+
+`AdminSettings` 是平台管理端最典型的配置模型。源码里它实现了 `HasTenantId`，字段只有 `tenantId`、`key` 和 `jsonValue`，其中 `key` 用来区分配置域，例如 `general`、`mail`、`sms`，`jsonValue` 才是具体配置内容。官方 API 直接提供 `getAdminSettings` / `saveAdminSettings`，系统初始化过程也会预置默认的 general、mail、connectivity 等设置。citeturn0search11
+
+这类模型的设计要点是：
+
+- 用 `key` 切配置域
+- 用 `JSON` 承载值
+- 不把所有平台配置合成一个超大对象
+
+## C2 租户画像：`TenantProfile`
+
+`TenantProfile` 不是普通键值配置，而是一个租户画像对象。它包含普通字段如 `name`、`description`、`default`、`isolatedTbRuleEngine`，同时还包含 `profileData`。源码里 `profileData` 会被序列化到 `profileDataBytes`，其内部又包含 `TenantProfileConfiguration`、队列配置和配额/限流等内容。官方文档也明确说明 Tenant profile 用于资源限制、配额和租户运行行为控制。citeturn0search1turn0search11
+
+这说明 ThingsBoard 对租户级配置的处理方式更像：
+
+- 一份租户能力画像
+- 按对象整体读写
+- 内部可以有复杂结构
+
+## C3 用户偏好：`UserSettings`
+
+`UserSettings` 只保留 `userId`、`type` 和 `settings` 三个字段，其中 `settings` 是 `JsonNode`。用户设置 API 也是按类型组织的，前端常见类型包括 `general`、`quick_links`、`doc_links`、`dashboards`。这表明 ThingsBoard 的用户配置是“按类型分组的个人偏好”，不是平台规则，也不是租户画像。citeturn0search11
+
+这个设计的好处是：
+
+- 用户偏好可以按模块分组
+- 结构灵活，适合 JSON
+- 不需要为每个偏好单独建列
+
+## C4 通知配置：`NotificationSettings` 与 `UserNotificationSettings`
+
+ThingsBoard 把通知配置分成两层：
+
+- `NotificationSettings`
+  - tenant 级通知通道配置
+  - 使用 `Map<NotificationDeliveryMethod, NotificationDeliveryMethodConfig>`
+- `UserNotificationSettings`
+  - user 级通知偏好
+  - 使用 `Map<NotificationType, NotificationPref>`
+
+`UserNotificationSettings` 还提供默认启用逻辑：没有配置时默认允许，明确关闭才拒绝；并限制可用投递方式来自平台用户通知目标支持的集合。通知控制器分别暴露 tenant 级和 user 级接口。citeturn0search11
+
+这说明 ThingsBoard 对通知配置的分层很明确：
+
+- tenant 配“能用哪些通道”
+- user 配“我想怎么收”
+
+## C5 白标、菜单、翻译：层级覆盖配置
+
+ThingsBoard 的白标能力不是一个单一配置对象，而是分散在品牌、颜色、custom menu 和 custom translations 等多个功能里。官方文档明确说明白标可以自定义公司名、Logo、颜色、菜单和翻译；Edge 文档还说明这些设置遵循所有权层级，system admin 的设置可被 tenant 覆盖，再被 customer 覆盖。Custom translation 还提供了 JSON 编辑器，用来覆盖特定翻译键。citeturn0search4turn0search15turn0search22
+
+这类能力体现的是：
+
+- 先分清归属层级
+- 再为不同能力选择不同 payload
+- JSON 只负责承载值，不负责表达规则
+
+## C6 版本控制配置：`RepositorySettings`
+
+`RepositorySettings` 是一个强类型配置对象，字段直接表达仓库地址、认证方式、用户名、密码、私钥、默认分支、只读、merge commit 可见性和 localOnly 等语义。它被版本控制相关控制器和服务直接使用，不需要再套一层通用 JSON。citeturn0search15
+
+这说明 ThingsBoard 在“字段稳定、语义明确”的配置场景里，倾向于用强类型对象，而不是一律 JSON。
+
+## C7 配置管理的总体模式
+
+ThingsBoard 并不是把所有配置归到一类，而是三种模式并存：
+
+1. **键 + JSON payload**
+   - 适合 `AdminSettings`
+   - 适合少量平台/租户/用户设置域
+2. **强类型配置对象**
+   - 适合 `TenantProfile`、`RepositorySettings`
+   - 适合字段语义稳定、结构较大的配置域
+3. **层级偏好映射**
+   - 适合 `UserSettings`、`UserNotificationSettings`
+   - 适合按类型/枚举分组的用户偏好
+
+换句话说，ThingsBoard 的配置管理不是“统一表”，而是“统一治理原则 + 多种承载形式”。
+
+## C8 对 RoseCloud 的借鉴
+
+对 RoseCloud 来说，ThingsBoard 最值得借鉴的不是表结构，而是边界感：
+
+- 平台级管理配置可以采用 `key + JSON`
+- 租户画像类配置应该单独建模
+- 用户偏好适合 `type + JSON`
+- 通知配置应拆成 tenant 级通道配置和 user 级偏好配置
+- 白标、菜单、翻译这类功能不要塞进通用配置仓库
+
+如果 RoseCloud 未来重做配置模型，ThingsBoard 给出的启发是：
+
+- 先分配置域，再决定字段结构
+- 能强类型就强类型
+- 需要灵活 payload 时再用 JSON
+- 不要把 JSON 当成模型本体
+
+# Part D 风险取舍与结论
 
 ## 风险与取舍
 - **默认关闭**：MFA/OAuth2 客户端均以 `rosecloud.{name}.enabled=true` 门控，关闭时零装配，符合 §5.4；不可让默认路径回归。

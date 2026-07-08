@@ -12,7 +12,7 @@ RoseCloud 是一个企业后台 + SaaS 平台底座，基于 Spring Boot 4.1、S
 - 运行形态分为单体 `rosecloud-monolith` 和微服务 `rosecloud-service/*`
 - 共享技术模块分为 `rosecloud-common/`、`rosecloud-api/`、`rosecloud-starter-tech/`、`rosecloud-starter-business/`
 
-设计原则是轻量分层、面向接口、不做过度抽象。更完整的需求和技术背景见 `docs/01-requirements.md`、`docs/02-technical-requirements.md`。
+设计原则是轻量分层、面向接口、不做过度抽象。更完整的需求和技术背景见 `docs/prd/product-requirements.md`、`docs/prd/technical-requirements.md`。
 
 ## Structure
 

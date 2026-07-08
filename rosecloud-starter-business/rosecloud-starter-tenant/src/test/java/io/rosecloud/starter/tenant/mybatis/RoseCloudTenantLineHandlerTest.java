@@ -28,7 +28,6 @@ class RoseCloudTenantLineHandlerTest {
                 "sys_role_menu",
                 "sys_audit_log",
                 "sys_login_log",
-                "sys_config",
                 "sys_dict_type",
                 "sys_dict_data",
                 "sys_dept",

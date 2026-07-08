@@ -14,8 +14,6 @@ public enum SystemErrorCode implements ErrorCode {
     MENU_NOT_FOUND("菜单不存在"),
     MENU_HAS_CHILDREN("存在子菜单，无法删除"),
     ROLE_NOT_FOUND("角色不存在"),
-    CONFIG_KEY_EXISTS("参数键已存在"),
-    CONFIG_NOT_FOUND("参数配置不存在"),
     TASK_NOT_FOUND("任务不存在"),
     TASK_HANDLER_NOT_FOUND("未找到任务处理器"),
     TASK_STATUS_INVALID("任务当前状态不允许该操作"),
