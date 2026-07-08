@@ -12,6 +12,8 @@ public interface TenantRepository {
 
     Optional<Tenant> findById(Long id);
 
+    PageResult<Tenant> page(long current, long size, String keyword);
+
     boolean existsByCode(String code);
 
     Long insert(Tenant tenant, String adminUsername, String adminPasswordHash);
@@ -21,6 +23,4 @@ public interface TenantRepository {
     void clearAdminPassword(Long id);
 
     void updateStatus(Long id, TenantStatus status);
-
-    PageResult<Tenant> page(long current, long size, String keyword);
 }

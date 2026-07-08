@@ -3,7 +3,9 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantApplyRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TenantController {
 
     private final TenantService tenantService;
+    private final AuditLogService auditLogService;
 
-    public TenantController(TenantService tenantService) {
+    public TenantController(TenantService tenantService, AuditLogService auditLogService) {
         this.tenantService = tenantService;
+        this.auditLogService = auditLogService;
     }
 
     @PreAuthorize("hasAuthority('system:tenant:open')")
@@ -35,6 +39,12 @@ public class TenantController {
     @PostMapping("/{id}/open")
     public ApiResponse<Long> open(@PathVariable Long id) {
         return ApiResponse.ok(tenantService.open(id));
+    }
+
+    @PreAuthorize("hasAuthority('system:tenant:list')")
+    @GetMapping("/{id}")
+    public ApiResponse<Tenant> get(@PathVariable Long id) {
+        return ApiResponse.ok(tenantService.get(id));
     }
 
     @PreAuthorize("hasAuthority('system:tenant:toggle')")
@@ -57,5 +67,15 @@ public class TenantController {
                                                  @RequestParam(defaultValue = "10") long size,
                                                  @RequestParam(required = false) String keyword) {
         return ApiResponse.ok(tenantService.page(current, size, keyword));
+    }
+
+    @PreAuthorize("hasAuthority('system:audit:list')")
+    @GetMapping("/{id}/audit")
+    public ApiResponse<PageResult<AuditLog>> audit(@PathVariable Long id,
+                                                   @RequestParam(defaultValue = "1") long current,
+                                                   @RequestParam(defaultValue = "10") long size,
+                                                   @RequestParam(required = false) String action,
+                                                   @RequestParam(required = false) String principal) {
+        return ApiResponse.ok(auditLogService.page(current, size, id, action, principal));
     }
 }

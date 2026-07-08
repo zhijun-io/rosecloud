@@ -78,8 +78,18 @@ public class TenantRepositoryImpl implements TenantRepository {
 
     private Tenant toDomain(TenantPO po) {
         return new Tenant(po.getId(), po.getName(), po.getCode(),
-                TenantStatus.of(po.getStatus()), po.getContactUser(), po.getContactPhone(),
+                resolveStatus(po.getStatus(), po.getExpireTime()), po.getContactUser(), po.getContactPhone(),
                 po.getExpireTime(), po.getRemark());
+    }
+
+    private TenantStatus resolveStatus(Integer status, java.time.LocalDate expireTime) {
+        if (status == null) {
+            return null;
+        }
+        if (expireTime != null && expireTime.isBefore(java.time.LocalDate.now())) {
+            return TenantStatus.EXPIRED;
+        }
+        return TenantStatus.of(status);
     }
 
     private TenantPO toPO(Tenant t) {

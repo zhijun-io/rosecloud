@@ -9,6 +9,7 @@ import io.rosecloud.system.domain.AuditLogRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class AuditLogRepositoryImpl implements AuditLogRepository {
@@ -34,9 +35,17 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, String action, String principal) {
+    public Optional<AuditLog> findById(Long id) {
+        return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
+    }
+
+    @Override
+    public PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal) {
         Page<AuditLogPO> page = new Page<>(current, size);
         LambdaQueryWrapper<AuditLogPO> wrapper = new LambdaQueryWrapper<>();
+        if (tenantId != null) {
+            wrapper.eq(AuditLogPO::getTenantId, tenantId);
+        }
         if (action != null && !action.isBlank()) {
             wrapper.eq(AuditLogPO::getAction, action);
         }

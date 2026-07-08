@@ -5,7 +5,8 @@ public enum TenantStatus {
 
     PENDING(0),
     ENABLED(1),
-    DISABLED(2);
+    DISABLED(2),
+    EXPIRED(3);
 
     private final int code;
 

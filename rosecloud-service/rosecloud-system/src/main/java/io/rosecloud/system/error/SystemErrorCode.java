@@ -24,6 +24,7 @@ public enum SystemErrorCode implements ErrorCode {
     DEPT_NOT_FOUND("部门不存在"),
     DEPT_HAS_CHILDREN("存在子部门，无法删除"),
     SESSION_NOT_FOUND("会话不存在"),
+    AUDIT_LOG_NOT_FOUND("审计日志不存在"),
     SETTING_KEY_EXISTS("配置键已存在"),
     SETTING_KEY_NOT_FOUND("配置键不存在"),
     SYSTEM_SETTING_NOT_FOUND("系统配置不存在"),

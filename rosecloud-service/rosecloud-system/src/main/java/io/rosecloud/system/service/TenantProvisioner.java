@@ -1,6 +1,9 @@
 package io.rosecloud.system.service;
 
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.api.notice.NoticePublishApi;
+import io.rosecloud.api.notice.NoticePublishRequest;
+import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.domain.RoleRepository;
 import io.rosecloud.system.domain.TenantAdminCredentials;
@@ -11,6 +14,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -28,12 +32,14 @@ public class TenantProvisioner {
     private final TenantRepository tenantRepository;
     private final RoleRepository roleRepository;
     private final UserService userService;
+    private final NoticePublishApi noticePublishApi;
 
     public TenantProvisioner(TenantRepository tenantRepository, RoleRepository roleRepository,
-                             UserService userService) {
+                             UserService userService, NoticePublishApi noticePublishApi) {
         this.tenantRepository = tenantRepository;
         this.roleRepository = roleRepository;
         this.userService = userService;
+        this.noticePublishApi = noticePublishApi;
     }
 
     @Async("tenantProvisioningExecutor")
@@ -43,6 +49,7 @@ public class TenantProvisioner {
         if (creds == null || creds.username() == null || creds.username().isBlank()
                 || creds.passwordHash() == null) {
             tenantRepository.updateStatus(tenantId, TenantStatus.ENABLED);
+            publishTenantNotice(tenantId, "租户已开通", "租户已完成开通。");
             return;
         }
         Role tenantAdminRole = roleRepository.findByCode(TENANT_ADMIN_ROLE_CODE)
@@ -52,5 +59,15 @@ public class TenantProvisioner {
         userService.assignRoles(userId, List.of(tenantAdminRole.id()));
         tenantRepository.clearAdminPassword(tenantId);
         tenantRepository.updateStatus(tenantId, TenantStatus.ENABLED);
+        publishTenantNotice(tenantId, "租户已开通", "租户已完成开通，首个管理员账号已初始化。");
+    }
+
+    private void publishTenantNotice(Long tenantId, String title, String content) {
+        try {
+            noticePublishApi.publish(new NoticePublishRequest(title, content, NoticeTargetType.TENANT.code(),
+                    tenantId, null, null, LocalDateTime.now(), null, null, false, null));
+        } catch (Exception ignored) {
+            // Best-effort: provisioning must not fail because notice delivery is unavailable.
+        }
     }
 }

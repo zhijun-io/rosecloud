@@ -10,5 +10,7 @@ public interface AuditLogRepository {
 
     void insert(AuditLog log);
 
-    PageResult<AuditLog> page(long current, long size, String action, String principal);
+    java.util.Optional<AuditLog> findById(Long id);
+
+    PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal);
 }

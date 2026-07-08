@@ -1,0 +1,9 @@
+package io.rosecloud.api.notice;
+
+import java.time.LocalDateTime;
+
+public record NoticePublishRequest(String title, String content, Integer targetType,
+                                   Long targetTenantId, String targetRoleCode, Integer publishType,
+                                   LocalDateTime publishTime, LocalDateTime effectiveTime,
+                                   LocalDateTime expireTime, Boolean needConfirm, Integer channels) {
+}

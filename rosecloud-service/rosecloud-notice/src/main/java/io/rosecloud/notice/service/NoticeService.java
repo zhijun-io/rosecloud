@@ -1,9 +1,9 @@
 package io.rosecloud.notice.service;
 
+import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.service.dto.MyNotice;
-import io.rosecloud.notice.service.dto.NoticePublishRequest;
 
 public interface NoticeService {
 
