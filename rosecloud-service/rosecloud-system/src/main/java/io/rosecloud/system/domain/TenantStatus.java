@@ -1,5 +1,13 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.system.error.SystemErrorCode;
+
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+
 /** Tenant lifecycle status (stored as a tinyint code). */
 public enum TenantStatus {
 
@@ -25,5 +33,54 @@ public enum TenantStatus {
             }
         }
         throw new IllegalArgumentException("unknown tenant status: " + code);
+    }
+
+    /**
+     * Legal transitions. {@code PENDING -> ENABLED/DISABLED}; {@code ENABLED <-> DISABLED}
+     * on disable/enable; {@code * -> EXPIRED} when the tenant expires. Centralizing
+     * the rules here keeps every caller's state change in one auditable place.
+     */
+    private static final Map<TenantStatus, Set<TenantStatus>> TRANSITIONS = new EnumMap<>(TenantStatus.class);
+
+    static {
+        TRANSITIONS.put(PENDING, EnumSet.of(ENABLED, DISABLED, EXPIRED));
+        TRANSITIONS.put(ENABLED, EnumSet.of(DISABLED, EXPIRED));
+        TRANSITIONS.put(DISABLED, EnumSet.of(ENABLED, EXPIRED));
+        TRANSITIONS.put(EXPIRED, EnumSet.noneOf(TenantStatus.class));
+    }
+
+    /** Returns the next status for an open (provision) action; throws if not allowed. */
+    public TenantStatus open() {
+        return transitionTo(ENABLED);
+    }
+
+    /** Returns the next status for a disable action; throws if not allowed. */
+    public TenantStatus disable() {
+        return transitionTo(DISABLED);
+    }
+
+    /** Returns the next status for an enable action; throws if not allowed. */
+    public TenantStatus enable() {
+        return transitionTo(ENABLED);
+    }
+
+    /** Returns the terminal expired status; throws if the transition is not allowed. */
+    public TenantStatus expire() {
+        return transitionTo(EXPIRED);
+    }
+
+    /**
+     * Validates that {@code this -> target} is allowed and returns {@code target};
+     * otherwise throws {@link BizException} with {@code system.tenant_status_invalid}.
+     */
+    public TenantStatus transitionTo(TenantStatus target) {
+        if (target == EXPIRED) {
+            return target;
+        }
+        Set<TenantStatus> allowed = TRANSITIONS.get(this);
+        if (allowed == null || !allowed.contains(target)) {
+            throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
+        }
+        return target;
     }
 }

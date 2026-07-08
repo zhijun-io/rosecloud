@@ -73,7 +73,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
 
     @Override
     public PageResult<Notice> myNotices(long current, long size, String tenantId,
-                                        Collection<String> roleCodes, LocalDateTime now) {
+                                        Collection<String> roleCodes, String username, LocalDateTime now) {
         Page<NoticeEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<NoticeEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(NoticeEntity::getStatus, NoticeStatus.PUBLISHED.code());
@@ -89,6 +89,10 @@ public class NoticeRepositoryImpl implements NoticeRepository {
             if (roleCodes != null && !roleCodes.isEmpty()) {
                 q.or().and(t -> t.eq(NoticeEntity::getTargetType, NoticeTargetType.ROLE.code())
                         .in(NoticeEntity::getTargetRoleCode, roleCodes));
+            }
+            if (username != null && !username.isBlank()) {
+                q.or().and(t -> t.eq(NoticeEntity::getTargetType, NoticeTargetType.USER.code())
+                        .eq(NoticeEntity::getTargetUsername, username));
             }
         });
         wrapper.orderByDesc(NoticeEntity::getPublishTime);
@@ -153,7 +157,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
 
     private Notice toDomain(NoticeEntity entity) {
         return new Notice(entity.getId(), entity.getTitle(), entity.getContent(), entity.getTargetType(),
-                entity.getTargetTenantId(), entity.getTargetRoleCode(), entity.getPublishType(), entity.getPublishTime(),
+                entity.getTargetTenantId(), entity.getTargetRoleCode(), entity.getTargetUsername(), entity.getPublishType(), entity.getPublishTime(),
                 entity.getEffectiveTime(), entity.getExpireTime(), entity.getStatus(), entity.getNeedConfirm(),
                 entity.getSenderId(), entity.getTenantId(), entity.getChannels());
     }
@@ -171,6 +175,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         entity.setTargetType(n.getTargetType());
         entity.setTargetTenantId(n.getTargetTenantId());
         entity.setTargetRoleCode(n.getTargetRoleCode());
+        entity.setTargetUsername(n.getTargetUsername());
         entity.setPublishType(n.getPublishType());
         entity.setPublishTime(n.getPublishTime());
         entity.setEffectiveTime(n.getEffectiveTime());

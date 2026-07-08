@@ -1,13 +1,10 @@
 package io.rosecloud.notice.channel;
 
 import io.rosecloud.api.notice.NoticeRecipient;
-import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticeChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * SMS sender stub: logs intended sends. Real SMS delivery (provider client) is
@@ -24,9 +21,9 @@ public class SmsNoticeSender implements NoticeChannelSender {
     }
 
     @Override
-    public void send(Notice notice, List<NoticeRecipient> recipients) {
-        int withPhone = (int) recipients.stream().filter(r -> r.phone() != null && !r.phone().isBlank()).count();
+    public void send(NoticeDispatchContext context) {
+        int withPhone = (int) context.recipients().stream().filter(r -> r.phone() != null && !r.phone().isBlank()).count();
         log.info("sms dispatch (stub): notice={} title={} recipients_with_phone={}",
-                notice.getId(), notice.getTitle(), withPhone);
+                context.notice().getId(), context.notice().getTitle(), withPhone);
     }
 }

@@ -2,21 +2,18 @@ package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
-import io.rosecloud.api.notice.NoticePublishApi;
-import io.rosecloud.api.notice.NoticePublishRequest;
-import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantProfileRepository;
 import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.TenantProvisioner;
 import io.rosecloud.system.service.TenantService;
-import io.rosecloud.system.service.dto.TenantApplyRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import io.rosecloud.system.service.dto.TenantCreateRequest;
+import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -24,30 +21,42 @@ import java.util.UUID;
 public class TenantServiceImpl implements TenantService {
 
     private final TenantRepository tenantRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final TenantProfileRepository tenantProfileRepository;
     private final TenantProvisioner tenantProvisioner;
-    private final NoticePublishApi noticePublishApi;
 
-    public TenantServiceImpl(TenantRepository tenantRepository, PasswordEncoder passwordEncoder,
-                             TenantProvisioner tenantProvisioner, NoticePublishApi noticePublishApi) {
+    public TenantServiceImpl(TenantRepository tenantRepository, TenantProfileRepository tenantProfileRepository,
+                             TenantProvisioner tenantProvisioner) {
         this.tenantRepository = tenantRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.tenantProfileRepository = tenantProfileRepository;
         this.tenantProvisioner = tenantProvisioner;
-        this.noticePublishApi = noticePublishApi;
     }
 
-    @AuditLog(action = "tenant-apply", description = "申请租户")
+    @AuditLog(action = "tenant-create", description = "创建租户")
     @Override
-    public String apply(TenantApplyRequest request) {
-        String tenantId = UUID.randomUUID().toString();
-        Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
-                request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(), null);
-        String passwordHash = request.adminPassword() == null || request.adminPassword().isBlank()
-                ? null : passwordEncoder.encode(request.adminPassword());
-        String id = tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
-        publishPlatformNotice("新租户申请待审核", request.name() + "（" + id + "）已提交申请，等待审核。",
-                NoticeTargetType.ROLE.code(), null, "platform-admin");
+    public String create(TenantCreateRequest request) {
+        String id = persistTenant(request);
+        open(id);
         return id;
+    }
+
+    @AuditLog(action = "tenant-update", description = "修改租户")
+    @Override
+    public void update(String id, TenantUpdateRequest request) {
+        Tenant tenant = load(id);
+        String tenantProfileId = resolveTenantProfileId(
+                request.tenantProfileId() == null || request.tenantProfileId().isBlank()
+                        ? tenant.getTenantProfileId() : request.tenantProfileId());
+        Tenant updated = new Tenant(id, request.name(), tenant.getStatus(), request.contactUser(),
+                request.contactPhone(), request.expireTime(), request.remark(), tenantProfileId,
+                tenant.getAdditionalInfo());
+        tenantRepository.update(updated);
+    }
+
+    @AuditLog(action = "tenant-delete", description = "删除租户")
+    @Override
+    public void delete(String id) {
+        load(id);
+        tenantRepository.deleteById(id);
     }
 
     @Override
@@ -64,9 +73,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public String open(String id) {
         Tenant tenant = load(id);
-        if (tenant.getStatus() != TenantStatus.PENDING) {
-            throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
-        }
+        tenant.getStatus().transitionTo(TenantStatus.ENABLED);
         tenantProvisioner.provision(id);
         return id;
     }
@@ -75,10 +82,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void disable(String id) {
         Tenant tenant = load(id);
-        if (tenant.getStatus() != TenantStatus.ENABLED) {
-            throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
-        }
-        tenantRepository.updateStatus(id, TenantStatus.DISABLED);
+        tenantRepository.updateStatus(id, tenant.getStatus().transitionTo(TenantStatus.DISABLED));
     }
 
     @AuditLog(action = "tenant-enable", description = "启用租户")
@@ -88,10 +92,7 @@ public class TenantServiceImpl implements TenantService {
         if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDate.now())) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
-        if (tenant.getStatus() != TenantStatus.DISABLED) {
-            throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
-        }
-        tenantRepository.updateStatus(id, TenantStatus.ENABLED);
+        tenantRepository.updateStatus(id, tenant.getStatus().transitionTo(TenantStatus.ENABLED));
     }
 
     @Override
@@ -104,13 +105,22 @@ public class TenantServiceImpl implements TenantService {
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_NOT_FOUND));
     }
 
-    private void publishPlatformNotice(String title, String content, Integer targetType, String targetTenantId,
-                                       String targetRoleCode) {
-        try {
-            noticePublishApi.publish(new NoticePublishRequest(title, content, targetType, targetTenantId,
-                    targetRoleCode, null, LocalDateTime.now(), null, null, false, null));
-        } catch (Exception ignored) {
-            // Notification is best-effort; lifecycle must not fail because of it.
-        }
+    private String persistTenant(TenantCreateRequest request) {
+        String tenantId = UUID.randomUUID().toString();
+        String tenantProfileId = resolveTenantProfileId(request.tenantProfileId());
+        Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
+                request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(),
+                tenantProfileId, null);
+        return tenantRepository.insert(tenant, request.adminUsername());
     }
+
+    private String resolveTenantProfileId(String tenantProfileId) {
+        if (tenantProfileId == null || tenantProfileId.isBlank()) {
+            return tenantProfileRepository.defaultProfileId();
+        }
+        tenantProfileRepository.findById(tenantProfileId)
+                .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
+        return tenantProfileId;
+    }
+
 }

@@ -22,9 +22,9 @@ public class TenantEntity {
     private String contactPhone;
     private LocalDate expireTime;
     private String remark;
+    private String tenantProfileId;
     private String extra;
     private String adminUsername;
-    private String adminPassword;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
@@ -51,12 +51,12 @@ public class TenantEntity {
     public void setExpireTime(LocalDate expireTime) { this.expireTime = expireTime; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public String getTenantProfileId() { return tenantProfileId; }
+    public void setTenantProfileId(String tenantProfileId) { this.tenantProfileId = tenantProfileId; }
     public String getExtra() { return extra; }
     public void setExtra(String extra) { this.extra = extra; }
     public String getAdminUsername() { return adminUsername; }
     public void setAdminUsername(String adminUsername) { this.adminUsername = adminUsername; }
-    public String getAdminPassword() { return adminPassword; }
-    public void setAdminPassword(String adminPassword) { this.adminPassword = adminPassword; }
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     public LocalDateTime getUpdateTime() { return updateTime; }

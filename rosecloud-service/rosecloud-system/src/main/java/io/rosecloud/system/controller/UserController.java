@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.UserService;
+import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.service.dto.UserRoleAssignRequest;
@@ -49,6 +50,13 @@ public class UserController {
     @GetMapping("/me")
     public ApiResponse<UserProfile> me() {
         return ApiResponse.ok(userService.me());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/me/password")
+    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ApiResponse.ok();
     }
 
     @PreAuthorize("hasAuthority('system:user:list')")

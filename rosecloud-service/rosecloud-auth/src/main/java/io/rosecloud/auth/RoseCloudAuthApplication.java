@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
  * Auth service entry point. Persistence-free: user credentials live in the
- * system service and are fetched over Feign (see FeignUserRepository). Feign
+ * system service and are fetched over Feign (see LoginUserLookupImpl). Feign
  * client scanning is scoped to {@code io.rosecloud.api} where contracts live.
  */
 @EnableFeignClients(basePackages = "io.rosecloud.api")

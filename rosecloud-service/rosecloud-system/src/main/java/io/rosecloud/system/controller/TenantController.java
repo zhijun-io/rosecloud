@@ -7,12 +7,15 @@ import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
-import io.rosecloud.system.service.dto.TenantApplyRequest;
+import io.rosecloud.system.service.dto.TenantCreateRequest;
+import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,10 +32,24 @@ public class TenantController {
         this.auditLogService = auditLogService;
     }
 
-    @PreAuthorize("hasAuthority('system:tenant:open')")
-    @PostMapping("/apply")
-    public ApiResponse<String> apply(@RequestBody TenantApplyRequest request) {
-        return ApiResponse.ok(tenantService.apply(request));
+    @PreAuthorize("hasAuthority('system:tenant:add')")
+    @PostMapping
+    public ApiResponse<String> create(@RequestBody TenantCreateRequest request) {
+        return ApiResponse.ok(tenantService.create(request));
+    }
+
+    @PreAuthorize("hasAuthority('system:tenant:edit')")
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable String id, @RequestBody TenantUpdateRequest request) {
+        tenantService.update(id, request);
+        return ApiResponse.ok();
+    }
+
+    @PreAuthorize("hasAuthority('system:tenant:del')")
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        tenantService.delete(id);
+        return ApiResponse.ok();
     }
 
     @PreAuthorize("hasAuthority('system:tenant:open')")

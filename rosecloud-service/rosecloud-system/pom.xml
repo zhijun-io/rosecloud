@@ -66,6 +66,10 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-starter-audit</artifactId>
             <version>${project.version}</version>

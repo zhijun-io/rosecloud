@@ -59,7 +59,7 @@ public class NoticeServiceImpl implements NoticeService {
         String senderTenantId = sender == null ? null : sender.tenantId();
         int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
-                request.targetTenantId(), request.targetRoleCode(), publishType, publishTime,
+                request.targetTenantId(), request.targetRoleCode(), request.targetUsername(), publishType, publishTime,
                 request.effectiveTime(), request.expireTime(), status,
                 Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels);
         Long id = noticeRepository.insert(notice);
@@ -81,7 +81,8 @@ public class NoticeServiceImpl implements NoticeService {
             return PageResult.empty(current, size);
         }
         LocalDateTime now = LocalDateTime.now();
-        PageResult<Notice> notices = noticeRepository.myNotices(current, size, user.tenantId(), user.roles(), now);
+        PageResult<Notice> notices = noticeRepository.myNotices(current, size, user.tenantId(), user.roles(),
+                user.username(), now);
         Map<Long, NoticeRecord> records = noticeRepository
                 .findRecords(notices.records().stream().map(Notice::getId).toList(), user.userId())
                 .stream().collect(Collectors.toMap(NoticeRecord::getNoticeId, Function.identity()));
@@ -168,6 +169,9 @@ public class NoticeServiceImpl implements NoticeService {
             return user != null && n.getTargetRoleCode() != null && user.roles() != null
                     && user.roles().contains(n.getTargetRoleCode());
         }
+        if (type == NoticeTargetType.USER.code()) {
+            return user != null && n.getTargetUsername() != null && n.getTargetUsername().equals(user.username());
+        }
         return false;
     }
 
@@ -177,6 +181,9 @@ public class NoticeServiceImpl implements NoticeService {
             throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
         }
         if (type == NoticeTargetType.ROLE.code() && (request.targetRoleCode() == null || request.targetRoleCode().isBlank())) {
+            throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
+        }
+        if (type == NoticeTargetType.USER.code() && (request.targetUsername() == null || request.targetUsername().isBlank())) {
             throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
         }
     }

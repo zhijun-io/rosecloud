@@ -14,6 +14,7 @@ public class NoticeEntity extends BaseEntity {
     private Integer targetType;
     private String targetTenantId;
     private String targetRoleCode;
+    private String targetUsername;
     private Integer publishType;
     private LocalDateTime publishTime;
     private LocalDateTime effectiveTime;
@@ -34,6 +35,8 @@ public class NoticeEntity extends BaseEntity {
     public void setTargetTenantId(String targetTenantId) { this.targetTenantId = targetTenantId; }
     public String getTargetRoleCode() { return targetRoleCode; }
     public void setTargetRoleCode(String targetRoleCode) { this.targetRoleCode = targetRoleCode; }
+    public String getTargetUsername() { return targetUsername; }
+    public void setTargetUsername(String targetUsername) { this.targetUsername = targetUsername; }
     public Integer getPublishType() { return publishType; }
     public void setPublishType(Integer publishType) { this.publishType = publishType; }
     public LocalDateTime getPublishTime() { return publishTime; }

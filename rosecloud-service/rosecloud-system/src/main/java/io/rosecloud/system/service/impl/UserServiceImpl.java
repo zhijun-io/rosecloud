@@ -11,10 +11,14 @@ import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.UserService;
+import io.rosecloud.system.service.dto.ChangePasswordRequest;
+import java.time.LocalDateTime;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
+import io.rosecloud.system.support.PasswordPolicyValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,22 +35,35 @@ public class UserServiceImpl implements UserService {
     }
 
     @AuditLog(action = "user-create", description = "创建用户")
+    @Transactional
     @Override
     public Long create(UserCreateRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
+        PasswordPolicyValidator.validate(request.password());
         User user = new User(null, request.username(), request.nickname(), 1, request.tenantId(), null);
         return userRepository.insert(user, passwordEncoder.encode(request.password()));
     }
 
     @Override
+    @Transactional
     public Long createWithHash(String username, String passwordHash, String nickname, String tenantId) {
         if (userRepository.existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
         User user = new User(null, username, nickname, 1, tenantId, null);
         return userRepository.insert(user, passwordHash);
+    }
+
+    @Override
+    @Transactional
+    public Long createWithoutPassword(String username, String nickname, String tenantId) {
+        if (userRepository.existsByUsername(username)) {
+            throw new BizException(SystemErrorCode.USERNAME_EXISTS);
+        }
+        User user = new User(null, username, nickname, 0, tenantId, null);
+        return userRepository.insert(user, null);
     }
 
     @Override
@@ -69,6 +86,24 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<UserAuthInfo> findAuthInfo(String username) {
         return userRepository.findAuthInfo(username);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        CurrentUser current = UserContext.get();
+        if (current == null || current.userId() == null || current.username() == null) {
+            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
+        }
+        UserAuthInfo authInfo = userRepository.findAuthInfo(current.username())
+                .orElseThrow(() -> new BizException(SecurityErrorCode.UNAUTHORIZED));
+        if (authInfo.passwordHash() == null || authInfo.passwordHash().isBlank()
+                || !passwordEncoder.matches(request.currentPassword(), authInfo.passwordHash())) {
+            throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
+        }
+        PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
+        userRepository.updatePassword(current.userId(),
+                passwordEncoder.encode(request.newPassword()), java.time.LocalDateTime.now());
     }
 
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
@@ -94,5 +129,10 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(current.userId())
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
         return new UserProfile(user, userRepository.findRoleCodesByUserId(current.userId()));
+    }
+
+    @Override
+    public void updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
+        userRepository.updateLastLoginTime(userId, lastLoginTime);
     }
 }

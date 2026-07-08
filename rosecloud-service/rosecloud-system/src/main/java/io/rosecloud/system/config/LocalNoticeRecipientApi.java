@@ -27,6 +27,6 @@ public class LocalNoticeRecipientApi implements NoticeRecipientApi {
     @Override
     public ApiResponse<List<NoticeRecipient>> list(NoticeRecipientRequest request) {
         return ApiResponse.ok(userRepository.findContacts(
-                request.targetType(), request.targetTenantId(), request.targetRoleCode()));
+                request.targetType(), request.targetTenantId(), request.targetRoleCode(), request.targetUsername()));
     }
 }

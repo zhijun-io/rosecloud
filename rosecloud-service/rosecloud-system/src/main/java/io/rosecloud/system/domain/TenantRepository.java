@@ -14,11 +14,15 @@ public interface TenantRepository {
 
     PageResult<Tenant> page(long current, long size, String keyword);
 
-    String insert(Tenant tenant, String adminUsername, String adminPasswordHash);
+    String insert(Tenant tenant, String adminUsername);
 
-    Optional<TenantAdminCredentials> findAdminCredentials(String id);
+    void update(Tenant tenant);
 
-    void clearAdminPassword(String id);
+    void deleteById(String id);
+
+    Optional<String> findAdminUsername(String id);
 
     void updateStatus(String id, TenantStatus status);
+
+    long countByTenantProfileId(String tenantProfileId);
 }

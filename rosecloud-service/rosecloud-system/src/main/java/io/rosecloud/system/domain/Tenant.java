@@ -19,9 +19,16 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
     private final String contactPhone;
     private final LocalDate expireTime;
     private final String remark;
+    private final String tenantProfileId;
 
     public Tenant(String id, String name, TenantStatus status, String contactUser,
                   String contactPhone, LocalDate expireTime, String remark, JsonNode additionalInfo) {
+        this(id, name, status, contactUser, contactPhone, expireTime, remark, null, additionalInfo);
+    }
+
+    public Tenant(String id, String name, TenantStatus status, String contactUser,
+                  String contactPhone, LocalDate expireTime, String remark, String tenantProfileId,
+                  JsonNode additionalInfo) {
         super(additionalInfo);
         this.id = id;
         this.name = name;
@@ -30,6 +37,7 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
         this.contactPhone = contactPhone;
         this.expireTime = expireTime;
         this.remark = remark;
+        this.tenantProfileId = tenantProfileId;
     }
 
     public String getId() { return id; }
@@ -39,6 +47,7 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
     public String getContactPhone() { return contactPhone; }
     public LocalDate getExpireTime() { return expireTime; }
     public String getRemark() { return remark; }
+    public String getTenantProfileId() { return tenantProfileId; }
 
     @Override
     public boolean equals(Object o) {
@@ -55,12 +64,14 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
                 && Objects.equals(contactPhone, tenant.contactPhone)
                 && Objects.equals(expireTime, tenant.expireTime)
                 && Objects.equals(remark, tenant.remark)
+                && Objects.equals(tenantProfileId, tenant.tenantProfileId)
                 && Objects.equals(getAdditionalInfo(), tenant.getAdditionalInfo());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, status, contactUser, contactPhone, expireTime, remark, getAdditionalInfo());
+        return Objects.hash(id, name, status, contactUser, contactPhone, expireTime, remark, tenantProfileId,
+                getAdditionalInfo());
     }
 
     @Override
@@ -73,6 +84,7 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
                 ", contactPhone=" + contactPhone +
                 ", expireTime=" + expireTime +
                 ", remark=" + remark +
+                ", tenantProfileId=" + tenantProfileId +
                 ", additionalInfo=" + getAdditionalInfo() +
                 ']';
     }

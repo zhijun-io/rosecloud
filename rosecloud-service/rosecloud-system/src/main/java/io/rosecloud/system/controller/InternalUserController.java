@@ -2,11 +2,16 @@ package io.rosecloud.system.controller;
 
 import io.rosecloud.api.user.UserAuthInfo;
 import io.rosecloud.common.core.model.ApiResponse;
+import java.time.LocalDateTime;
 import io.rosecloud.system.service.UserService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 
 /**
  * Internal endpoints consumed by other services over Feign, not routed by the
@@ -26,5 +31,12 @@ public class InternalUserController {
     @GetMapping("/auth/{username}")
     public ApiResponse<UserAuthInfo> getAuthInfo(@PathVariable String username) {
         return ApiResponse.ok(userService.findAuthInfo(username).orElse(null));
+    }
+
+    @PostMapping("/{userId}/last-login")
+    public ApiResponse<Void> updateLastLoginTime(@PathVariable Long userId,
+                                                 @RequestBody LocalDateTime lastLoginTime) {
+        userService.updateLastLoginTime(userId, lastLoginTime);
+        return ApiResponse.ok();
     }
 }

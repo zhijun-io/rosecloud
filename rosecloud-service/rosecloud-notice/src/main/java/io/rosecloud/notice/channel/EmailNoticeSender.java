@@ -1,7 +1,6 @@
 package io.rosecloud.notice.channel;
 
 import io.rosecloud.api.notice.NoticeRecipient;
-import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticeChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Email sender. Only loaded when {@code spring-boot-starter-mail} is on the
@@ -36,24 +33,25 @@ public class EmailNoticeSender implements NoticeChannelSender {
     }
 
     @Override
-    public void send(Notice notice, List<NoticeRecipient> recipients) {
+    public void send(NoticeDispatchContext context) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender == null) {
-            log.warn("email channel requested but no JavaMailSender configured; skipping notice {}", notice.getId());
+            log.warn("email channel requested but no JavaMailSender configured; skipping notice {}",
+                    context.notice().getId());
             return;
         }
-        for (NoticeRecipient r : recipients) {
+        for (NoticeRecipient r : context.recipients()) {
             if (r.email() == null || r.email().isBlank()) {
                 continue;
             }
             try {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setTo(r.email());
-                message.setSubject(notice.getTitle());
-                message.setText(notice.getContent());
+                message.setSubject(context.notice().getTitle());
+                message.setText(context.notice().getContent());
                 sender.send(message);
             } catch (Exception e) {
-                log.warn("failed to email notice {} to {}", notice.getId(), r.email(), e);
+                log.warn("failed to email notice {} to {}", context.notice().getId(), r.email(), e);
             }
         }
     }

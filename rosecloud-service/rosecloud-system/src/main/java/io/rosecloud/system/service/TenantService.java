@@ -2,11 +2,16 @@ package io.rosecloud.system.service;
 
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.system.domain.Tenant;
-import io.rosecloud.system.service.dto.TenantApplyRequest;
+import io.rosecloud.system.service.dto.TenantCreateRequest;
+import io.rosecloud.system.service.dto.TenantUpdateRequest;
 
 public interface TenantService {
 
-    String apply(TenantApplyRequest request);
+    String create(TenantCreateRequest request);
+
+    void update(String id, TenantUpdateRequest request);
+
+    void delete(String id);
 
     Tenant get(String id);
 

@@ -28,6 +28,9 @@ rosecloud:
   cache:
     enabled: true
     type: in-memory
+  security:
+    auth-chain:
+      enabled: true
   auth:
     login-protection:
       enabled: true

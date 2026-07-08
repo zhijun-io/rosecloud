@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS sys_notice (
   target_type      TINYINT      NOT NULL                   COMMENT '投放:0全局 1租户 2角色',
   target_tenant_id VARCHAR(64)  DEFAULT NULL               COMMENT '租户目标(目标=租户时填)',
   target_role_code VARCHAR(64)  DEFAULT NULL               COMMENT '角色目标编码(目标=角色时填)',
+  target_username  VARCHAR(128) DEFAULT NULL               COMMENT '用户名目标(目标=用户时填)',
   publish_type     TINYINT      NOT NULL DEFAULT 0         COMMENT '发布:0即时 1定时',
   publish_time     DATETIME     DEFAULT NULL               COMMENT '发布时间',
   effective_time   DATETIME     DEFAULT NULL               COMMENT '生效时间',

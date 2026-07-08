@@ -51,7 +51,7 @@ class NoticeDispatchServiceTest {
         NoticeDispatchService service = new NoticeDispatchService(api,
                 List.of(capturingSender(NoticeChannel.EMAIL, new AtomicInteger())), SYNC);
         Notice notice = new Notice(7L, "t", "c", NoticeTargetType.TENANT.code(), "tenant-99", "admin",
-                NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
+                null, NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
                 null, null, NoticeChannel.EMAIL.code());
 
         service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
@@ -69,15 +69,15 @@ class NoticeDispatchServiceTest {
             }
 
             @Override
-            public void send(Notice notice, List<NoticeRecipient> recipients) {
-                counter.addAndGet(recipients.size());
+            public void send(NoticeDispatchContext context) {
+                counter.addAndGet(context.recipients().size());
             }
         };
     }
 
     private static Notice notice(int channels) {
         return new Notice(1L, "t", "c", NoticeTargetType.GLOBAL.code(), null, null,
-                NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
+                null, NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
                 null, null, channels);
     }
 }

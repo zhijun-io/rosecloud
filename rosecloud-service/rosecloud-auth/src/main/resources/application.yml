@@ -25,6 +25,9 @@ rosecloud:
   cache:
     enabled: true
     type: redis
+  security:
+    auth-chain:
+      enabled: true
   auth:
     login-protection:
       enabled: true

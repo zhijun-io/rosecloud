@@ -26,7 +26,7 @@ public interface NoticeRepository {
     Optional<Notice> findById(Long id);
 
     PageResult<Notice> myNotices(long current, long size, String tenantId,
-                                 Collection<String> roleCodes, LocalDateTime now);
+                                 Collection<String> roleCodes, String username, LocalDateTime now);
 
     List<NoticeRecord> findRecords(Collection<Long> noticeIds, Long userId);
 

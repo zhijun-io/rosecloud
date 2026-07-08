@@ -18,7 +18,6 @@
 
     <modules>
         <module>rosecloud-starter-web</module>
-        <module>rosecloud-starter-security</module>
         <module>rosecloud-starter-trace</module>
         <module>rosecloud-starter-data-mybatisplus</module>
         <module>rosecloud-starter-lock</module>

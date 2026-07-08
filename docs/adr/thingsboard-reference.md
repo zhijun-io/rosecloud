@@ -133,7 +133,7 @@
 - **OAuth2**：RoseCloud 仅资源服务器；可借鉴客户端登录 + DB 驱动动态注册 + 可插拔 mapper SPI + Cookie 无状态授权请求 + 成功后签本站 JWT。
 
 ### A6.2 落地建议（分阶段，默认关闭）
-- **阶段 0（低成本增量）**：会话数上限（复用 `sys_login_session`，超限吊销最早 `jti`）；改密失效旧令牌（`sys_user.password_changed_at`，校验比 `iat`）；密码重置/激活令牌（`TokenType` 扩展，接入 `TenantProvisioner`）。
+- **阶段 0（低成本增量）**：会话数上限（复用 `sys_login_session`，超限吊销最早 `jti`）；改密失效旧令牌（`sys_user.password_changed_time`，校验比 `iat`）；密码重置/激活令牌（`TokenType` 扩展，接入 `TenantProvisioner`）。
 - **阶段 1（MFA，P1 占位）**：新建 `rosecloud-mfa-starter`（`rosecloud.mfa.enabled` 门控）+ `TwoFactorAuthProvider` SPI；先 TOTP + BackupCode，SMS/Email 调 notice；`TokenType.PRE_AUTH` 短 TTL + `/api/auth/mfa/verify`；限频复用 Redis；存 `sys_user_mfa`。
 - **阶段 2（OAuth2 客户端登录，P1）**：新建 `rosecloud-oauth2-client-starter`；`sys_oauth2_client` 表 + `ClientRegistrationRepository` 动态构造；`OAuth2ClientMapper` SPI(BASIC/CUSTOM)；Cookie 仓库；成功处理器签本站 JWT；如需 MFA 在此补 `isTwoFaEnabled` 分支；登录页元数据 API + 网关白名单加回调。
 - **阶段 3（暂缓）**：OAuth2 Authorization Server(M2M)、非对称签名+JWKS、`enforceTwoFa`、public 令牌——仅预留边界。
@@ -174,7 +174,7 @@
 | 启用/停用凭据 | `/user/{id}/userCredentialsEnabled` | `UserController.java`(:386) |
 | 激活流程 | sendActivationMail/getActivationLink/getActivationLinkInfo/checkActivateToken/activate | `UserController.java`(:208,:230)、`AuthController.java`(:134,:202) |
 | 密码重置 | requestResetPasswordByEmail/checkResetToken/resetPassword | `AuthController.java`(:155,:174,:242) |
-| 改密 | `/auth/changePassword` | `AuthController.java`(:105) |
+| 改密 | `/auth/change-password` | `AuthController.java`(:105) |
 | 密码策略 | `/noauth/userPasswordPolicy` | `AuthController.java`(:128) |
 | Token 访问 | isUserTokenAccessEnabled/getUserToken（用户模拟） | `UserController.java`(:155,:160) |
 | 用户设置 | JSON 设置 save/get/update/delete，按 type 分组(general+自定义) | 同上(:449-540) |
@@ -182,7 +182,7 @@
 | 移动会话 | `/user/mobile/session` get/post/delete | 同上(:587-602) |
 | 用户分配 | getUsersForAssign（告警指派） | 同上(:408) |
 
-> 借鉴点：RoseCloud `sys_user` 已有基础字段；可补 `password_changed_at`/`failed_login_attempts`/`last_login_ts` 支撑改密失效与登录锁定；用户激活/重置令牌复用 JWT 专用 type；`UserSettings`(JSON) 可作为用户偏好存储参考。Token 访问（模拟）与移动会话按需。
+> 借鉴点：RoseCloud `sys_user` 已有基础字段；已补 `password_changed_time`/`last_login_time`，后续可继续补 `failed_login_attempts` 支撑改密失效与登录锁定；用户激活/重置令牌复用 JWT 专用 type；`UserSettings`(JSON) 可作为用户偏好存储参考。Token 访问（模拟）与移动会话按需。
 
 ## B3 通知中心
 

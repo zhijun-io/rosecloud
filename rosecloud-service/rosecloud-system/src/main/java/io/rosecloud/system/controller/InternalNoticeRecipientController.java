@@ -25,6 +25,6 @@ public class InternalNoticeRecipientController {
     @PostMapping
     public ApiResponse<List<NoticeRecipient>> list(@RequestBody NoticeRecipientRequest request) {
         return ApiResponse.ok(userRepository.findContacts(
-                request.targetType(), request.targetTenantId(), request.targetRoleCode()));
+                request.targetType(), request.targetTenantId(), request.targetRoleCode(), request.targetUsername()));
     }
 }

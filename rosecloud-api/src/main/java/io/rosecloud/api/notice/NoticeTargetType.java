@@ -5,7 +5,8 @@ public enum NoticeTargetType {
 
     GLOBAL(0),
     TENANT(1),
-    ROLE(2);
+    ROLE(2),
+    USER(3);
 
     private final int code;
 

@@ -21,6 +21,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     private final Integer targetType;
     private final String targetTenantId;
     private final String targetRoleCode;
+    private final String targetUsername;
     private final Integer publishType;
     private final LocalDateTime publishTime;
     private final LocalDateTime effectiveTime;
@@ -32,7 +33,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     private final Integer channels;
 
     public Notice(Long id, String title, String content, Integer targetType, String targetTenantId,
-                  String targetRoleCode, Integer publishType, LocalDateTime publishTime,
+                  String targetRoleCode, String targetUsername, Integer publishType, LocalDateTime publishTime,
                   LocalDateTime effectiveTime, LocalDateTime expireTime, Integer status,
                   Boolean needConfirm, Long senderId, String tenantId, Integer channels) {
         this.id = id;
@@ -41,6 +42,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
         this.targetType = targetType;
         this.targetTenantId = targetTenantId;
         this.targetRoleCode = targetRoleCode;
+        this.targetUsername = targetUsername;
         this.publishType = publishType;
         this.publishTime = publishTime;
         this.effectiveTime = effectiveTime;
@@ -58,6 +60,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     public Integer getTargetType() { return targetType; }
     public String getTargetTenantId() { return targetTenantId; }
     public String getTargetRoleCode() { return targetRoleCode; }
+    public String getTargetUsername() { return targetUsername; }
     public Integer getPublishType() { return publishType; }
     public LocalDateTime getPublishTime() { return publishTime; }
     public LocalDateTime getEffectiveTime() { return effectiveTime; }
@@ -70,7 +73,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
 
     /** Copy with the persisted id set (for dispatch after insert). */
     public Notice withId(Long id) {
-        return new Notice(id, title, content, targetType, targetTenantId, targetRoleCode, publishType,
+        return new Notice(id, title, content, targetType, targetTenantId, targetRoleCode, targetUsername, publishType,
                 publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels);
     }
 
@@ -82,6 +85,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
                 && Objects.equals(content, notice.content) && Objects.equals(targetType, notice.targetType)
                 && Objects.equals(targetTenantId, notice.targetTenantId)
                 && Objects.equals(targetRoleCode, notice.targetRoleCode)
+                && Objects.equals(targetUsername, notice.targetUsername)
                 && Objects.equals(publishType, notice.publishType)
                 && Objects.equals(publishTime, notice.publishTime)
                 && Objects.equals(effectiveTime, notice.effectiveTime)
@@ -96,7 +100,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     @Override
     public int hashCode() {
         return Objects.hash(id, title, content, targetType, targetTenantId, targetRoleCode, publishType,
-                publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels);
+                targetUsername, publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels);
     }
 
     @Override
@@ -108,6 +112,7 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
                 ", targetType=" + targetType +
                 ", targetTenantId=" + targetTenantId +
                 ", targetRoleCode=" + targetRoleCode +
+                ", targetUsername=" + targetUsername +
                 ", publishType=" + publishType +
                 ", publishTime=" + publishTime +
                 ", effectiveTime=" + effectiveTime +

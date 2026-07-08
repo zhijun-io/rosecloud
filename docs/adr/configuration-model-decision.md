@@ -21,11 +21,13 @@ RoseCloud 的配置管理采用最小可用模型：
 
 ## 2. 表结构
 
+时间类字段统一使用 `_time` 后缀；仅存量历史表保留 `updated_at` / `created_at` 这类旧命名，新建表和新字段不再采用 `_at` / `_ts`。
+
 ### 2.1 `system_setting`
 
 - `key`
 - `value`
-- `updated_at`
+- `updated_time`
 - `updated_by`
 
 ### 2.2 `user_setting`
@@ -33,7 +35,7 @@ RoseCloud 的配置管理采用最小可用模型：
 - `user_id`
 - `key`
 - `value`
-- `updated_at`
+- `updated_time`
 - `updated_by`
 
 ### 2.3 `tenant_profile`

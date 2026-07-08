@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.api.user.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.model.PageResult;
@@ -14,6 +15,7 @@ import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -22,15 +24,18 @@ import java.util.Optional;
 public class UserRepositoryImpl implements UserRepository {
 
     private final UserMapper userMapper;
+    private final UserCredentialMapper userCredentialMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final MenuMapper menuMapper;
     private final ObjectMapper objectMapper;
 
-    public UserRepositoryImpl(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper,
+    public UserRepositoryImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
+                              UserRoleMapper userRoleMapper, RoleMapper roleMapper,
                               RoleMenuMapper roleMenuMapper, MenuMapper menuMapper, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
+        this.userCredentialMapper = userCredentialMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleMapper = roleMapper;
         this.roleMenuMapper = roleMenuMapper;
@@ -40,13 +45,51 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<UserAuthInfo> findAuthInfo(String username) {
-        UserEntity po = userMapper.selectOne(
-                new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getUsername, username));
+        UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
+                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                        .or()
+                        .eq(UserEntity::getPhone, username)));
         if (po == null) {
             return Optional.empty();
         }
-        return Optional.of(new UserAuthInfo(po.getId(), po.getUsername(), po.getPassword(),
-                po.getStatus(), po.getTenantId(), loadRoleCodes(po.getId()), loadPerms(po.getId())));
+        UserCredentialEntity credential = credentialByUserId(po.getId());
+        String password = credential == null ? null : credential.getPassword();
+        return Optional.of(new UserAuthInfo(po.getId(), loginName(po), password,
+                po.getStatus(), po.getTenantId(), loadRoleCodes(po.getId()), loadPerms(po.getId()),
+                credential == null ? null : credential.getPasswordChangedTime()));
+    }
+
+    @Override
+    public Optional<UserActivationInfo> findActivationByToken(String activateToken) {
+        if (activateToken == null || activateToken.isBlank()) {
+            return Optional.empty();
+        }
+        UserCredentialEntity credential = userCredentialMapper.selectOne(
+                new LambdaQueryWrapper<UserCredentialEntity>().eq(UserCredentialEntity::getActivateToken, activateToken));
+        if (credential == null) {
+            return Optional.empty();
+        }
+        UserEntity user = userMapper.selectById(credential.getUserId());
+        if (user == null) {
+            return Optional.empty();
+        }
+        return Optional.of(toActivationInfo(user, credential));
+    }
+
+    @Override
+    public Optional<UserActivationInfo> findActivationByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
+        }
+        UserEntity user = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
+                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                        .or()
+                        .eq(UserEntity::getPhone, username)));
+        if (user == null) {
+            return Optional.empty();
+        }
+        UserCredentialEntity credential = credentialByUserId(user.getId());
+        return Optional.of(toActivationInfo(user, credential));
     }
 
     private List<String> loadRoleCodes(Long userId) {
@@ -91,20 +134,87 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public boolean existsByUsername(String username) {
-        return userMapper.exists(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getUsername, username));
+        return userMapper.exists(new LambdaQueryWrapper<UserEntity>()
+                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                        .or()
+                        .eq(UserEntity::getPhone, username)));
     }
 
     @Override
     public Long insert(User user, String passwordHash) {
         UserEntity po = new UserEntity();
-        po.setUsername(user.getUsername());
-        po.setPassword(passwordHash);
         po.setNickname(user.getNickname());
         po.setStatus(user.getStatus());
         po.setTenantId(user.getTenantId());
-        po.setExtra(writeJson(user.getAdditionalInfo()));
+        if (isEmail(user.getUsername())) {
+            po.setEmail(user.getUsername());
+        } else if (isPhone(user.getUsername())) {
+            po.setPhone(user.getUsername());
+        }
+        po.setAdditionalInfo(writeJson(user.getAdditionalInfo()));
         userMapper.insert(po);
+        UserCredentialEntity credential = new UserCredentialEntity();
+        credential.setUserId(po.getId());
+        credential.setPassword(passwordHash);
+        credential.setPasswordChangedTime(passwordHash == null ? null : LocalDateTime.now());
+        userCredentialMapper.insert(credential);
         return po.getId();
+    }
+
+    @Override
+    public void saveActivationToken(Long userId, String activateToken, LocalDateTime expireTime,
+                                    LocalDateTime sendTime, Long version) {
+        UserCredentialEntity credential = credentialByUserId(userId);
+        if (credential == null) {
+            throw new IllegalStateException("Missing user credential for userId=" + userId);
+        }
+        credential.setActivateToken(activateToken);
+        credential.setExpireTime(expireTime);
+        credential.setUsedTime(null);
+        credential.setSendTime(sendTime);
+        credential.setVersion(version);
+        userCredentialMapper.updateById(credential);
+    }
+
+    @Override
+    public void confirmActivation(Long userId, String encodedPassword, LocalDateTime usedTime) {
+        UserCredentialEntity credential = credentialByUserId(userId);
+        if (credential == null) {
+            throw new IllegalStateException("Missing user credential for userId=" + userId);
+        }
+        credential.setPassword(encodedPassword);
+        credential.setPasswordChangedTime(usedTime);
+        credential.setActivateToken(null);
+        credential.setExpireTime(null);
+        credential.setUsedTime(usedTime);
+        userCredentialMapper.updateById(credential);
+
+        UserEntity user = userMapper.selectById(userId);
+        if (user != null) {
+            user.setStatus(1);
+            userMapper.updateById(user);
+        }
+    }
+
+    @Override
+    public void updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
+        UserCredentialEntity credential = credentialByUserId(userId);
+        if (credential == null) {
+            throw new IllegalStateException("Missing user credential for userId=" + userId);
+        }
+        credential.setLastLoginTime(lastLoginTime);
+        userCredentialMapper.updateById(credential);
+    }
+
+    @Override
+    public void updatePassword(Long userId, String passwordHash, LocalDateTime passwordChangedTime) {
+        UserCredentialEntity credential = credentialByUserId(userId);
+        if (credential == null) {
+            throw new IllegalStateException("Missing user credential for userId=" + userId);
+        }
+        credential.setPassword(passwordHash);
+        credential.setPasswordChangedTime(passwordChangedTime);
+        userCredentialMapper.updateById(credential);
     }
 
     @Override
@@ -117,7 +227,11 @@ public class UserRepositoryImpl implements UserRepository {
         Page<UserEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(UserEntity::getUsername, keyword).or().like(UserEntity::getNickname, keyword);
+            wrapper.nested(w -> w.like(UserEntity::getEmail, keyword)
+                    .or()
+                    .like(UserEntity::getPhone, keyword)
+                    .or()
+                    .like(UserEntity::getNickname, keyword));
         }
         wrapper.orderByDesc(UserEntity::getCreateTime);
         IPage<UserEntity> result = userMapper.selectPage(page, wrapper);
@@ -162,7 +276,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public List<NoticeRecipient> findContacts(Integer targetType, String tenantId, String roleCode) {
+    public List<NoticeRecipient> findContacts(Integer targetType, String tenantId, String roleCode, String username) {
         int type = targetType == null ? NoticeTargetType.GLOBAL.code() : targetType;
         List<UserEntity> users;
         if (type == NoticeTargetType.TENANT.code()) {
@@ -170,6 +284,8 @@ public class UserRepositoryImpl implements UserRepository {
                     .eq(UserEntity::getTenantId, tenantId).eq(UserEntity::getStatus, 1));
         } else if (type == NoticeTargetType.ROLE.code()) {
             users = findByRole(roleCode);
+        } else if (type == NoticeTargetType.USER.code()) {
+            users = findByUsername(username);
         } else {
             users = userMapper.selectList(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getStatus, 1));
         }
@@ -196,9 +312,20 @@ public class UserRepositoryImpl implements UserRepository {
                 .in(UserEntity::getId, userIds).eq(UserEntity::getStatus, 1));
     }
 
+    private List<UserEntity> findByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return List.of();
+        }
+        UserEntity user = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
+                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                        .or()
+                        .eq(UserEntity::getPhone, username)));
+        return user == null ? List.of() : List.of(user);
+    }
+
     private User toDomain(UserEntity po) {
-        return new User(po.getId(), po.getUsername(), po.getNickname(), po.getStatus(), po.getTenantId(),
-                readJson(po.getExtra()));
+        return new User(po.getId(), loginName(po), po.getNickname(), po.getStatus(), po.getTenantId(),
+                readJson(po.getAdditionalInfo()));
     }
 
     private JsonNode readJson(String value) {
@@ -214,5 +341,37 @@ public class UserRepositoryImpl implements UserRepository {
 
     private String writeJson(JsonNode value) {
         return value == null || value.isNull() ? null : value.toString();
+    }
+
+    private UserCredentialEntity credentialByUserId(Long userId) {
+        return userCredentialMapper.selectOne(
+                new LambdaQueryWrapper<UserCredentialEntity>().eq(UserCredentialEntity::getUserId, userId));
+    }
+
+    private boolean isEmail(String username) {
+        return username != null && username.contains("@");
+    }
+
+    private boolean isPhone(String username) {
+        return username != null && username.matches("\\d{6,}");
+    }
+
+    private UserActivationInfo toActivationInfo(UserEntity user, UserCredentialEntity credential) {
+        return new UserActivationInfo(user.getId(), loginName(user), user.getTenantId(),
+                credential == null ? null : credential.getActivateToken(),
+                credential == null ? null : credential.getExpireTime(),
+                credential == null ? null : credential.getUsedTime(),
+                credential == null ? null : credential.getSendTime(),
+                credential == null ? null : credential.getVersion());
+    }
+
+    private String loginName(UserEntity user) {
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            return user.getEmail();
+        }
+        if (user.getPhone() != null && !user.getPhone().isBlank()) {
+            return user.getPhone();
+        }
+        return null;
     }
 }

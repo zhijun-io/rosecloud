@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS sys_tenant (
 -- follow MyBatis-Plus underscore mapping.
 CREATE TABLE IF NOT EXISTS sys_user (
   id          BIGINT       NOT NULL                   COMMENT '主键',
-  username    VARCHAR(64)  NOT NULL                   COMMENT '用户名',
-  password    VARCHAR(128) NOT NULL                   COMMENT '密码(BCrypt)',
   nickname    VARCHAR(64)  DEFAULT NULL               COMMENT '昵称',
   status      TINYINT      NOT NULL DEFAULT 1         COMMENT '状态:1启用 0停用',
   tenant_id   VARCHAR(64)  DEFAULT NULL               COMMENT '租户ID(平台账号为空)',
@@ -35,8 +33,29 @@ CREATE TABLE IF NOT EXISTS sys_user (
   update_by   BIGINT       DEFAULT NULL               COMMENT '更新人',
   deleted     TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_username (username)
+  UNIQUE KEY uk_email (email),
+  UNIQUE KEY uk_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+CREATE TABLE IF NOT EXISTS user_credential (
+  id             BIGINT       NOT NULL                   COMMENT '主键',
+  user_id        BIGINT       NOT NULL                   COMMENT '用户ID',
+  password       VARCHAR(128) DEFAULT NULL               COMMENT '密码(BCrypt)',
+  password_changed_time DATETIME DEFAULT NULL            COMMENT '密码更新时间',
+  activate_token VARCHAR(255) DEFAULT NULL               COMMENT '激活临时令牌',
+  expire_time    DATETIME     DEFAULT NULL               COMMENT '令牌过期时间',
+  used_time      DATETIME     DEFAULT NULL               COMMENT '令牌使用时间',
+  send_time      DATETIME     DEFAULT NULL               COMMENT '令牌发送时间',
+  version        BIGINT       NOT NULL DEFAULT 0         COMMENT '版本号',
+  create_time    DATETIME     DEFAULT NULL               COMMENT '创建时间',
+  update_time    DATETIME     DEFAULT NULL               COMMENT '更新时间',
+  create_by      BIGINT       DEFAULT NULL               COMMENT '创建人',
+  update_by      BIGINT       DEFAULT NULL               COMMENT '更新人',
+  deleted        TINYINT      NOT NULL DEFAULT 0         COMMENT '逻辑删除',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_user_id (user_id),
+  UNIQUE KEY uk_activate_token (activate_token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户凭据表';
 
 -- Platform-level roles (no tenant_id) for v1.
 CREATE TABLE IF NOT EXISTS sys_role (
