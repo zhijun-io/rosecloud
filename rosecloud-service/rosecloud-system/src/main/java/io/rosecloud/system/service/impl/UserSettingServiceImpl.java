@@ -42,8 +42,8 @@ public class UserSettingServiceImpl implements UserSettingService {
     @AuditLog(action = "user-setting-save", description = "保存用户配置")
     @Override
     public void saveMine(String key, SettingValueRequest request) {
-        ensureSettingKeyExists(key);
         Long userId = currentUserId();
+        ensureSettingKeyExists(key);
         userSettingRepository.save(new UserSetting(userId, key, request.value(), now(), userId));
     }
 
