@@ -221,6 +221,12 @@
 - `extra` 只做扩展，不承载规则、继承或权限
 - 不做统一覆盖链，不做通用 `SettingResolver`
 
+落地现状：
+
+- `system` 模块已实现 `setting_key`、`system_setting`、`user_setting` 的后端接口
+- 系统配置和用户配置都按 `key / value` 读写
+- 配置键删除时会同步清理对应的系统配置和用户配置
+
 ### 2.7 不做项
 
 - 不做前端页面

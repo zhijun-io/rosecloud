@@ -49,6 +49,9 @@ rosecloud:
       - sys_dict_data
       - sys_dept
       - sys_login_session
+      - sys_setting_key
+      - sys_system_setting
+      - sys_user_setting
   security:
     jwt:
       secret: ${ROSECLOUD_SECURITY_JWT_SECRET:-"EGpBkD0uIstmuaCTQF6KqiDPL9YTuRL1KFrCjoL+m0Q/1HqQPWxoQPxwNw2A2OBO"}

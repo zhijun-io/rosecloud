@@ -23,7 +23,11 @@ public enum SystemErrorCode implements ErrorCode {
     DICT_DATA_NOT_FOUND("字典项不存在"),
     DEPT_NOT_FOUND("部门不存在"),
     DEPT_HAS_CHILDREN("存在子部门，无法删除"),
-    SESSION_NOT_FOUND("会话不存在");
+    SESSION_NOT_FOUND("会话不存在"),
+    SETTING_KEY_EXISTS("配置键已存在"),
+    SETTING_KEY_NOT_FOUND("配置键不存在"),
+    SYSTEM_SETTING_NOT_FOUND("系统配置不存在"),
+    USER_SETTING_NOT_FOUND("用户配置不存在");
 
     private final String message;
 

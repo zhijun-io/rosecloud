@@ -31,7 +31,10 @@ class RoseCloudTenantLineHandlerTest {
                 "sys_dict_type",
                 "sys_dict_data",
                 "sys_dept",
-                "sys_login_session"
+                "sys_login_session",
+                "sys_setting_key",
+                "sys_system_setting",
+                "sys_user_setting"
         ));
 
         TenantContext.setTenantId(100L);
