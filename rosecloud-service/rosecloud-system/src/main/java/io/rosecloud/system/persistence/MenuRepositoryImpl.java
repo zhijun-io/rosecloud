@@ -27,12 +27,12 @@ public class MenuRepositoryImpl implements MenuRepository {
 
     @Override
     public boolean existsByParentId(Long parentId) {
-        return menuMapper.exists(new LambdaQueryWrapper<MenuPO>().eq(MenuPO::getParentId, parentId));
+        return menuMapper.exists(new LambdaQueryWrapper<MenuEntity>().eq(MenuEntity::getParentId, parentId));
     }
 
     @Override
     public Long insert(Menu menu) {
-        MenuPO po = toPO(menu);
+        MenuEntity po = toEntity(menu);
         po.setId(null);
         menuMapper.insert(po);
         return po.getId();
@@ -40,7 +40,7 @@ public class MenuRepositoryImpl implements MenuRepository {
 
     @Override
     public void update(Menu menu) {
-        menuMapper.updateById(toPO(menu));
+        menuMapper.updateById(toEntity(menu));
     }
 
     @Override
@@ -50,8 +50,8 @@ public class MenuRepositoryImpl implements MenuRepository {
 
     @Override
     public List<Menu> findAll() {
-        return menuMapper.selectList(new LambdaQueryWrapper<MenuPO>()
-                        .orderByAsc(MenuPO::getSort))
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                        .orderByAsc(MenuEntity::getSort))
                 .stream().map(this::toDomain).toList();
     }
 
@@ -60,36 +60,36 @@ public class MenuRepositoryImpl implements MenuRepository {
         if (roleIds == null || roleIds.isEmpty()) {
             return List.of();
         }
-        List<RoleMenuPO> links = roleMenuMapper.selectList(
-                new LambdaQueryWrapper<RoleMenuPO>().in(RoleMenuPO::getRoleId, roleIds));
+        List<RoleMenuEntity> links = roleMenuMapper.selectList(
+                new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds));
         if (links.isEmpty()) {
             return List.of();
         }
-        List<Long> menuIds = links.stream().map(RoleMenuPO::getMenuId).distinct().toList();
-        return menuMapper.selectList(new LambdaQueryWrapper<MenuPO>()
-                        .in(MenuPO::getId, menuIds)
-                        .orderByAsc(MenuPO::getSort))
+        List<Long> menuIds = links.stream().map(RoleMenuEntity::getMenuId).distinct().toList();
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                        .in(MenuEntity::getId, menuIds)
+                        .orderByAsc(MenuEntity::getSort))
                 .stream().map(this::toDomain).toList();
     }
 
-    private Menu toDomain(MenuPO po) {
+    private Menu toDomain(MenuEntity po) {
         return new Menu(po.getId(), po.getParentId(), po.getName(), po.getType(), po.getPath(),
                 po.getComponent(), po.getPerms(), po.getIcon(), po.getSort(), po.getStatus(), po.getVisible());
     }
 
-    private MenuPO toPO(Menu m) {
-        MenuPO po = new MenuPO();
-        po.setId(m.id());
-        po.setParentId(m.parentId());
-        po.setName(m.name());
-        po.setType(m.type());
-        po.setPath(m.path());
-        po.setComponent(m.component());
-        po.setPerms(m.perms());
-        po.setIcon(m.icon());
-        po.setSort(m.sort());
-        po.setStatus(m.status());
-        po.setVisible(m.visible());
+    private MenuEntity toEntity(Menu m) {
+        MenuEntity po = new MenuEntity();
+        po.setId(m.getId());
+        po.setParentId(m.getParentId());
+        po.setName(m.getName());
+        po.setType(m.getType());
+        po.setPath(m.getPath());
+        po.setComponent(m.getComponent());
+        po.setPerms(m.getPerms());
+        po.setIcon(m.getIcon());
+        po.setSort(m.getSort());
+        po.setStatus(m.getStatus());
+        po.setVisible(m.getVisible());
         return po;
     }
 }

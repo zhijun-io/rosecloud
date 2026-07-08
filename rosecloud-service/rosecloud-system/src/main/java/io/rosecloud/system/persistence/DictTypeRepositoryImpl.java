@@ -22,12 +22,12 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
 
     @Override
     public boolean existsByCode(String code) {
-        return mapper.exists(new LambdaQueryWrapper<DictTypePO>().eq(DictTypePO::getCode, code));
+        return mapper.exists(new LambdaQueryWrapper<DictTypeEntity>().eq(DictTypeEntity::getCode, code));
     }
 
     @Override
     public Long insert(DictType dictType) {
-        DictTypePO po = toPO(dictType);
+        DictTypeEntity po = toEntity(dictType);
         po.setId(null);
         mapper.insert(po);
         return po.getId();
@@ -35,7 +35,7 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
 
     @Override
     public void update(DictType dictType) {
-        mapper.updateById(toPO(dictType));
+        mapper.updateById(toEntity(dictType));
     }
 
     @Override
@@ -46,7 +46,7 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
     @Override
     public Optional<DictType> findByCode(String code) {
         return Optional.ofNullable(mapper.selectOne(
-                new LambdaQueryWrapper<DictTypePO>().eq(DictTypePO::getCode, code))).map(this::toDomain);
+                new LambdaQueryWrapper<DictTypeEntity>().eq(DictTypeEntity::getCode, code))).map(this::toDomain);
     }
 
     @Override
@@ -56,28 +56,28 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
 
     @Override
     public PageResult<DictType> page(long current, long size, String keyword) {
-        Page<DictTypePO> page = new Page<>(current, size);
-        LambdaQueryWrapper<DictTypePO> wrapper = new LambdaQueryWrapper<>();
+        Page<DictTypeEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<DictTypeEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(DictTypePO::getCode, keyword).or().like(DictTypePO::getName, keyword);
+            wrapper.like(DictTypeEntity::getCode, keyword).or().like(DictTypeEntity::getName, keyword);
         }
-        wrapper.orderByDesc(DictTypePO::getCreateTime);
-        IPage<DictTypePO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(DictTypeEntity::getCreateTime);
+        IPage<DictTypeEntity> result = mapper.selectPage(page, wrapper);
         List<DictType> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private DictType toDomain(DictTypePO po) {
+    private DictType toDomain(DictTypeEntity po) {
         return new DictType(po.getId(), po.getCode(), po.getName(), po.getStatus(), po.getRemark());
     }
 
-    private DictTypePO toPO(DictType d) {
-        DictTypePO po = new DictTypePO();
-        po.setId(d.id());
-        po.setCode(d.code());
-        po.setName(d.name());
-        po.setStatus(d.status());
-        po.setRemark(d.remark());
+    private DictTypeEntity toEntity(DictType d) {
+        DictTypeEntity po = new DictTypeEntity();
+        po.setId(d.getId());
+        po.setCode(d.getCode());
+        po.setName(d.getName());
+        po.setStatus(d.getStatus());
+        po.setRemark(d.getRemark());
         return po;
     }
 }

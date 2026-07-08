@@ -5,7 +5,7 @@ import io.rosecloud.starter.data.BaseEntity;
 
 /** MyBatis-Plus persistent object for {@code sys_menu}; confined to infrastructure. */
 @TableName("sys_menu")
-public class MenuPO extends BaseEntity {
+public class MenuEntity extends BaseEntity {
 
     private Long parentId;
     private String name;

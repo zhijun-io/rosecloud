@@ -46,17 +46,17 @@ public class TenantProvisioner {
     @Transactional
     public void provision(Long tenantId) {
         TenantAdminCredentials creds = tenantRepository.findAdminCredentials(tenantId).orElse(null);
-        if (creds == null || creds.username() == null || creds.username().isBlank()
-                || creds.passwordHash() == null) {
+        if (creds == null || creds.getUsername() == null || creds.getUsername().isBlank()
+                || creds.getPasswordHash() == null) {
             tenantRepository.updateStatus(tenantId, TenantStatus.ENABLED);
             publishTenantNotice(tenantId, "租户已开通", "租户已完成开通。");
             return;
         }
         Role tenantAdminRole = roleRepository.findByCode(TENANT_ADMIN_ROLE_CODE)
                 .orElseThrow(() -> new BizException(SystemErrorCode.ROLE_NOT_FOUND));
-        Long userId = userService.createWithHash(creds.username(), creds.passwordHash(),
-                creds.username(), tenantId);
-        userService.assignRoles(userId, List.of(tenantAdminRole.id()));
+        Long userId = userService.createWithHash(creds.getUsername(), creds.getPasswordHash(),
+                creds.getUsername(), tenantId);
+        userService.assignRoles(userId, List.of(tenantAdminRole.getId()));
         tenantRepository.clearAdminPassword(tenantId);
         tenantRepository.updateStatus(tenantId, TenantStatus.ENABLED);
         publishTenantNotice(tenantId, "租户已开通", "租户已完成开通，首个管理员账号已初始化。");

@@ -60,15 +60,15 @@ public class AuthServiceImpl implements AuthService {
                 loginProtection.onFailure(request.username(), ip, false);
                 throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
             }
-            if (user.status() == null || user.status() != 1) {
+            if (user.getStatus() == null || user.getStatus() != 1) {
                 throw new BizException(SecurityErrorCode.ACCOUNT_DISABLED);
             }
-            if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
+            if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
                 loginProtection.onFailure(request.username(), ip, true);
                 throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
             }
-            CurrentUser currentUser = new CurrentUser(user.userId(), user.username(), user.tenantId(),
-                    user.roles(), user.perms());
+            CurrentUser currentUser = new CurrentUser(user.getUserId(), user.getUsername(), user.getTenantId(),
+                    user.getRoles(), user.getPerms());
             TokenResponse token = issue(currentUser);
             recordSession(token.accessToken(), currentUser, ip, userAgent);
             recordLogin(request.username(), true, null, ip, userAgent);
@@ -93,8 +93,8 @@ public class AuthServiceImpl implements AuthService {
         }
         AuthUser user = userRepository.findByUsername(claims.username())
                 .orElseThrow(() -> new BizException(SecurityErrorCode.INVALID_TOKEN));
-        return issue(new CurrentUser(user.userId(), user.username(), user.tenantId(),
-                user.roles(), user.perms()));
+        return issue(new CurrentUser(user.getUserId(), user.getUsername(), user.getTenantId(),
+                user.getRoles(), user.getPerms()));
     }
 
     /**

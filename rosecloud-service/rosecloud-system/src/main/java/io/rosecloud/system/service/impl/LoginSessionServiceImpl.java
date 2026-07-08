@@ -54,8 +54,8 @@ public class LoginSessionServiceImpl implements LoginSessionService {
         LoginSession session = loginSessionRepository.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.SESSION_NOT_FOUND));
         loginSessionRepository.markLoggedOutById(id);
-        if (session.jti() != null) {
-            tokenRevocationApi.revoke(new RevokeRequest(session.jti(), session.expireTime()));
+        if (session.getJti() != null) {
+            tokenRevocationApi.revoke(new RevokeRequest(session.getJti(), session.getExpireTime()));
         }
     }
 

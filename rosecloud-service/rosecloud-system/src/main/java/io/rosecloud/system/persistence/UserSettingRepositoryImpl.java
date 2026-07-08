@@ -19,25 +19,25 @@ public class UserSettingRepositoryImpl implements UserSettingRepository {
 
     @Override
     public Optional<UserSetting> findByUserIdAndKey(Long userId, String key) {
-        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<UserSettingPO>()
-                        .eq(UserSettingPO::getUserId, userId)
-                        .eq(UserSettingPO::getSettingKey, key)))
+        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
+                        .eq(UserSettingEntity::getUserId, userId)
+                        .eq(UserSettingEntity::getSettingKey, key)))
                 .map(this::toDomain);
     }
 
     @Override
     public List<UserSetting> findByUserId(Long userId) {
-        return mapper.selectList(new LambdaQueryWrapper<UserSettingPO>()
-                .eq(UserSettingPO::getUserId, userId)
-                .orderByAsc(UserSettingPO::getSettingKey)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getUserId, userId)
+                .orderByAsc(UserSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public void save(UserSetting setting) {
-        UserSettingPO existing = mapper.selectOne(new LambdaQueryWrapper<UserSettingPO>()
-                .eq(UserSettingPO::getUserId, setting.userId())
-                .eq(UserSettingPO::getSettingKey, setting.key()));
-        UserSettingPO po = toPO(setting);
+        UserSettingEntity existing = mapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getUserId, setting.getUserId())
+                .eq(UserSettingEntity::getSettingKey, setting.getKey()));
+        UserSettingEntity po = toEntity(setting);
         if (existing == null) {
             mapper.insert(po);
             return;
@@ -48,28 +48,28 @@ public class UserSettingRepositoryImpl implements UserSettingRepository {
 
     @Override
     public void deleteByUserIdAndKey(Long userId, String key) {
-        mapper.delete(new LambdaQueryWrapper<UserSettingPO>()
-                .eq(UserSettingPO::getUserId, userId)
-                .eq(UserSettingPO::getSettingKey, key));
+        mapper.delete(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getUserId, userId)
+                .eq(UserSettingEntity::getSettingKey, key));
     }
 
     @Override
     public void deleteByKey(String key) {
-        mapper.delete(new LambdaQueryWrapper<UserSettingPO>()
-                .eq(UserSettingPO::getSettingKey, key));
+        mapper.delete(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getSettingKey, key));
     }
 
-    private UserSetting toDomain(UserSettingPO po) {
+    private UserSetting toDomain(UserSettingEntity po) {
         return new UserSetting(po.getUserId(), po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
     }
 
-    private UserSettingPO toPO(UserSetting setting) {
-        UserSettingPO po = new UserSettingPO();
-        po.setUserId(setting.userId());
-        po.setSettingKey(setting.key());
-        po.setValue(setting.value());
-        po.setUpdatedAt(setting.updatedAt());
-        po.setUpdatedBy(setting.updatedBy());
+    private UserSettingEntity toEntity(UserSetting setting) {
+        UserSettingEntity po = new UserSettingEntity();
+        po.setUserId(setting.getUserId());
+        po.setSettingKey(setting.getKey());
+        po.setValue(setting.getValue());
+        po.setUpdatedAt(setting.getUpdatedAt());
+        po.setUpdatedBy(setting.getUpdatedBy());
         return po;
     }
 }

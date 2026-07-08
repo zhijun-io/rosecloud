@@ -27,6 +27,6 @@ public class SmsNoticeSender implements NoticeChannelSender {
     public void send(Notice notice, List<NoticeRecipient> recipients) {
         int withPhone = (int) recipients.stream().filter(r -> r.phone() != null && !r.phone().isBlank()).count();
         log.info("sms dispatch (stub): notice={} title={} recipients_with_phone={}",
-                notice.id(), notice.title(), withPhone);
+                notice.getId(), notice.getTitle(), withPhone);
     }
 }

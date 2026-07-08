@@ -41,14 +41,14 @@ public class NoticeDispatchService {
     }
 
     public void dispatch(Notice notice) {
-        int mask = NoticeChannel.maskOf(notice.channels());
+        int mask = NoticeChannel.maskOf(notice.getChannels());
         if (!NoticeChannel.EMAIL.in(mask) && !NoticeChannel.SMS.in(mask)) {
             return;
         }
         CompletableFuture.runAsync(() -> doDispatch(notice, mask), executor)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
-                        log.error("notice {} dispatch future terminated exceptionally", notice.id(), ex);
+                        log.error("notice {} dispatch future terminated exceptionally", notice.getId(), ex);
                     }
                 });
     }
@@ -56,7 +56,7 @@ public class NoticeDispatchService {
     void doDispatch(Notice notice, int mask) {
         try {
             List<NoticeRecipient> recipients = recipientApi.list(new NoticeRecipientRequest(
-                    notice.targetType(), notice.targetTenantId(), notice.targetRoleCode())).data();
+                    notice.getTargetType(), notice.getTargetTenantId(), notice.getTargetRoleCode())).data();
             if (recipients == null || recipients.isEmpty()) {
                 return;
             }
@@ -68,11 +68,11 @@ public class NoticeDispatchService {
                 if (sender != null) {
                     sender.send(notice, recipients);
                 } else {
-                    log.warn("no sender registered for channel {} on notice {}", channel, notice.id());
+                    log.warn("no sender registered for channel {} on notice {}", channel, notice.getId());
                 }
             }
         } catch (Exception e) {
-            log.warn("failed to dispatch notice {}", notice.id(), e);
+            log.warn("failed to dispatch notice {}", notice.getId(), e);
         }
     }
 }

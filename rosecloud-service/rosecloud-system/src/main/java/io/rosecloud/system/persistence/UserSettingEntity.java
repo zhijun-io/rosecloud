@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("sys_user_setting")
-public class UserSettingPO {
+public class UserSettingEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;

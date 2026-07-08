@@ -3,9 +3,9 @@ package io.rosecloud.system.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.rosecloud.starter.data.BaseEntity;
 
-/** MyBatis-Plus persistent object for {@code sys_dept}; confined to infrastructure. */
+/** MyBatis-Plus persistent entity for {@code sys_dept}; confined to infrastructure. */
 @TableName("sys_dept")
-public class DeptPO extends BaseEntity {
+public class DeptEntity extends BaseEntity {
 
     private Long parentId;
     private String name;

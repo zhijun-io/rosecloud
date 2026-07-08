@@ -39,7 +39,7 @@ public class EmailNoticeSender implements NoticeChannelSender {
     public void send(Notice notice, List<NoticeRecipient> recipients) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender == null) {
-            log.warn("email channel requested but no JavaMailSender configured; skipping notice {}", notice.id());
+            log.warn("email channel requested but no JavaMailSender configured; skipping notice {}", notice.getId());
             return;
         }
         for (NoticeRecipient r : recipients) {
@@ -49,11 +49,11 @@ public class EmailNoticeSender implements NoticeChannelSender {
             try {
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setTo(r.email());
-                message.setSubject(notice.title());
-                message.setText(notice.content());
+                message.setSubject(notice.getTitle());
+                message.setText(notice.getContent());
                 sender.send(message);
             } catch (Exception e) {
-                log.warn("failed to email notice {} to {}", notice.id(), r.email(), e);
+                log.warn("failed to email notice {} to {}", notice.getId(), r.email(), e);
             }
         }
     }

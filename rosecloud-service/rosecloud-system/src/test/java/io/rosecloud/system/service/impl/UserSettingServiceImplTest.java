@@ -62,10 +62,10 @@ class UserSettingServiceImplTest {
 
         ArgumentCaptor<UserSetting> captor = ArgumentCaptor.forClass(UserSetting.class);
         verify(userSettingRepository).save(captor.capture());
-        assertEquals(11L, captor.getValue().userId());
-        assertEquals("ui.theme", captor.getValue().key());
-        assertEquals("dark", captor.getValue().value());
-        assertEquals(11L, captor.getValue().updatedBy());
+        assertEquals(11L, captor.getValue().getUserId());
+        assertEquals("ui.theme", captor.getValue().getKey());
+        assertEquals("dark", captor.getValue().getValue());
+        assertEquals(11L, captor.getValue().getUpdatedBy());
     }
 
     @Test

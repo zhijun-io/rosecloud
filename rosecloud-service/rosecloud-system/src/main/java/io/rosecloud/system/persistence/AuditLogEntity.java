@@ -3,9 +3,9 @@ package io.rosecloud.system.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.rosecloud.starter.data.BaseEntity;
 
-/** MyBatis-Plus persistent object for {@code sys_audit_log}; confined to infrastructure. */
+/** MyBatis-Plus persistent entity for {@code sys_audit_log}; confined to infrastructure. */
 @TableName("sys_audit_log")
-public class AuditLogPO extends BaseEntity {
+public class AuditLogEntity extends BaseEntity {
 
     private String action;
     private String description;

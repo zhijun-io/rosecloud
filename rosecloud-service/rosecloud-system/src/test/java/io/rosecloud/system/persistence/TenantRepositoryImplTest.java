@@ -1,5 +1,6 @@
 package io.rosecloud.system.persistence;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
@@ -9,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,26 +24,28 @@ class TenantRepositoryImplTest {
 
     @Test
     void findByIdMarksEnabledTenantAsExpiredAfterExpireDate() {
-        TenantPO po = new TenantPO();
+        TenantEntity po = new TenantEntity();
         po.setId(7L);
         po.setName("Acme");
         po.setCode("acme");
         po.setStatus(TenantStatus.ENABLED.code());
         po.setExpireTime(LocalDate.now().minusDays(1));
+        po.setExtra("{\"tier\":\"gold\"}");
 
         when(mapper.selectById(7L)).thenReturn(po);
 
-        TenantRepositoryImpl repository = new TenantRepositoryImpl(mapper);
+        TenantRepositoryImpl repository = new TenantRepositoryImpl(mapper, new ObjectMapper());
 
         Tenant tenant = repository.findById(7L).orElseThrow();
 
-        assertEquals(TenantStatus.EXPIRED, tenant.status());
-        assertEquals(LocalDate.now().minusDays(1), tenant.expireTime());
+        assertEquals(TenantStatus.EXPIRED, tenant.getStatus());
+        assertEquals(LocalDate.now().minusDays(1), tenant.getExpireTime());
+        assertEquals("gold", tenant.getAdditionalInfo().get("tier").asText());
     }
 
     @Test
     void pageMapsTenantRecords() {
-        TenantPO po = new TenantPO();
+        TenantEntity po = new TenantEntity();
         po.setId(8L);
         po.setName("Beta");
         po.setCode("beta");
@@ -52,14 +54,14 @@ class TenantRepositoryImplTest {
 
         when(mapper.selectPage(any(), any())).thenAnswer(invocation -> {
             @SuppressWarnings("unchecked")
-            Page<TenantPO> page = invocation.getArgument(0);
+            Page<TenantEntity> page = invocation.getArgument(0);
             page.setRecords(List.of(po));
             page.setTotal(1L);
             return page;
         });
 
-        TenantRepositoryImpl repository = new TenantRepositoryImpl(mapper);
+        TenantRepositoryImpl repository = new TenantRepositoryImpl(mapper, new ObjectMapper());
 
-        assertEquals(TenantStatus.PENDING, repository.page(1, 10, null).records().get(0).status());
+        assertEquals(TenantStatus.PENDING, repository.page(1, 10, null).records().get(0).getStatus());
     }
 }

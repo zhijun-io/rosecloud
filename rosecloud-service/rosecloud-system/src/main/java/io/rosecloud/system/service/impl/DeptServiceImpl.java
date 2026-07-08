@@ -54,13 +54,13 @@ public class DeptServiceImpl implements DeptService {
     public List<DeptTreeNode> tree() {
         List<Dept> depts = deptRepository.findAll();
         Map<Long, List<Dept>> byParent = depts.stream()
-                .collect(Collectors.groupingBy(d -> d.parentId() == null ? 0L : d.parentId()));
+                .collect(Collectors.groupingBy(d -> d.getParentId() == null ? 0L : d.getParentId()));
         return buildChildren(byParent, 0L);
     }
 
     private List<DeptTreeNode> buildChildren(Map<Long, List<Dept>> byParent, Long parentId) {
         return byParent.getOrDefault(parentId, List.of()).stream()
-                .map(d -> new DeptTreeNode(d, buildChildren(byParent, d.id())))
+                .map(d -> new DeptTreeNode(d, buildChildren(byParent, d.getId())))
                 .toList();
     }
 

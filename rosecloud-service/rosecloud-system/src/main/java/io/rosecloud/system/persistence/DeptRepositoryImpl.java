@@ -24,12 +24,12 @@ public class DeptRepositoryImpl implements DeptRepository {
 
     @Override
     public boolean existsByParentId(Long parentId) {
-        return mapper.exists(new LambdaQueryWrapper<DeptPO>().eq(DeptPO::getParentId, parentId));
+        return mapper.exists(new LambdaQueryWrapper<DeptEntity>().eq(DeptEntity::getParentId, parentId));
     }
 
     @Override
     public Long insert(Dept dept) {
-        DeptPO po = toPO(dept);
+        DeptEntity po = toEntity(dept);
         po.setId(null);
         mapper.insert(po);
         return po.getId();
@@ -37,7 +37,7 @@ public class DeptRepositoryImpl implements DeptRepository {
 
     @Override
     public void update(Dept dept) {
-        mapper.updateById(toPO(dept));
+        mapper.updateById(toEntity(dept));
     }
 
     @Override
@@ -47,25 +47,25 @@ public class DeptRepositoryImpl implements DeptRepository {
 
     @Override
     public List<Dept> findAll() {
-        return mapper.selectList(new LambdaQueryWrapper<DeptPO>()
-                .orderByAsc(DeptPO::getSort)
-                .orderByAsc(DeptPO::getId)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<DeptEntity>()
+                .orderByAsc(DeptEntity::getSort)
+                .orderByAsc(DeptEntity::getId)).stream().map(this::toDomain).toList();
     }
 
-    private Dept toDomain(DeptPO po) {
+    private Dept toDomain(DeptEntity po) {
         return new Dept(po.getId(), po.getParentId(), po.getName(), po.getSort(),
                 po.getStatus(), po.getLeader(), po.getPhone());
     }
 
-    private DeptPO toPO(Dept d) {
-        DeptPO po = new DeptPO();
-        po.setId(d.id());
-        po.setParentId(d.parentId());
-        po.setName(d.name());
-        po.setSort(d.sort());
-        po.setStatus(d.status());
-        po.setLeader(d.leader());
-        po.setPhone(d.phone());
+    private DeptEntity toEntity(Dept d) {
+        DeptEntity po = new DeptEntity();
+        po.setId(d.getId());
+        po.setParentId(d.getParentId());
+        po.setName(d.getName());
+        po.setSort(d.getSort());
+        po.setStatus(d.getStatus());
+        po.setLeader(d.getLeader());
+        po.setPhone(d.getPhone());
         return po;
     }
 }

@@ -22,7 +22,7 @@ public class DictDataRepositoryImpl implements DictDataRepository {
 
     @Override
     public Long insert(DictData dictData) {
-        DictDataPO po = toPO(dictData);
+        DictDataEntity po = toEntity(dictData);
         po.setId(null);
         mapper.insert(po);
         return po.getId();
@@ -30,7 +30,7 @@ public class DictDataRepositoryImpl implements DictDataRepository {
 
     @Override
     public void update(DictData dictData) {
-        mapper.updateById(toPO(dictData));
+        mapper.updateById(toEntity(dictData));
     }
 
     @Override
@@ -40,17 +40,17 @@ public class DictDataRepositoryImpl implements DictDataRepository {
 
     @Override
     public List<DictData> findByDictCode(String dictCode) {
-        return mapper.selectList(new LambdaQueryWrapper<DictDataPO>()
-                .eq(DictDataPO::getDictCode, dictCode)
-                .orderByAsc(DictDataPO::getSort)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictCode, dictCode)
+                .orderByAsc(DictDataEntity::getSort)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public List<DictData> findEnabledByDictCode(String dictCode) {
-        return mapper.selectList(new LambdaQueryWrapper<DictDataPO>()
-                .eq(DictDataPO::getDictCode, dictCode)
-                .eq(DictDataPO::getStatus, 1)
-                .orderByAsc(DictDataPO::getSort)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictCode, dictCode)
+                .eq(DictDataEntity::getStatus, 1)
+                .orderByAsc(DictDataEntity::getSort)).stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -60,36 +60,36 @@ public class DictDataRepositoryImpl implements DictDataRepository {
 
     @Override
     public void deleteByDictCode(String dictCode) {
-        mapper.delete(new LambdaQueryWrapper<DictDataPO>().eq(DictDataPO::getDictCode, dictCode));
+        mapper.delete(new LambdaQueryWrapper<DictDataEntity>().eq(DictDataEntity::getDictCode, dictCode));
     }
 
     @Override
     public PageResult<DictData> page(long current, long size, String dictCode) {
-        Page<DictDataPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<DictDataPO> wrapper = new LambdaQueryWrapper<>();
+        Page<DictDataEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<DictDataEntity> wrapper = new LambdaQueryWrapper<>();
         if (dictCode != null && !dictCode.isBlank()) {
-            wrapper.eq(DictDataPO::getDictCode, dictCode);
+            wrapper.eq(DictDataEntity::getDictCode, dictCode);
         }
-        wrapper.orderByAsc(DictDataPO::getSort).orderByDesc(DictDataPO::getCreateTime);
-        IPage<DictDataPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByAsc(DictDataEntity::getSort).orderByDesc(DictDataEntity::getCreateTime);
+        IPage<DictDataEntity> result = mapper.selectPage(page, wrapper);
         List<DictData> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private DictData toDomain(DictDataPO po) {
+    private DictData toDomain(DictDataEntity po) {
         return new DictData(po.getId(), po.getDictCode(), po.getLabel(), po.getValue(),
                 po.getSort(), po.getStatus(), po.getRemark());
     }
 
-    private DictDataPO toPO(DictData d) {
-        DictDataPO po = new DictDataPO();
-        po.setId(d.id());
-        po.setDictCode(d.dictCode());
-        po.setLabel(d.label());
-        po.setValue(d.value());
-        po.setSort(d.sort());
-        po.setStatus(d.status());
-        po.setRemark(d.remark());
+    private DictDataEntity toEntity(DictData d) {
+        DictDataEntity po = new DictDataEntity();
+        po.setId(d.getId());
+        po.setDictCode(d.getDictCode());
+        po.setLabel(d.getLabel());
+        po.setValue(d.getValue());
+        po.setSort(d.getSort());
+        po.setStatus(d.getStatus());
+        po.setRemark(d.getRemark());
         return po;
     }
 }

@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 
 @TableName("sys_setting_key")
-public class SettingKeyPO {
+public class SettingKeyEntity {
 
     @TableId(value = "setting_key", type = IdType.INPUT)
     private String settingKey;

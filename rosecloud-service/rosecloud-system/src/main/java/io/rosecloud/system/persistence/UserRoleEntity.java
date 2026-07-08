@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
- * MyBatis-Plus persistent object for the {@code sys_user_role} link table.
+ * MyBatis-Plus persistent entity for the {@code sys_user_role} link table.
  * Standalone (no audit base) since it is a pure join table.
  */
 @TableName("sys_user_role")
-public class UserRolePO {
+public class UserRoleEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;

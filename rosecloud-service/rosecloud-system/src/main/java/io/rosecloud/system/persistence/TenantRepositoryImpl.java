@@ -1,5 +1,8 @@
 package io.rosecloud.system.persistence;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -18,9 +21,11 @@ import java.util.Optional;
 public class TenantRepositoryImpl implements TenantRepository {
 
     private final TenantMapper mapper;
+    private final ObjectMapper objectMapper;
 
-    public TenantRepositoryImpl(TenantMapper mapper) {
+    public TenantRepositoryImpl(TenantMapper mapper, ObjectMapper objectMapper) {
         this.mapper = mapper;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -30,12 +35,12 @@ public class TenantRepositoryImpl implements TenantRepository {
 
     @Override
     public boolean existsByCode(String code) {
-        return mapper.exists(new LambdaQueryWrapper<TenantPO>().eq(TenantPO::getCode, code));
+        return mapper.exists(new LambdaQueryWrapper<TenantEntity>().eq(TenantEntity::getCode, code));
     }
 
     @Override
     public Long insert(Tenant tenant, String adminUsername, String adminPasswordHash) {
-        TenantPO po = toPO(tenant);
+        TenantEntity po = toEntity(tenant);
         po.setId(null);
         po.setAdminUsername(adminUsername);
         po.setAdminPassword(adminPasswordHash);
@@ -51,35 +56,35 @@ public class TenantRepositoryImpl implements TenantRepository {
 
     @Override
     public void clearAdminPassword(Long id) {
-        mapper.update(null, new LambdaUpdateWrapper<TenantPO>()
-                .eq(TenantPO::getId, id)
-                .set(TenantPO::getAdminPassword, null));
+        mapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
+                .eq(TenantEntity::getId, id)
+                .set(TenantEntity::getAdminPassword, null));
     }
 
     @Override
     public void updateStatus(Long id, TenantStatus status) {
-        mapper.update(null, new LambdaUpdateWrapper<TenantPO>()
-                .eq(TenantPO::getId, id)
-                .set(TenantPO::getStatus, status.code()));
+        mapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
+                .eq(TenantEntity::getId, id)
+                .set(TenantEntity::getStatus, status.code()));
     }
 
     @Override
     public PageResult<Tenant> page(long current, long size, String keyword) {
-        Page<TenantPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<TenantPO> wrapper = new LambdaQueryWrapper<>();
+        Page<TenantEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(TenantPO::getName, keyword).or().like(TenantPO::getCode, keyword);
+            wrapper.like(TenantEntity::getName, keyword).or().like(TenantEntity::getCode, keyword);
         }
-        wrapper.orderByDesc(TenantPO::getCreateTime);
-        IPage<TenantPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(TenantEntity::getCreateTime);
+        IPage<TenantEntity> result = mapper.selectPage(page, wrapper);
         List<Tenant> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private Tenant toDomain(TenantPO po) {
+    private Tenant toDomain(TenantEntity po) {
         return new Tenant(po.getId(), po.getName(), po.getCode(),
                 resolveStatus(po.getStatus(), po.getExpireTime()), po.getContactUser(), po.getContactPhone(),
-                po.getExpireTime(), po.getRemark());
+                po.getExpireTime(), po.getRemark(), readJson(po.getExtra()));
     }
 
     private TenantStatus resolveStatus(Integer status, java.time.LocalDate expireTime) {
@@ -92,16 +97,32 @@ public class TenantRepositoryImpl implements TenantRepository {
         return TenantStatus.of(status);
     }
 
-    private TenantPO toPO(Tenant t) {
-        TenantPO po = new TenantPO();
-        po.setId(t.id());
-        po.setName(t.name());
-        po.setCode(t.code());
-        po.setStatus(t.status() == null ? null : t.status().code());
-        po.setContactUser(t.contactUser());
-        po.setContactPhone(t.contactPhone());
-        po.setExpireTime(t.expireTime());
-        po.setRemark(t.remark());
+    private TenantEntity toEntity(Tenant t) {
+        TenantEntity po = new TenantEntity();
+        po.setId(t.getId());
+        po.setName(t.getName());
+        po.setCode(t.getCode());
+        po.setStatus(t.getStatus() == null ? null : t.getStatus().code());
+        po.setContactUser(t.getContactUser());
+        po.setContactPhone(t.getContactPhone());
+        po.setExpireTime(t.getExpireTime());
+        po.setRemark(t.getRemark());
+        po.setExtra(writeJson(t.getAdditionalInfo()));
         return po;
+    }
+
+    private JsonNode readJson(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(value);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Invalid tenant extra JSON", ex);
+        }
+    }
+
+    private String writeJson(JsonNode value) {
+        return value == null || value.isNull() ? null : value.toString();
     }
 }

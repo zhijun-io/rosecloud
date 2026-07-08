@@ -3,9 +3,9 @@ package io.rosecloud.system.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.rosecloud.starter.data.BaseEntity;
 
-/** MyBatis-Plus persistent object for {@code sys_user}; confined to infrastructure. */
+/** MyBatis-Plus persistent entity for {@code sys_user}; confined to infrastructure. */
 @TableName("sys_user")
-public class UserPO extends BaseEntity {
+public class UserEntity extends BaseEntity {
 
     private String username;
     private String password;
@@ -14,6 +14,7 @@ public class UserPO extends BaseEntity {
     private Long tenantId;
     private String email;
     private String phone;
+    private String extra;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -29,4 +30,6 @@ public class UserPO extends BaseEntity {
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public String getExtra() { return extra; }
+    public void setExtra(String extra) { this.extra = extra; }
 }

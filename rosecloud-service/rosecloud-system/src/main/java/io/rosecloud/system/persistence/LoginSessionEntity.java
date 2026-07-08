@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 /** MyBatis-Plus persistent object for {@code sys_login_session}; confined to infrastructure. */
 @TableName("sys_login_session")
-public class LoginSessionPO extends BaseEntity {
+public class LoginSessionEntity extends BaseEntity {
 
     private String jti;
     private Long userId;

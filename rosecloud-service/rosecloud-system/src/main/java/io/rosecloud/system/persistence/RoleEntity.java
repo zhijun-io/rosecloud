@@ -5,7 +5,7 @@ import io.rosecloud.starter.data.BaseEntity;
 
 /** MyBatis-Plus persistent object for {@code sys_role}; confined to infrastructure. */
 @TableName("sys_role")
-public class RolePO extends BaseEntity {
+public class RoleEntity extends BaseEntity {
 
     private String code;
     private String name;

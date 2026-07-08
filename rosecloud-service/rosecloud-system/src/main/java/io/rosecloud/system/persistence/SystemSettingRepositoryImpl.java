@@ -25,14 +25,14 @@ public class SystemSettingRepositoryImpl implements SystemSettingRepository {
 
     @Override
     public List<SystemSetting> findAll() {
-        return mapper.selectList(new LambdaQueryWrapper<SystemSettingPO>()
-                .orderByAsc(SystemSettingPO::getSettingKey)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<SystemSettingEntity>()
+                .orderByAsc(SystemSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public void save(SystemSetting setting) {
-        SystemSettingPO existing = mapper.selectById(setting.key());
-        SystemSettingPO po = toPO(setting);
+        SystemSettingEntity existing = mapper.selectById(setting.getKey());
+        SystemSettingEntity po = toEntity(setting);
         if (existing == null) {
             mapper.insert(po);
             return;
@@ -45,16 +45,16 @@ public class SystemSettingRepositoryImpl implements SystemSettingRepository {
         mapper.deleteById(key);
     }
 
-    private SystemSetting toDomain(SystemSettingPO po) {
+    private SystemSetting toDomain(SystemSettingEntity po) {
         return new SystemSetting(po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
     }
 
-    private SystemSettingPO toPO(SystemSetting setting) {
-        SystemSettingPO po = new SystemSettingPO();
-        po.setSettingKey(setting.key());
-        po.setValue(setting.value());
-        po.setUpdatedAt(setting.updatedAt());
-        po.setUpdatedBy(setting.updatedBy());
+    private SystemSettingEntity toEntity(SystemSetting setting) {
+        SystemSettingEntity po = new SystemSettingEntity();
+        po.setSettingKey(setting.getKey());
+        po.setValue(setting.getValue());
+        po.setUpdatedAt(setting.getUpdatedAt());
+        po.setUpdatedBy(setting.getUpdatedBy());
         return po;
     }
 }

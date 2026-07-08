@@ -83,10 +83,10 @@ public class NoticeServiceImpl implements NoticeService {
         LocalDateTime now = LocalDateTime.now();
         PageResult<Notice> notices = noticeRepository.myNotices(current, size, user.tenantId(), user.roles(), now);
         Map<Long, NoticeRecord> records = noticeRepository
-                .findRecords(notices.records().stream().map(Notice::id).toList(), user.userId())
-                .stream().collect(Collectors.toMap(NoticeRecord::noticeId, Function.identity()));
+                .findRecords(notices.records().stream().map(Notice::getId).toList(), user.userId())
+                .stream().collect(Collectors.toMap(NoticeRecord::getNoticeId, Function.identity()));
         List<MyNotice> mine = notices.records().stream()
-                .map(n -> toMyNotice(n, records.get(n.id())))
+                .map(n -> toMyNotice(n, records.get(n.getId())))
                 .toList();
         return PageResult.of(mine, notices.total(), notices.current(), notices.size());
     }
@@ -113,7 +113,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public void confirm(Long id) {
         Notice notice = loadAndCheckVisible(id);
-        if (!Boolean.TRUE.equals(notice.needConfirm())) {
+        if (!Boolean.TRUE.equals(notice.getNeedConfirm())) {
             throw new BizException(NoticeErrorCode.NOTICE_NOT_CONFIRMABLE);
         }
         CurrentUser user = UserContext.get();
@@ -128,7 +128,7 @@ public class NoticeServiceImpl implements NoticeService {
         LocalDateTime now = LocalDateTime.now();
         List<Notice> due = noticeRepository.findDueScheduled(now);
         for (Notice notice : due) {
-            noticeRepository.markPublished(notice.id());
+            noticeRepository.markPublished(notice.getId());
             dispatchService.dispatch(notice);
         }
         return due.size();
@@ -145,28 +145,28 @@ public class NoticeServiceImpl implements NoticeService {
     }
 
     private boolean visibleTo(Notice n, CurrentUser user, LocalDateTime now) {
-        if (n.status() == null || n.status() != NoticeStatus.PUBLISHED.code()) {
+        if (n.getStatus() == null || n.getStatus() != NoticeStatus.PUBLISHED.code()) {
             return false;
         }
-        if (n.publishTime() != null && n.publishTime().isAfter(now)) {
+        if (n.getPublishTime() != null && n.getPublishTime().isAfter(now)) {
             return false;
         }
-        if (n.effectiveTime() != null && n.effectiveTime().isAfter(now)) {
+        if (n.getEffectiveTime() != null && n.getEffectiveTime().isAfter(now)) {
             return false;
         }
-        if (n.expireTime() != null && n.expireTime().isBefore(now)) {
+        if (n.getExpireTime() != null && n.getExpireTime().isBefore(now)) {
             return false;
         }
-        int type = n.targetType() == null ? -1 : n.targetType();
+        int type = n.getTargetType() == null ? -1 : n.getTargetType();
         if (type == NoticeTargetType.GLOBAL.code()) {
             return true;
         }
         if (type == NoticeTargetType.TENANT.code()) {
-            return user != null && user.tenantId() != null && user.tenantId().equals(n.targetTenantId());
+            return user != null && user.tenantId() != null && user.tenantId().equals(n.getTargetTenantId());
         }
         if (type == NoticeTargetType.ROLE.code()) {
-            return user != null && n.targetRoleCode() != null && user.roles() != null
-                    && user.roles().contains(n.targetRoleCode());
+            return user != null && n.getTargetRoleCode() != null && user.roles() != null
+                    && user.roles().contains(n.getTargetRoleCode());
         }
         return false;
     }
@@ -182,10 +182,10 @@ public class NoticeServiceImpl implements NoticeService {
     }
 
     private MyNotice toMyNotice(Notice notice, NoticeRecord record) {
-        boolean read = record != null && record.readTime() != null;
-        boolean confirmed = record != null && record.confirmTime() != null;
+        boolean read = record != null && record.getReadTime() != null;
+        boolean confirmed = record != null && record.getConfirmTime() != null;
         return new MyNotice(notice, read, confirmed,
-                record == null ? null : record.readTime(),
-                record == null ? null : record.confirmTime());
+                record == null ? null : record.getReadTime(),
+                record == null ? null : record.getConfirmTime());
     }
 }

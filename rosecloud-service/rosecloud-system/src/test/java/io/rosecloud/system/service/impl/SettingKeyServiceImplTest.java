@@ -66,10 +66,10 @@ class SettingKeyServiceImplTest {
 
         ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
         verify(settingKeyRepository).insert(captor.capture());
-        assertEquals("ui.theme", captor.getValue().key());
-        assertEquals("主题", captor.getValue().name());
-        assertEquals("desc", captor.getValue().remark());
-        assertEquals(7L, captor.getValue().updatedBy());
+        assertEquals("ui.theme", captor.getValue().getKey());
+        assertEquals("主题", captor.getValue().getName());
+        assertEquals("desc", captor.getValue().getRemark());
+        assertEquals(7L, captor.getValue().getUpdatedBy());
     }
 
     @Test

@@ -59,7 +59,7 @@ class TenantServiceImplTest {
         assertEquals(99L, id);
         ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
         verify(tenantRepository).insert(tenantCaptor.capture(), any(), any());
-        assertEquals(TenantStatus.PENDING, tenantCaptor.getValue().status());
+        assertEquals(TenantStatus.PENDING, tenantCaptor.getValue().getStatus());
         ArgumentCaptor<NoticePublishRequest> noticeCaptor = ArgumentCaptor.forClass(NoticePublishRequest.class);
         verify(noticePublishApi).publish(noticeCaptor.capture());
         assertEquals(NoticeTargetType.ROLE.code(), noticeCaptor.getValue().targetType());
@@ -70,7 +70,7 @@ class TenantServiceImplTest {
     @Test
     void enableRejectsExpiredTenant() {
         Tenant tenant = new Tenant(7L, "Acme", "acme", TenantStatus.DISABLED,
-                "Owner", "13800000000", LocalDate.now().minusDays(1), "remark");
+                "Owner", "13800000000", LocalDate.now().minusDays(1), "remark", null);
         when(tenantRepository.findById(7L)).thenReturn(Optional.of(tenant));
 
         BizException ex = assertThrows(BizException.class, () -> service().enable(7L));
@@ -82,7 +82,7 @@ class TenantServiceImplTest {
     @Test
     void getReturnsRepositoryValue() {
         Tenant tenant = new Tenant(8L, "Beta", "beta", TenantStatus.ENABLED,
-                "Owner", "13800000000", LocalDate.now().plusDays(1), "remark");
+                "Owner", "13800000000", LocalDate.now().plusDays(1), "remark", null);
         when(tenantRepository.findById(8L)).thenReturn(Optional.of(tenant));
 
         assertEquals(tenant, service().get(8L));

@@ -35,7 +35,7 @@ class NoticeDispatchServiceTest {
                         capturingSender(NoticeChannel.SMS, smsCount)), SYNC);
 
         Notice notice = notice(NoticeChannel.EMAIL.code());
-        service.doDispatch(notice, NoticeChannel.maskOf(notice.channels()));
+        service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
         assertThat(emailCount.get()).isEqualTo(2);
         assertThat(smsCount.get()).isEqualTo(0);
@@ -54,7 +54,7 @@ class NoticeDispatchServiceTest {
                 NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
                 null, null, NoticeChannel.EMAIL.code());
 
-        service.doDispatch(notice, NoticeChannel.maskOf(notice.channels()));
+        service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
         assertThat(captured[0].targetType()).isEqualTo(NoticeTargetType.TENANT.code());
         assertThat(captured[0].targetTenantId()).isEqualTo(99L);

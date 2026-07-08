@@ -25,27 +25,27 @@ public class RoleRepositoryImpl implements RoleRepository {
 
     @Override
     public boolean existsByCode(String code) {
-        return roleMapper.exists(new LambdaQueryWrapper<RolePO>().eq(RolePO::getCode, code));
+        return roleMapper.exists(new LambdaQueryWrapper<RoleEntity>().eq(RoleEntity::getCode, code));
     }
 
     @Override
     public Long insert(Role role) {
-        RolePO po = new RolePO();
-        po.setCode(role.code());
-        po.setName(role.name());
+        RoleEntity po = new RoleEntity();
+        po.setCode(role.getCode());
+        po.setName(role.getName());
         roleMapper.insert(po);
         return po.getId();
     }
 
     @Override
     public PageResult<Role> page(long current, long size, String keyword) {
-        Page<RolePO> page = new Page<>(current, size);
-        LambdaQueryWrapper<RolePO> wrapper = new LambdaQueryWrapper<>();
+        Page<RoleEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(RolePO::getCode, keyword).or().like(RolePO::getName, keyword);
+            wrapper.like(RoleEntity::getCode, keyword).or().like(RoleEntity::getName, keyword);
         }
-        wrapper.orderByDesc(RolePO::getCreateTime);
-        IPage<RolePO> result = roleMapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(RoleEntity::getCreateTime);
+        IPage<RoleEntity> result = roleMapper.selectPage(page, wrapper);
         List<Role> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -58,18 +58,18 @@ public class RoleRepositoryImpl implements RoleRepository {
     @Override
     public List<Long> findMenuIdsByRoleId(Long roleId) {
         return roleMenuMapper.selectList(
-                        new LambdaQueryWrapper<RoleMenuPO>().eq(RoleMenuPO::getRoleId, roleId))
-                .stream().map(RoleMenuPO::getMenuId).toList();
+                        new LambdaQueryWrapper<RoleMenuEntity>().eq(RoleMenuEntity::getRoleId, roleId))
+                .stream().map(RoleMenuEntity::getMenuId).toList();
     }
 
     @Override
     public void assignMenus(Long roleId, Collection<Long> menuIds) {
-        roleMenuMapper.delete(new LambdaQueryWrapper<RoleMenuPO>().eq(RoleMenuPO::getRoleId, roleId));
+        roleMenuMapper.delete(new LambdaQueryWrapper<RoleMenuEntity>().eq(RoleMenuEntity::getRoleId, roleId));
         if (menuIds == null) {
             return;
         }
         for (Long menuId : menuIds) {
-            RoleMenuPO po = new RoleMenuPO();
+            RoleMenuEntity po = new RoleMenuEntity();
             po.setRoleId(roleId);
             po.setMenuId(menuId);
             roleMenuMapper.insert(po);
@@ -84,10 +84,10 @@ public class RoleRepositoryImpl implements RoleRepository {
     @Override
     public Optional<Role> findByCode(String code) {
         return Optional.ofNullable(roleMapper.selectOne(
-                new LambdaQueryWrapper<RolePO>().eq(RolePO::getCode, code))).map(this::toDomain);
+                new LambdaQueryWrapper<RoleEntity>().eq(RoleEntity::getCode, code))).map(this::toDomain);
     }
 
-    private Role toDomain(RolePO po) {
+    private Role toDomain(RoleEntity po) {
         return new Role(po.getId(), po.getCode(), po.getName());
     }
 }

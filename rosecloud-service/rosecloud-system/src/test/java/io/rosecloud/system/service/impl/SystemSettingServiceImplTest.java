@@ -63,9 +63,9 @@ class SystemSettingServiceImplTest {
 
         ArgumentCaptor<SystemSetting> captor = ArgumentCaptor.forClass(SystemSetting.class);
         verify(systemSettingRepository).save(captor.capture());
-        assertEquals("ui.theme", captor.getValue().key());
-        assertEquals("{\"mode\":\"dark\"}", captor.getValue().value());
-        assertEquals(9L, captor.getValue().updatedBy());
+        assertEquals("ui.theme", captor.getValue().getKey());
+        assertEquals("{\"mode\":\"dark\"}", captor.getValue().getValue());
+        assertEquals(9L, captor.getValue().getUpdatedBy());
     }
 
     @Test

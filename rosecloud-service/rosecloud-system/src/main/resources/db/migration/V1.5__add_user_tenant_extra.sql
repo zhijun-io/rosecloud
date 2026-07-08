@@ -1,0 +1,5 @@
+ALTER TABLE sys_tenant
+    ADD COLUMN extra JSON DEFAULT NULL COMMENT '扩展信息(JSON)' AFTER remark;
+
+ALTER TABLE sys_user
+    ADD COLUMN extra JSON DEFAULT NULL COMMENT '扩展信息(JSON)' AFTER phone;

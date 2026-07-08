@@ -42,7 +42,7 @@ public class TenantServiceImpl implements TenantService {
             throw new BizException(SystemErrorCode.TENANT_CODE_EXISTS);
         }
         Tenant tenant = new Tenant(null, request.name(), request.code(), TenantStatus.PENDING,
-                request.contactUser(), request.contactPhone(), request.expireTime(), request.remark());
+                request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(), null);
         String passwordHash = request.adminPassword() == null || request.adminPassword().isBlank()
                 ? null : passwordEncoder.encode(request.adminPassword());
         Long id = tenantRepository.insert(tenant, request.adminUsername(), passwordHash);
@@ -65,7 +65,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public Long open(Long id) {
         Tenant tenant = load(id);
-        if (tenant.status() != TenantStatus.PENDING) {
+        if (tenant.getStatus() != TenantStatus.PENDING) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
         tenantProvisioner.provision(id);
@@ -76,7 +76,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void disable(Long id) {
         Tenant tenant = load(id);
-        if (tenant.status() != TenantStatus.ENABLED) {
+        if (tenant.getStatus() != TenantStatus.ENABLED) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
         tenantRepository.updateStatus(id, TenantStatus.DISABLED);
@@ -86,10 +86,10 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public void enable(Long id) {
         Tenant tenant = load(id);
-        if (tenant.expireTime() != null && tenant.expireTime().isBefore(LocalDate.now())) {
+        if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDate.now())) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
-        if (tenant.status() != TenantStatus.DISABLED) {
+        if (tenant.getStatus() != TenantStatus.DISABLED) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
         tenantRepository.updateStatus(id, TenantStatus.ENABLED);

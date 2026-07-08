@@ -5,9 +5,9 @@ import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
 
-/** MyBatis-Plus persistent object for {@code sys_notice}; confined to infrastructure. */
+/** MyBatis-Plus persistent entity for {@code sys_notice}; confined to infrastructure. */
 @TableName("sys_notice")
-public class NoticePO extends BaseEntity {
+public class NoticeEntity extends BaseEntity {
 
     private String title;
     private String content;

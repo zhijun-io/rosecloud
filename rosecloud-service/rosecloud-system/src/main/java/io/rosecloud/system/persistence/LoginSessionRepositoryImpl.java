@@ -25,7 +25,7 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
 
     @Override
     public Long insert(LoginSession session) {
-        LoginSessionPO po = toPO(session);
+        LoginSessionEntity po = toEntity(session);
         po.setId(null);
         mapper.insert(po);
         return po.getId();
@@ -39,57 +39,57 @@ public class LoginSessionRepositoryImpl implements LoginSessionRepository {
     @Override
     public Optional<LoginSession> findByJti(String jti) {
         return Optional.ofNullable(mapper.selectOne(
-                new LambdaQueryWrapper<LoginSessionPO>().eq(LoginSessionPO::getJti, jti))).map(this::toDomain);
+                new LambdaQueryWrapper<LoginSessionEntity>().eq(LoginSessionEntity::getJti, jti))).map(this::toDomain);
     }
 
     @Override
     public void markLoggedOutByJti(String jti) {
-        mapper.update(null, new LambdaUpdateWrapper<LoginSessionPO>()
-                .eq(LoginSessionPO::getJti, jti)
-                .set(LoginSessionPO::getStatus, LoginSessionStatus.LOGGED_OUT.code())
-                .set(LoginSessionPO::getUpdateTime, LocalDateTime.now()));
+        mapper.update(null, new LambdaUpdateWrapper<LoginSessionEntity>()
+                .eq(LoginSessionEntity::getJti, jti)
+                .set(LoginSessionEntity::getStatus, LoginSessionStatus.LOGGED_OUT.code())
+                .set(LoginSessionEntity::getUpdateTime, LocalDateTime.now()));
     }
 
     @Override
     public void markLoggedOutById(Long id) {
-        mapper.update(null, new LambdaUpdateWrapper<LoginSessionPO>()
-                .eq(LoginSessionPO::getId, id)
-                .set(LoginSessionPO::getStatus, LoginSessionStatus.LOGGED_OUT.code())
-                .set(LoginSessionPO::getUpdateTime, LocalDateTime.now()));
+        mapper.update(null, new LambdaUpdateWrapper<LoginSessionEntity>()
+                .eq(LoginSessionEntity::getId, id)
+                .set(LoginSessionEntity::getStatus, LoginSessionStatus.LOGGED_OUT.code())
+                .set(LoginSessionEntity::getUpdateTime, LocalDateTime.now()));
     }
 
     @Override
     public PageResult<LoginSession> onlinePage(long current, long size, Long tenantId, LocalDateTime now) {
-        Page<LoginSessionPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<LoginSessionPO> wrapper = new LambdaQueryWrapper<LoginSessionPO>()
-                .eq(LoginSessionPO::getStatus, LoginSessionStatus.ONLINE.code())
-                .gt(LoginSessionPO::getExpireTime, now);
+        Page<LoginSessionEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<LoginSessionEntity> wrapper = new LambdaQueryWrapper<LoginSessionEntity>()
+                .eq(LoginSessionEntity::getStatus, LoginSessionStatus.ONLINE.code())
+                .gt(LoginSessionEntity::getExpireTime, now);
         if (tenantId != null) {
-            wrapper.eq(LoginSessionPO::getTenantId, tenantId);
+            wrapper.eq(LoginSessionEntity::getTenantId, tenantId);
         }
-        wrapper.orderByDesc(LoginSessionPO::getLoginTime);
-        IPage<LoginSessionPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(LoginSessionEntity::getLoginTime);
+        IPage<LoginSessionEntity> result = mapper.selectPage(page, wrapper);
         List<LoginSession> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private LoginSession toDomain(LoginSessionPO po) {
+    private LoginSession toDomain(LoginSessionEntity po) {
         return new LoginSession(po.getId(), po.getJti(), po.getUserId(), po.getUsername(), po.getTenantId(),
                 po.getLoginTime(), po.getExpireTime(), po.getIp(), po.getUserAgent(), po.getStatus());
     }
 
-    private LoginSessionPO toPO(LoginSession s) {
-        LoginSessionPO po = new LoginSessionPO();
-        po.setId(s.id());
-        po.setJti(s.jti());
-        po.setUserId(s.userId());
-        po.setUsername(s.username());
-        po.setTenantId(s.tenantId());
-        po.setLoginTime(s.loginTime());
-        po.setExpireTime(s.expireTime());
-        po.setIp(s.ip());
-        po.setUserAgent(s.userAgent());
-        po.setStatus(s.status());
+    private LoginSessionEntity toEntity(LoginSession s) {
+        LoginSessionEntity po = new LoginSessionEntity();
+        po.setId(s.getId());
+        po.setJti(s.getJti());
+        po.setUserId(s.getUserId());
+        po.setUsername(s.getUsername());
+        po.setTenantId(s.getTenantId());
+        po.setLoginTime(s.getLoginTime());
+        po.setExpireTime(s.getExpireTime());
+        po.setIp(s.getIp());
+        po.setUserAgent(s.getUserAgent());
+        po.setStatus(s.getStatus());
         return po;
     }
 }

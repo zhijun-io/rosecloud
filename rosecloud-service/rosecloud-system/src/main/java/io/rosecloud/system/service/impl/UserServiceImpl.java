@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(request.username())) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
-        User user = new User(null, request.username(), request.nickname(), 1, request.tenantId());
+        User user = new User(null, request.username(), request.nickname(), 1, request.tenantId(), null);
         return userRepository.insert(user, passwordEncoder.encode(request.password()));
     }
 
@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
-        User user = new User(null, username, nickname, 1, tenantId);
+        User user = new User(null, username, nickname, 1, tenantId, null);
         return userRepository.insert(user, passwordHash);
     }
 

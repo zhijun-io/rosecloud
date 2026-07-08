@@ -22,15 +22,15 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
 
     @Override
     public void insert(AuditLog log) {
-        AuditLogPO po = new AuditLogPO();
-        po.setAction(log.action());
-        po.setDescription(log.description());
-        po.setPrincipal(log.principal());
-        po.setTenantId(log.tenantId());
-        po.setTarget(log.target());
-        po.setElapsedMillis(log.elapsedMillis());
-        po.setSuccess(log.success() ? 1 : 0);
-        po.setError(log.error());
+        AuditLogEntity po = new AuditLogEntity();
+        po.setAction(log.getAction());
+        po.setDescription(log.getDescription());
+        po.setPrincipal(log.getPrincipal());
+        po.setTenantId(log.getTenantId());
+        po.setTarget(log.getTarget());
+        po.setElapsedMillis(log.getElapsedMillis());
+        po.setSuccess(log.isSuccess() ? 1 : 0);
+        po.setError(log.getError());
         mapper.insert(po);
     }
 
@@ -41,24 +41,24 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
 
     @Override
     public PageResult<AuditLog> page(long current, long size, Long tenantId, String action, String principal) {
-        Page<AuditLogPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<AuditLogPO> wrapper = new LambdaQueryWrapper<>();
+        Page<AuditLogEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
         if (tenantId != null) {
-            wrapper.eq(AuditLogPO::getTenantId, tenantId);
+            wrapper.eq(AuditLogEntity::getTenantId, tenantId);
         }
         if (action != null && !action.isBlank()) {
-            wrapper.eq(AuditLogPO::getAction, action);
+            wrapper.eq(AuditLogEntity::getAction, action);
         }
         if (principal != null && !principal.isBlank()) {
-            wrapper.eq(AuditLogPO::getPrincipal, principal);
+            wrapper.eq(AuditLogEntity::getPrincipal, principal);
         }
-        wrapper.orderByDesc(AuditLogPO::getCreateTime);
-        IPage<AuditLogPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(AuditLogEntity::getCreateTime);
+        IPage<AuditLogEntity> result = mapper.selectPage(page, wrapper);
         List<AuditLog> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private AuditLog toDomain(AuditLogPO po) {
+    private AuditLog toDomain(AuditLogEntity po) {
         return new AuditLog(po.getId(), po.getAction(), po.getDescription(), po.getPrincipal(),
                 po.getTenantId(), po.getTarget(), po.getElapsedMillis() == null ? 0L : po.getElapsedMillis(),
                 po.getSuccess() != null && po.getSuccess() == 1, po.getError(), po.getCreateTime());

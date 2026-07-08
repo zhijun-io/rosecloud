@@ -27,12 +27,12 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
 
     @Override
     public void insert(SettingKey settingKey) {
-        mapper.insert(toPO(settingKey));
+        mapper.insert(toEntity(settingKey));
     }
 
     @Override
     public void update(SettingKey settingKey) {
-        mapper.updateById(toPO(settingKey));
+        mapper.updateById(toEntity(settingKey));
     }
 
     @Override
@@ -48,36 +48,36 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
 
     @Override
     public List<SettingKey> findAll() {
-        return mapper.selectList(new LambdaQueryWrapper<SettingKeyPO>()
-                .orderByAsc(SettingKeyPO::getSettingKey)).stream().map(this::toDomain).toList();
+        return mapper.selectList(new LambdaQueryWrapper<SettingKeyEntity>()
+                .orderByAsc(SettingKeyEntity::getSettingKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public PageResult<SettingKey> page(long current, long size, String keyword) {
-        Page<SettingKeyPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<SettingKeyPO> wrapper = new LambdaQueryWrapper<>();
+        Page<SettingKeyEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<SettingKeyEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.and(w -> w.like(SettingKeyPO::getSettingKey, keyword)
-                    .or().like(SettingKeyPO::getName, keyword)
-                    .or().like(SettingKeyPO::getRemark, keyword));
+            wrapper.and(w -> w.like(SettingKeyEntity::getSettingKey, keyword)
+                    .or().like(SettingKeyEntity::getName, keyword)
+                    .or().like(SettingKeyEntity::getRemark, keyword));
         }
-        wrapper.orderByAsc(SettingKeyPO::getSettingKey);
-        IPage<SettingKeyPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByAsc(SettingKeyEntity::getSettingKey);
+        IPage<SettingKeyEntity> result = mapper.selectPage(page, wrapper);
         List<SettingKey> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private SettingKey toDomain(SettingKeyPO po) {
+    private SettingKey toDomain(SettingKeyEntity po) {
         return new SettingKey(po.getSettingKey(), po.getName(), po.getRemark(), po.getUpdatedAt(), po.getUpdatedBy());
     }
 
-    private SettingKeyPO toPO(SettingKey settingKey) {
-        SettingKeyPO po = new SettingKeyPO();
-        po.setSettingKey(settingKey.key());
-        po.setName(settingKey.name());
-        po.setRemark(settingKey.remark());
-        po.setUpdatedAt(settingKey.updatedAt());
-        po.setUpdatedBy(settingKey.updatedBy());
+    private SettingKeyEntity toEntity(SettingKey settingKey) {
+        SettingKeyEntity po = new SettingKeyEntity();
+        po.setSettingKey(settingKey.getKey());
+        po.setName(settingKey.getName());
+        po.setRemark(settingKey.getRemark());
+        po.setUpdatedAt(settingKey.getUpdatedAt());
+        po.setUpdatedBy(settingKey.getUpdatedBy());
         return po;
     }
 }

@@ -74,14 +74,14 @@ public class MenuServiceImpl implements MenuService {
         }
         List<Menu> menus = menuRepository.findByRoleIds(roleIds);
         List<String> permissions = menus.stream()
-                .map(Menu::perms)
+                .map(Menu::getPerms)
                 .filter(p -> p != null && !p.isBlank())
                 .distinct()
                 .toList();
         List<Menu> navigation = menus.stream()
-                .filter(m -> m.type() != null && m.type() != MenuType.BUTTON.code())
-                .filter(m -> m.visible() != null && m.visible() == 1)
-                .filter(m -> m.status() != null && m.status() == 1)
+                .filter(m -> m.getType() != null && m.getType() != MenuType.BUTTON.code())
+                .filter(m -> m.getVisible() != null && m.getVisible() == 1)
+                .filter(m -> m.getStatus() != null && m.getStatus() == 1)
                 .toList();
         return new UserMenuResult(buildTree(navigation), permissions);
     }
@@ -97,13 +97,13 @@ public class MenuServiceImpl implements MenuService {
 
     private List<MenuTreeNode> buildTree(List<Menu> menus) {
         Map<Long, List<Menu>> byParent = menus.stream()
-                .collect(Collectors.groupingBy(m -> m.parentId() == null ? 0L : m.parentId()));
+                .collect(Collectors.groupingBy(m -> m.getParentId() == null ? 0L : m.getParentId()));
         return buildChildren(byParent, 0L);
     }
 
     private List<MenuTreeNode> buildChildren(Map<Long, List<Menu>> byParent, Long parentId) {
         return byParent.getOrDefault(parentId, List.of()).stream()
-                .map(m -> new MenuTreeNode(m, buildChildren(byParent, m.id())))
+                .map(m -> new MenuTreeNode(m, buildChildren(byParent, m.getId())))
                 .toList();
     }
 }

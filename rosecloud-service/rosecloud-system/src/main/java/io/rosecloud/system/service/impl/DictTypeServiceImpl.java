@@ -39,7 +39,7 @@ public class DictTypeServiceImpl implements DictTypeService {
         DictType existing = dictTypeRepository.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.DICT_TYPE_NOT_FOUND));
         dictTypeRepository.update(new DictType(id, request.code(), request.name(),
-                request.status() == null ? existing.status() : request.status(), request.remark()));
+                request.status() == null ? existing.getStatus() : request.status(), request.remark()));
     }
 
     @AuditLog(action = "dict-type-delete", description = "删除字典类型")
@@ -48,7 +48,7 @@ public class DictTypeServiceImpl implements DictTypeService {
     public void delete(Long id) {
         DictType dictType = dictTypeRepository.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.DICT_TYPE_NOT_FOUND));
-        dictDataRepository.deleteByDictCode(dictType.code());
+        dictDataRepository.deleteByDictCode(dictType.getCode());
         dictTypeRepository.deleteById(id);
     }
 

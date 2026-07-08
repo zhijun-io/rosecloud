@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("sys_system_setting")
-public class SystemSettingPO {
+public class SystemSettingEntity {
 
     @TableId(value = "setting_key", type = IdType.INPUT)
     private String settingKey;

@@ -21,33 +21,33 @@ public class LoginLogRepositoryImpl implements LoginLogRepository {
 
     @Override
     public void insert(LoginLog log) {
-        LoginLogPO po = new LoginLogPO();
-        po.setUsername(log.username());
-        po.setSuccess(log.success() ? 1 : 0);
-        po.setFailReason(log.failReason());
-        po.setIp(log.ip());
-        po.setUserAgent(log.userAgent());
-        po.setLoginTime(log.loginTime());
+        LoginLogEntity po = new LoginLogEntity();
+        po.setUsername(log.getUsername());
+        po.setSuccess(log.isSuccess() ? 1 : 0);
+        po.setFailReason(log.getFailReason());
+        po.setIp(log.getIp());
+        po.setUserAgent(log.getUserAgent());
+        po.setLoginTime(log.getLoginTime());
         mapper.insert(po);
     }
 
     @Override
     public PageResult<LoginLog> page(long current, long size, String username, Boolean success) {
-        Page<LoginLogPO> page = new Page<>(current, size);
-        LambdaQueryWrapper<LoginLogPO> wrapper = new LambdaQueryWrapper<>();
+        Page<LoginLogEntity> page = new Page<>(current, size);
+        LambdaQueryWrapper<LoginLogEntity> wrapper = new LambdaQueryWrapper<>();
         if (username != null && !username.isBlank()) {
-            wrapper.eq(LoginLogPO::getUsername, username);
+            wrapper.eq(LoginLogEntity::getUsername, username);
         }
         if (success != null) {
-            wrapper.eq(LoginLogPO::getSuccess, success ? 1 : 0);
+            wrapper.eq(LoginLogEntity::getSuccess, success ? 1 : 0);
         }
-        wrapper.orderByDesc(LoginLogPO::getLoginTime);
-        IPage<LoginLogPO> result = mapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(LoginLogEntity::getLoginTime);
+        IPage<LoginLogEntity> result = mapper.selectPage(page, wrapper);
         List<LoginLog> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
-    private LoginLog toDomain(LoginLogPO po) {
+    private LoginLog toDomain(LoginLogEntity po) {
         return new LoginLog(po.getId(), po.getUsername(), po.getSuccess() != null && po.getSuccess() == 1,
                 po.getFailReason(), po.getIp(), po.getUserAgent(), po.getLoginTime());
     }

@@ -5,7 +5,7 @@ import io.rosecloud.starter.data.BaseEntity;
 
 /** MyBatis-Plus persistent object for {@code sys_dict_type}; confined to infrastructure. */
 @TableName("sys_dict_type")
-public class DictTypePO extends BaseEntity {
+public class DictTypeEntity extends BaseEntity {
 
     private String code;
     private String name;
