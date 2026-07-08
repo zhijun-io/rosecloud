@@ -1,5 +1,9 @@
 package io.rosecloud.auth.domain;
 
+import io.rosecloud.common.core.model.HasStatus;
+import io.rosecloud.common.core.model.HasTenantId;
+import io.rosecloud.common.core.model.HasUserId;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -9,7 +13,7 @@ import java.util.Objects;
  * system service today, something else later) can change behind the repository
  * port.
  */
-public final class AuthUser {
+public final class AuthUser implements HasUserId, HasStatus<Integer>, HasTenantId {
 
     private final Long userId;
     private final String username;

@@ -1,10 +1,13 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasTenantId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /** Domain view of a persisted audit entry. ORM-free; mapped to/from {@code sys_audit_log}. */
-public final class AuditLog {
+public final class AuditLog implements HasId, HasTenantId {
 
     private final Long id;
     private final String action;

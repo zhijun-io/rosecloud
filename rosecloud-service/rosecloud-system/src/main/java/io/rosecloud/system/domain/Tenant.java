@@ -2,13 +2,17 @@ package io.rosecloud.system.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
+import io.rosecloud.common.core.model.HasCode;
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasName;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
+import io.rosecloud.common.core.model.HasStatus;
 
 import java.time.LocalDate;
 import java.util.Objects;
 
 /** Domain view of a tenant. ORM-free; the persistence layer maps to/from {@code sys_tenant}. */
-public final class Tenant extends BaseDataWithAdditionalInfo implements HasAdditionalInfo {
+public final class Tenant extends BaseDataWithAdditionalInfo implements HasAdditionalInfo, HasId, HasName, HasCode, HasStatus<TenantStatus> {
 
     private final Long id;
     private final String name;

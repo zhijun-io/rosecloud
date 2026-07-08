@@ -1,10 +1,12 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /** Domain view of a login-audit entry. ORM-free; mapped to/from {@code sys_login_log}. */
-public final class LoginLog {
+public final class LoginLog implements HasId {
 
     private final Long id;
     private final String username;

@@ -1,5 +1,9 @@
 package io.rosecloud.notice.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasStatus;
+import io.rosecloud.common.core.model.HasTenantId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -9,7 +13,7 @@ import java.util.Objects;
  * delivery rows are pre-generated. {@code channels} is a {@link NoticeChannel}
  * bitmask controlling push delivery (station is the default pull feed).
  */
-public final class Notice {
+public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
 
     private final Long id;
     private final String title;

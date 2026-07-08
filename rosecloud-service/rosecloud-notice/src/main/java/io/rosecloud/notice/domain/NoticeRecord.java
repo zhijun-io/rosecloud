@@ -1,5 +1,9 @@
 package io.rosecloud.notice.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasTenantId;
+import io.rosecloud.common.core.model.HasUserId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -7,7 +11,7 @@ import java.util.Objects;
  * Per-user read/confirm state for a notice. Created lazily on first interaction
  * (read or confirm); absence means the user has not yet opened it.
  */
-public final class NoticeRecord {
+public final class NoticeRecord implements HasId, HasUserId, HasTenantId {
 
     private final Long id;
     private final Long noticeId;

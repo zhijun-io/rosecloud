@@ -1,10 +1,15 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasStatus;
+import io.rosecloud.common.core.model.HasTenantId;
+import io.rosecloud.common.core.model.HasUserId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /** Domain view of a login session. ORM-free; mapped to/from {@code sys_login_session}. */
-public final class LoginSession {
+public final class LoginSession implements HasId, HasUserId, HasTenantId, HasStatus<Integer> {
 
     private final Long id;
     private final String jti;

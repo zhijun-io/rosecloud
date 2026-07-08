@@ -1,9 +1,12 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasStatus;
+
 import java.util.Objects;
 
 /** Domain view of a dictionary item. ORM-free; mapped to/from {@code sys_dict_data}. */
-public final class DictData {
+public final class DictData implements HasId, HasStatus<Integer> {
 
     private final Long id;
     private final String dictCode;

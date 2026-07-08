@@ -1,10 +1,15 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasKey;
+import io.rosecloud.common.core.model.HasUpdatedAt;
+import io.rosecloud.common.core.model.HasUpdatedBy;
+import io.rosecloud.common.core.model.HasUserId;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /** Domain view of a per-user setting. */
-public final class UserSetting {
+public final class UserSetting implements HasUserId, HasKey, HasUpdatedAt, HasUpdatedBy {
 
     private final Long userId;
     private final String key;

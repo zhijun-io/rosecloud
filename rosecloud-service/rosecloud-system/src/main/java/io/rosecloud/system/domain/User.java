@@ -3,11 +3,14 @@ package io.rosecloud.system.domain;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasStatus;
+import io.rosecloud.common.core.model.HasTenantId;
 
 import java.util.Objects;
 
 /** Domain view of a user. ORM-free; the persistence layer maps to/from {@code sys_user}. */
-public final class User extends BaseDataWithAdditionalInfo implements HasAdditionalInfo {
+public final class User extends BaseDataWithAdditionalInfo implements HasAdditionalInfo, HasId, HasStatus<Integer>, HasTenantId {
 
     private final Long id;
     private final String username;

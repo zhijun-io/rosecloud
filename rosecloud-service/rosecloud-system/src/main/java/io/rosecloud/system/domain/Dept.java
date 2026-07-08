@@ -1,9 +1,14 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasName;
+import io.rosecloud.common.core.model.HasParentId;
+import io.rosecloud.common.core.model.HasStatus;
+
 import java.util.Objects;
 
 /** Domain view of a department/org node. ORM-free; mapped to/from {@code sys_dept}. */
-public final class Dept {
+public final class Dept implements HasId, HasName, HasParentId, HasStatus<Integer> {
 
     private final Long id;
     private final Long parentId;

@@ -1,9 +1,13 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasCode;
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasName;
+
 import java.util.Objects;
 
 /** Domain view of a role. ORM-free; the persistence layer maps to/from {@code sys_role}. */
-public final class Role {
+public final class Role implements HasId, HasCode, HasName {
 
     private final Long id;
     private final String code;

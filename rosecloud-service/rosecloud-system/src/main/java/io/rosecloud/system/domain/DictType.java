@@ -1,9 +1,14 @@
 package io.rosecloud.system.domain;
 
+import io.rosecloud.common.core.model.HasCode;
+import io.rosecloud.common.core.model.HasId;
+import io.rosecloud.common.core.model.HasName;
+import io.rosecloud.common.core.model.HasStatus;
+
 import java.util.Objects;
 
 /** Domain view of a dictionary type. ORM-free; mapped to/from {@code sys_dict_type}. */
-public final class DictType {
+public final class DictType implements HasId, HasCode, HasName, HasStatus<Integer> {
 
     private final Long id;
     private final String code;
