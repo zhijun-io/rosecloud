@@ -1,141 +1,185 @@
 package io.rosecloud.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.system.service.LoginSessionService;
-import io.rosecloud.system.persistence.LoginSessionEntity;
-import io.rosecloud.system.persistence.LoginSessionMapper;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * MyBatis-Plus backed {@link SessionStore}. Handles the mapping between the
- * {@link LoginSession} domain record and the {@link LoginSessionEntity}
- * persistent object.
- *
- * <p>The {@code sessionId} field on {@link LoginSession} doubles as the
- * database primary key (UUID, manually assigned by the authentication
- * success handler).
- *
- * <p>Extra query methods ({@link #findBySessionId}, {@link #findByUserId},
- * {@link #findAll}) are provided alongside the {@link SessionStore} contract
- * so that admin controllers can list and inspect sessions.
+ * Redis-backed {@link LoginSessionService}. Uses the same key layout as the
+ * security starter so auth and system can share the same session state.
  */
 @Service
-@Transactional
 public class LoginSessionServiceImpl implements LoginSessionService {
 
-    private final LoginSessionMapper mapper;
+    private static final String KEY_PREFIX = "session:";
+    private static final String ALL_INDEX_KEY = KEY_PREFIX + "ids";
+    private static final String TOKEN_INDEX_PREFIX = KEY_PREFIX + "token:";
+    private static final String USER_INDEX_PREFIX = KEY_PREFIX + "user:";
+    private static final Duration TTL = Duration.ofDays(7);
 
-    public LoginSessionServiceImpl(LoginSessionMapper mapper) {
-        this.mapper = mapper;
+    private final StringRedisTemplate redisTemplate;
+
+    public LoginSessionServiceImpl(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
-
-    // ---- SessionStore contract ----
 
     @Override
     public void save(LoginSession session) {
-        mapper.insert(toEntity(session));
+        String sessionKey = sessionKey(session.id());
+        redisTemplate.opsForHash().putAll(sessionKey, Map.of(
+                "id", session.id(),
+                "token", session.token(),
+                "userId", String.valueOf(session.userId()),
+                "username", session.username(),
+                "nickname", nullToEmpty(session.nickname()),
+                "clientIp", nullToEmpty(session.clientIp()),
+                "userAgent", nullToEmpty(session.userAgent()),
+                "loginAt", session.loginAt().toString(),
+                "expireAt", session.expireAt().toString()
+        ));
+        redisTemplate.expire(sessionKey, TTL);
+        redisTemplate.opsForSet().add(ALL_INDEX_KEY, session.id());
+        redisTemplate.expire(ALL_INDEX_KEY, TTL);
+        redisTemplate.opsForSet().add(tokenIndexKey(session.token()), session.id());
+        redisTemplate.expire(tokenIndexKey(session.token()), TTL);
+        redisTemplate.opsForSet().add(userIndexKey(session.userId()), session.id());
+        redisTemplate.expire(userIndexKey(session.userId()), TTL);
     }
 
     @Override
     public void revoke(String token) {
-        mapper.delete(new LambdaQueryWrapper<LoginSessionEntity>()
-                .eq(LoginSessionEntity::getToken, token));
+        Set<String> sessionIds = safeMembers(tokenIndexKey(token));
+        if (sessionIds != null) {
+            sessionIds.forEach(this::deleteSession);
+        }
+        redisTemplate.delete(tokenIndexKey(token));
     }
 
     @Override
     public void revokeBySessionId(String sessionId) {
-        mapper.deleteById(sessionId);
+        deleteSession(sessionId);
     }
 
     @Override
     public void revokeByUserId(Long userId) {
-        mapper.delete(new LambdaQueryWrapper<LoginSessionEntity>()
-                .eq(LoginSessionEntity::getUserId, userId));
+        Set<String> sessionIds = safeMembers(userIndexKey(userId));
+        if (sessionIds != null) {
+            sessionIds.forEach(this::deleteSession);
+        }
+        redisTemplate.delete(userIndexKey(userId));
     }
 
     @Override
     public boolean isRevoked(String token) {
-        return mapper.selectCount(new LambdaQueryWrapper<LoginSessionEntity>()
-                .eq(LoginSessionEntity::getToken, token)) == 0;
+        Set<String> sessionIds = safeMembers(tokenIndexKey(token));
+        return sessionIds == null || sessionIds.isEmpty();
     }
 
-    // ---- Extended query methods (beyond SessionStore) ----
-
+    @Override
     public Optional<LoginSession> findBySessionId(String sessionId) {
-        return Optional.ofNullable(mapper.selectById(sessionId))
-                .map(this::toDomain);
+        return readSession(sessionId);
     }
 
+    @Override
     public Optional<LoginSession> findByToken(String token) {
-        return Optional.ofNullable(mapper.selectOne(
-                new LambdaQueryWrapper<LoginSessionEntity>()
-                        .eq(LoginSessionEntity::getToken, token)
-                        .last("LIMIT 1")))
-                .map(this::toDomain);
+        Set<String> sessionIds = safeMembers(tokenIndexKey(token));
+        if (sessionIds == null || sessionIds.isEmpty()) {
+            return Optional.empty();
+        }
+        return sessionIds.stream()
+                .map(this::readSession)
+                .flatMap(Optional::stream)
+                .findFirst();
     }
 
+    @Override
     public List<LoginSession> findByUserId(Long userId) {
-        return mapper.selectList(new LambdaQueryWrapper<LoginSessionEntity>()
-                        .eq(LoginSessionEntity::getUserId, userId))
-                .stream()
-                .map(this::toDomain)
+        Set<String> sessionIds = safeMembers(userIndexKey(userId));
+        if (sessionIds == null || sessionIds.isEmpty()) {
+            return List.of();
+        }
+        return sessionIds.stream()
+                .map(this::readSession)
+                .flatMap(Optional::stream)
                 .toList();
     }
 
+    @Override
     public List<LoginSession> findAll() {
-        return mapper.selectList(null)
-                .stream()
-                .map(this::toDomain)
+        Set<String> sessionIds = safeMembers(ALL_INDEX_KEY);
+        if (sessionIds == null || sessionIds.isEmpty()) {
+            return List.of();
+        }
+        return sessionIds.stream()
+                .map(this::readSession)
+                .flatMap(Optional::stream)
                 .toList();
     }
 
-    // ---- Mapping helpers ----
-
-    private static LoginSessionEntity toEntity(LoginSession session) {
-        LoginSessionEntity entity = new LoginSessionEntity();
-        entity.setId(session.id());
-        entity.setToken(session.token());
-        entity.setUserId(session.userId());
-        entity.setUsername(session.username());
-        entity.setNickname(session.nickname());
-        entity.setClientIp(session.clientIp());
-        entity.setUserAgent(session.userAgent());
-        entity.setLoginAt(toLocalDateTime(session.loginAt()));
-        entity.setExpireAt(toLocalDateTime(session.expireAt()));
-        return entity;
+    private Optional<LoginSession> readSession(String sessionId) {
+        Map<Object, Object> values = redisTemplate.opsForHash().entries(sessionKey(sessionId));
+        if (values == null || values.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(new LoginSession(
+                    sessionId,
+                    stringValue(values.get("token")),
+                    Long.valueOf(stringValue(values.get("userId"))),
+                    stringValue(values.get("username")),
+                    emptyToNull(stringValue(values.get("nickname"))),
+                    emptyToNull(stringValue(values.get("clientIp"))),
+                    emptyToNull(stringValue(values.get("userAgent"))),
+                    Instant.parse(stringValue(values.get("loginAt"))),
+                    Instant.parse(stringValue(values.get("expireAt")))
+            ));
+        } catch (RuntimeException ex) {
+            return Optional.empty();
+        }
     }
 
-    private LoginSession toDomain(LoginSessionEntity entity) {
-        return new LoginSession(
-                entity.getId(),
-                entity.getToken(),
-                entity.getUserId(),
-                entity.getUsername(),
-                entity.getNickname(),
-                entity.getClientIp(),
-                entity.getUserAgent(),
-                toInstant(entity.getLoginAt()),
-                toInstant(entity.getExpireAt())
-        );
+    private void deleteSession(String sessionId) {
+        readSession(sessionId).ifPresent(session -> {
+            redisTemplate.opsForSet().remove(tokenIndexKey(session.token()), sessionId);
+            redisTemplate.opsForSet().remove(userIndexKey(session.userId()), sessionId);
+            redisTemplate.opsForSet().remove(ALL_INDEX_KEY, sessionId);
+        });
+        redisTemplate.delete(sessionKey(sessionId));
     }
 
-    private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null
-                ? LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-                : null;
+    private Set<String> safeMembers(String key) {
+        return redisTemplate.opsForSet().members(key);
     }
 
-    private static Instant toInstant(LocalDateTime localDateTime) {
-        return localDateTime != null
-                ? localDateTime.atZone(ZoneId.systemDefault()).toInstant()
-                : null;
+    private static String sessionKey(String sessionId) {
+        return KEY_PREFIX + sessionId;
+    }
+
+    private static String tokenIndexKey(String token) {
+        return TOKEN_INDEX_PREFIX + token;
+    }
+
+    private static String userIndexKey(Long userId) {
+        return USER_INDEX_PREFIX + userId;
+    }
+
+    private static String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

@@ -14,6 +14,12 @@ spring:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       username: ${NACOS_USERNAME:}
       password: ${NACOS_PASSWORD:}
+      config:
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
+      discovery:
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
 
 server:
   port: 8080

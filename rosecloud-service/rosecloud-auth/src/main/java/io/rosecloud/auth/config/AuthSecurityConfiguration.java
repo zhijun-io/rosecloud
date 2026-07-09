@@ -6,9 +6,11 @@ import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
 import io.rosecloud.common.security.model.SecurityUser;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.RedisSessionStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -26,7 +28,6 @@ import java.util.function.Function;
  * login-log and user-profile side effects.
  */
 @Configuration
-@ConditionalOnBean(SystemUserApi.class)
 public class AuthSecurityConfiguration {
 
     @Bean
@@ -41,6 +42,11 @@ public class AuthSecurityConfiguration {
     Consumer<LoginFailedEvent> loginFailedHandler(LoginLogApi loginLogApi) {
         return event -> loginLogApi.record(new LoginLogRequest(
                 event.username(), false, event.reason(), event.ip(), event.userAgent()));
+    }
+
+    @Bean
+    SessionStore sessionStore(StringRedisTemplate redisTemplate) {
+        return new RedisSessionStore(redisTemplate);
     }
 
     @Bean

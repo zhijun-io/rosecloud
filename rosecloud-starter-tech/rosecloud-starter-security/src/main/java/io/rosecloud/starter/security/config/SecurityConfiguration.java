@@ -28,6 +28,7 @@ import org.springframework.security.web.SecurityFilterChain;
  import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.function.Function;
 import java.util.Optional;
 
@@ -156,12 +157,12 @@ import io.rosecloud.common.security.model.SecurityUser;
             RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
             BearerTokenExtractor bearerTokenExtractor,
             AuthenticationManager authenticationManager) {
-        List<String> pathsToSkip = List.of(
-                LOGIN_ENTRY_POINT,
-                REFRESH_ENTRY_POINT,
-                LOGOUT_ENTRY_POINT,
-                "/api/noauth/**",
-                "/api/public/**");
+        List<String> pathsToSkip = new java.util.ArrayList<>(new LinkedHashSet<>(List.of(
+                properties.getPublicPaths()
+        )));
+        pathsToSkip.add(LOGIN_ENTRY_POINT);
+        pathsToSkip.add(REFRESH_ENTRY_POINT);
+        pathsToSkip.add(LOGOUT_ENTRY_POINT);
         SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
         JwtTokenAuthenticationProcessingFilter filter = new JwtTokenAuthenticationProcessingFilter(
                 matcher, restAwareAuthenticationFailureHandler, bearerTokenExtractor);

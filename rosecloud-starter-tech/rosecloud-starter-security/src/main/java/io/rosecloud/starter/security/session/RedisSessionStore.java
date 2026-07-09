@@ -5,6 +5,7 @@ import io.rosecloud.common.security.session.SessionStore;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import java.util.Set;
 public class RedisSessionStore implements SessionStore {
 
     private static final String KEY_PREFIX = "session:";
+    private static final String ALL_INDEX_KEY = KEY_PREFIX + "ids";
     private static final String TOKEN_INDEX_PREFIX = KEY_PREFIX + "token:";
     private static final String USER_INDEX_PREFIX = KEY_PREFIX + "user:";
 
@@ -37,17 +39,17 @@ public class RedisSessionStore implements SessionStore {
     @Override
     public void save(LoginSession session) {
         String sessionKey = sessionKey(session.id());
-        redisTemplate.opsForHash().putAll(sessionKey, Map.of(
-                "id", session.id(),
-                "token", session.token(),
-                "userId", String.valueOf(session.userId()),
-                "username", session.username(),
-                "nickname", session.nickname(),
-                "clientIp", session.clientIp(),
-                "userAgent", session.userAgent(),
-                "loginAt", session.loginAt().toString(),
-                "expireAt", session.expireAt().toString()
-        ));
+        Map<String, String> values = new HashMap<>();
+        values.put("id", session.id());
+        values.put("token", session.token());
+        values.put("userId", String.valueOf(session.userId()));
+        values.put("username", session.username());
+        values.put("nickname", emptyToNullSafe(session.nickname()));
+        values.put("clientIp", emptyToNullSafe(session.clientIp()));
+        values.put("userAgent", emptyToNullSafe(session.userAgent()));
+        values.put("loginAt", session.loginAt().toString());
+        values.put("expireAt", session.expireAt().toString());
+        redisTemplate.opsForHash().putAll(sessionKey, values);
         redisTemplate.expire(sessionKey, ttl);
 
         // token → sessionIds index
@@ -57,6 +59,10 @@ public class RedisSessionStore implements SessionStore {
         // user → sessionIds index
         redisTemplate.opsForSet().add(userIndexKey(session.userId()), session.id());
         redisTemplate.expire(userIndexKey(session.userId()), ttl);
+
+        // global sessionIds index for admin listing
+        redisTemplate.opsForSet().add(ALL_INDEX_KEY, session.id());
+        redisTemplate.expire(ALL_INDEX_KEY, ttl);
     }
 
     @Override
@@ -70,6 +76,7 @@ public class RedisSessionStore implements SessionStore {
                 if (userId != null) {
                     redisTemplate.opsForSet().remove(userIndexKey(Long.parseLong(userId)), sid);
                 }
+                redisTemplate.opsForSet().remove(ALL_INDEX_KEY, sid);
                 redisTemplate.delete(sessionKey(sid));
             });
         }
@@ -88,6 +95,7 @@ public class RedisSessionStore implements SessionStore {
         if (userId != null) {
             redisTemplate.opsForSet().remove(userIndexKey(Long.parseLong(userId)), sessionId);
         }
+        redisTemplate.opsForSet().remove(ALL_INDEX_KEY, sessionId);
         redisTemplate.delete(sessionKey);
     }
 
@@ -102,6 +110,7 @@ public class RedisSessionStore implements SessionStore {
                 if (token != null) {
                     redisTemplate.opsForSet().remove(tokenIndexKey(token), sid);
                 }
+                redisTemplate.opsForSet().remove(ALL_INDEX_KEY, sid);
                 redisTemplate.delete(sessionKey(sid));
             });
         }
@@ -124,5 +133,9 @@ public class RedisSessionStore implements SessionStore {
 
     private static String userIndexKey(Long userId) {
         return KEY_PREFIX + "user:" + userId;
+    }
+
+    private static String emptyToNullSafe(String value) {
+        return value == null ? "" : value;
     }
 }

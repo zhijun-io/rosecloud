@@ -15,8 +15,8 @@
 #   - 本文件内的密钥（MySQL/Redis/RabbitMQ/Nacos/xxl-job/JWT）均为弱默认值（便于本地快速起站），
 #     仅用于本地快速起站，不要当作生产密钥。
 #   - 生产部署必须把这些密钥通过 .env（git 忽略）覆盖；模板见仓库 .env.example。
-#   - Nacos 已开启鉴权（NACOS_AUTH_ENABLE=true），客户端用 NACOS_USERNAME/NACOS_PASSWORD
-#     注入；默认 nacos 用户密码为 nacos，生产必须改为独立强凭证（见 .env.example 与审计报告）。
+#   - Nacos 本地默认关闭鉴权，避免首次启动时因用户未初始化而阻塞服务注册；
+#     如需验证鉴权链路，可在 `.env` 中显式设置 `NACOS_AUTH_ENABLE=true` 并先初始化用户。
 # ============================================================
 
 x-app-env: &app-env
@@ -99,7 +99,7 @@ services:
     profiles: [microservice]  # 仅微服务模式需要Nacos
     environment:
       MODE: standalone
-      NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-true}
+      NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-false}
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-cm9zZWNsb3VkLWRldi1uYWNvcy1hdXRoLXRva2VuLTAxMjM0NTY3ODkwMTIzNDU2Nzg5}
       NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-rosecloud-dev-identity-key}
       NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-rosecloud-dev-identity-value}
