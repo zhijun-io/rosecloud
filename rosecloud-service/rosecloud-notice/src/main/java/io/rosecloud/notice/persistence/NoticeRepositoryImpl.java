@@ -55,9 +55,10 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
-    public void markPublished(Long id) {
-        noticeMapper.update(null, new LambdaUpdateWrapper<NoticeEntity>()
+    public int markPublished(Long id) {
+        return noticeMapper.update(null, new LambdaUpdateWrapper<NoticeEntity>()
                 .eq(NoticeEntity::getId, id)
+                .eq(NoticeEntity::getStatus, NoticeStatus.DRAFT.code())
                 .set(NoticeEntity::getStatus, NoticeStatus.PUBLISHED.code()));
     }
 

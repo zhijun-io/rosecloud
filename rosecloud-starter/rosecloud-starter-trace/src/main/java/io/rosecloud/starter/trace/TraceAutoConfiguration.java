@@ -30,6 +30,7 @@ public class TraceAutoConfiguration {
             registration.setFilter(new TraceContextFilter());
             registration.addUrlPatterns("/*");
             registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+            registration.setAsyncSupported(true);
             return registration;
         }
     }

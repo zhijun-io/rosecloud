@@ -25,9 +25,11 @@ public class LocalFileStorage implements FileStorage {
     @Override
     public void store(String key, InputStream content) {
         Path target = resolve(key);
-        try {
+        // The storage takes ownership of the stream and closes it once fully copied,
+        // preventing file-descriptor leaks from caller-supplied streams.
+        try (InputStream in = content) {
             Files.createDirectories(target.getParent());
-            Files.copy(content, target, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to store file: " + key, e);
         }

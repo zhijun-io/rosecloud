@@ -14,6 +14,7 @@ import io.rosecloud.system.service.dto.UserMenuResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public class MenuServiceImpl implements MenuService {
 
     @AuditLog(action = "menu-delete", description = "删除菜单")
     @Override
+    @Transactional
     public void delete(Long id) {
         if (menuRepository.existsByParentId(id)) {
             throw new BizException(SystemErrorCode.MENU_HAS_CHILDREN);

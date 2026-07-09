@@ -45,7 +45,10 @@ public class RedisRoseCloudCache implements RoseCloudCache {
     @Override
     public long increment(String key, Duration ttl) {
         Long value = redis.opsForValue().increment(key);
-        if (ttl != null && value != null) {
+        // Set the TTL only when the key is first created (value == 1) so we never
+        // reset the TTL on subsequent increments, and the no-expiry race window
+        // is limited to the single creation increment.
+        if (ttl != null && value != null && value == 1) {
             redis.expire(key, ttl);
         }
         return value == null ? 0 : value;

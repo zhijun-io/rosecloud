@@ -26,15 +26,18 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
     private final SessionStore sessionStore;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final long refreshTokenExpirationSeconds;
 
     public RestAwareAuthenticationSuccessHandler(JwtTokenFactory tokenFactory,
-                                                 SessionStore sessionStore,
-                                                 ApplicationEventPublisher eventPublisher,
-                                                 ObjectMapper objectMapper) {
+                                                  SessionStore sessionStore,
+                                                  ApplicationEventPublisher eventPublisher,
+                                                  ObjectMapper objectMapper,
+                                                  long refreshTokenExpirationSeconds) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
+        this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
     }
 
     @Override
@@ -49,7 +52,7 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
         String userAgent = request.getHeader("User-Agent");
         Instant now = Instant.now();
         long expiresInSeconds = tokenFactory.getAccessTokenExpirationSeconds();
-        Instant expireAt = now.plusSeconds(expiresInSeconds);
+        Instant expireAt = now.plusSeconds(refreshTokenExpirationSeconds);
         sessionStore.save(new LoginSession(
                 sessionId, token, tokenPair.refreshToken(), securityUser.getUserId(), securityUser.getUsername(),
                 securityUser.getNickname(), ip, truncate(userAgent, 512), now, expireAt));

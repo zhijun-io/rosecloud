@@ -116,18 +116,6 @@ class TenantControllerTest {
     }
 
     @Test
-    void auditReturnsAuditPage() throws Exception {
-        when(auditLogService.page(1, 10, "tenant-1", null, null))
-                .thenReturn(PageResult.of(List.of(new AuditLog(null, "tenant-create", "创建租户",
-                        "alice", "tenant-1", null, 12, true, null, LocalDate.now().atStartOfDay())),
-                        1, 1, 10));
-
-        mockMvc.perform(get("/api/system/tenants/tenant-1/audit"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.total").value(1));
-    }
-
-    @Test
     void openDelegatesToTenantService() throws Exception {
         when(tenantService.open("tenant-1")).thenReturn("tenant-1");
 

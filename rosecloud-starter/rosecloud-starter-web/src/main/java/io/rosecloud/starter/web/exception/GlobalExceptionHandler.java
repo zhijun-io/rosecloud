@@ -53,7 +53,12 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception ex) {
-        return respond(HttpStatus.BAD_REQUEST, ApiResponse.failure(CommonErrorCode.PARAM_INVALID));
+        log.warn("parameter validation failed: {}", ex.getMessage());
+        String detail = ex.getMessage();
+        if (detail != null && detail.length() > 500) {
+            detail = detail.substring(0, 500);
+        }
+        return respond(HttpStatus.BAD_REQUEST, ApiResponse.failure(CommonErrorCode.PARAM_INVALID.code(), detail));
     }
 
     @ExceptionHandler(Exception.class)

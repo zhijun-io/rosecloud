@@ -19,7 +19,13 @@ public interface NoticeRepository {
     /** Scheduled notices now due (draft + scheduled + publishTime <= now). */
     List<Notice> findDueScheduled(LocalDateTime now);
 
-    void markPublished(Long id);
+    /**
+     * Flips a DRAFT scheduled notice to PUBLISHED. Only acts on rows still in
+     * DRAFT state; returns the number of rows actually updated so the caller can
+     * tell whether it won the race (used to dispatch exactly once under multiple
+     * replicas).
+     */
+    int markPublished(Long id);
 
     PageResult<Notice> page(long current, long size, String keyword);
 

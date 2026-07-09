@@ -51,6 +51,13 @@ public class NoticeDispatchService {
     void doDispatch(Notice notice, int mask) {
         try {
             if (notice.getRecipients() == null || notice.getRecipients().isEmpty()) {
+                // No recipient snapshot: only explicit-recipient (USER) notices carry contacts
+                // today. ROLE/TENANT/GLOBAL targets require recipient resolution at dispatch
+                // time (not yet wired), so push channels have nobody to deliver to.
+                if (NoticeChannel.EMAIL.in(mask) || NoticeChannel.SMS.in(mask)) {
+                    log.warn("notice {} has email/sms channels but no resolved recipients; "
+                            + "push delivery skipped (recipient resolution not implemented)", notice.getId());
+                }
                 return;
             }
             for (NoticeChannel channel : new NoticeChannel[]{NoticeChannel.EMAIL, NoticeChannel.SMS}) {
@@ -65,7 +72,7 @@ public class NoticeDispatchService {
                 }
             }
         } catch (Exception e) {
-            log.warn("failed to dispatch notice {}", notice.getId(), e);
+            log.error("failed to dispatch notice {}", notice.getId(), e);
         }
     }
 }

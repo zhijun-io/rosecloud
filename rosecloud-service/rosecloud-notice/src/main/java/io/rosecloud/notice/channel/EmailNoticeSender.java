@@ -44,14 +44,31 @@ public class EmailNoticeSender implements NoticeChannelSender {
             if (r.email() == null || r.email().isBlank()) {
                 continue;
             }
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(r.email());
-                message.setSubject(context.notice().getTitle());
-                message.setText(context.notice().getContent());
-                sender.send(message);
-            } catch (Exception e) {
-                log.warn("failed to email notice {} to {}", context.notice().getId(), r.email(), e);
+            int maxAttempts = 3;
+            int attempt = 0;
+            boolean sent = false;
+            while (attempt < maxAttempts && !sent) {
+                attempt++;
+                try {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(r.email());
+                    message.setSubject(context.notice().getTitle());
+                    message.setText(context.notice().getContent());
+                    sender.send(message);
+                    sent = true;
+                } catch (Exception e) {
+                    if (attempt >= maxAttempts) {
+                        log.error("failed to email notice {} to {} after {} attempts",
+                                context.notice().getId(), r.email(), maxAttempts, e);
+                    } else {
+                        try {
+                            Thread.sleep(200L * attempt);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

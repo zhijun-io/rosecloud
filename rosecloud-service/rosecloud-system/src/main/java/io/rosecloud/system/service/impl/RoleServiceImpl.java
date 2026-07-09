@@ -9,6 +9,7 @@ import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.RoleService;
 import io.rosecloud.system.service.dto.RoleCreateRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class RoleServiceImpl implements RoleService {
     }
     @AuditLog(action = "role-assign-menus", description = "角色菜单授权")
     @Override
+    @Transactional
     public void assignMenus(Long roleId, List<Long> menuIds) {
         if (!roleRepository.existsById(roleId)) {
             throw new BizException(SystemErrorCode.ROLE_NOT_FOUND);

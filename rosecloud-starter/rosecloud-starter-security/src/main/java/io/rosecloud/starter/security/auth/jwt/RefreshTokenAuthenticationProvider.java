@@ -50,11 +50,22 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
             throw new BadCredentialsException("User not found");
         }
 
+        // A disabled account must not be able to mint fresh tokens from a still-valid
+        // refresh token; mirrors the same guard on the access-token path
+        // (JwtAuthenticationProvider) so disabling a user takes effect immediately.
         if (!userDetails.isEnabled()) {
             throw new BadCredentialsException("User is disabled");
         }
 
-        return new RefreshAuthenticationToken((SecurityUser) userDetails);
+        // Refresh-token rotation: revoke the session bound to the presented (old) refresh
+        // token so it cannot be reused after a new token pair is minted by the success handler.
+        sessionStore.revoke(rawAccessToken.token());
+
+        if (!(userDetails instanceof SecurityUser securityUser)) {
+            throw new BadCredentialsException(
+                    "Unsupported UserDetails type: " + userDetails.getClass().getName());
+        }
+        return new RefreshAuthenticationToken(securityUser);
     }
 
     @Override

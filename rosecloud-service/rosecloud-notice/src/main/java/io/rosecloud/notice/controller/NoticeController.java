@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/notice/notices")
 public class NoticeController {
@@ -28,23 +30,31 @@ public class NoticeController {
 
     @PreAuthorize("hasAuthority('system:notice:publish')")
     @PostMapping
-    public ApiResponse<Long> publish(@RequestBody NoticePublishRequest request) {
+    public ApiResponse<Long> publish(@RequestBody @Valid NoticePublishRequest request) {
         return ApiResponse.ok(noticeService.publish(request));
     }
 
     @PreAuthorize("hasAuthority('system:notice:list')")
     @GetMapping
     public ApiResponse<PageResult<Notice>> page(@RequestParam(defaultValue = "1") long current,
-                                                @RequestParam(defaultValue = "10") long size,
-                                                @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(noticeService.page(current, size, keyword));
+                                                 @RequestParam(defaultValue = "10") long size,
+                                                 @RequestParam(required = false) String keyword) {
+        long[] bounds = clampPage(current, size);
+        return ApiResponse.ok(noticeService.page(bounds[0], bounds[1], keyword));
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ApiResponse<PageResult<MyNotice>> myNotices(@RequestParam(defaultValue = "1") long current,
-                                                      @RequestParam(defaultValue = "10") long size) {
-        return ApiResponse.ok(noticeService.myNotices(current, size));
+                                                       @RequestParam(defaultValue = "10") long size) {
+        long[] bounds = clampPage(current, size);
+        return ApiResponse.ok(noticeService.myNotices(bounds[0], bounds[1]));
+    }
+
+    private static long[] clampPage(long current, long size) {
+        long safeCurrent = current < 1 ? 1 : current;
+        long safeSize = size < 1 ? 10 : Math.min(size, 100);
+        return new long[]{safeCurrent, safeSize};
     }
 
     @PreAuthorize("isAuthenticated()")

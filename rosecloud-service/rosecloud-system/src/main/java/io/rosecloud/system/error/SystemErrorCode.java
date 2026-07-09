@@ -14,6 +14,7 @@ public enum SystemErrorCode implements ErrorCode {
     TENANT_PROFILE_DEFAULT_DELETE_FORBIDDEN("默认租户套餐不允许删除"),
     TENANT_STATUS_INVALID("租户当前状态不允许该操作"),
     USERNAME_EXISTS("用户名已存在"),
+    USERNAME_INVALID("用户名必须是邮箱或手机号"),
     USER_NOT_FOUND("用户不存在"),
     USER_ACTIVATION_TOKEN_INVALID("激活链接无效"),
     USER_ACTIVATION_TOKEN_EXPIRED("激活链接已过期"),

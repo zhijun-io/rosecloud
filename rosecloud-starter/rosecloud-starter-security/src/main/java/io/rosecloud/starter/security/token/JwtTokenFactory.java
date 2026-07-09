@@ -8,13 +8,14 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import io.rosecloud.common.security.token.AccessJwtToken;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.config.SecurityProperties;
 import io.rosecloud.common.security.exception.JwtExpiredTokenException;
 import io.rosecloud.common.security.model.SecurityUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import javax.crypto.SecretKey;
@@ -26,10 +27,15 @@ import java.util.UUID;
 
 public class JwtTokenFactory implements io.rosecloud.common.security.token.TokenFactory {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenFactory.class);
+
     private static final String USER_ID = "userId";
     private static final String NICKNAME = "nickname";
     private static final String ENABLED = "enabled";
     private static final String TOKEN_TYPE = "type";
+
+    /** Minimum secret length (bytes) recommended for HS512 (512 bits). */
+    private static final int MIN_SECRET_BYTES = 64;
 
     private final SecurityProperties properties;
     private volatile JwtParser jwtParser;
@@ -37,6 +43,15 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
 
     public JwtTokenFactory(SecurityProperties properties) {
         this.properties = properties;
+        // Signing and parsing now use the exact same key material, so behaviour is
+        // consistent regardless of secret length. Warn (not fail) when the secret is
+        // shorter than the HS512 recommendation.
+        byte[] decoded = Base64.getDecoder().decode(properties.getJwt().getSecret());
+        if (decoded.length < MIN_SECRET_BYTES) {
+            log.warn("Configured rosecloud.security.jwt.secret decodes to {} bytes; HS512 recommends "
+                    + "at least {} bytes. Tokens will still work but the key is weaker than ideal.",
+                    decoded.length, MIN_SECRET_BYTES);
+        }
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser) {
@@ -125,6 +140,8 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
             synchronized (this) {
                 if (secretKey == null) {
                     byte[] decoded = Base64.getDecoder().decode(properties.getJwt().getSecret());
+                    // Same key material for both signing and verification, so behaviour is
+                    // consistent regardless of secret length.
                     secretKey = new SecretKeySpec(decoded, "HmacSHA512");
                 }
             }
@@ -137,7 +154,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
             synchronized (this) {
                 if (jwtParser == null) {
                     jwtParser = Jwts.parser()
-                            .verifyWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(properties.getJwt().getSecret())))
+                            .verifyWith(getSecretKey())
                             .build();
                 }
             }

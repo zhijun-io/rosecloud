@@ -26,6 +26,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -78,6 +79,10 @@ public class SecurityConfiguration {
                 .headers(headers -> {
                     headers.cacheControl(cache -> cache.disable());
                     headers.frameOptions(frame -> frame.sameOrigin());
+                    headers.httpStrictTransportSecurity(hsts ->
+                            hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
+                    headers.contentTypeOptions(Customizer.withDefaults());
+                    headers.referrerPolicy(Customizer.withDefaults());
                 })
                 .authorizeHttpRequests(auth -> {
                     for (String path : properties.getPublicPaths()) {
@@ -136,7 +141,8 @@ public class SecurityConfiguration {
     @Bean
     public RestAwareAuthenticationSuccessHandler restAwareAuthenticationSuccessHandler(
             JwtTokenFactory jwtTokenFactory, SessionStore sessionStore, ApplicationEventPublisher eventPublisher) {
-        return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, sessionStore, eventPublisher, objectMapper);
+        return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, sessionStore, eventPublisher,
+                objectMapper, properties.getRefreshTokenExpirationSeconds());
     }
 
     @Bean

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TraceContextFilterTest {
 
     @Test
-    void generatesFreshTraceIdAndIgnoresInboundHeader() throws Exception {
+    void reusesInboundTraceIdForPropagation() throws Exception {
         TraceContextFilter filter = new TraceContextFilter();
 
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -32,9 +32,28 @@ class TraceContextFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        assertThat(seen.get()).isNotBlank();
-        assertThat(seen.get()).isNotEqualTo("client-trace");
+        assertThat(seen.get()).isEqualTo("client-trace");
+        assertThat(response.getHeader(TraceHeaders.TRACE_ID)).isEqualTo("client-trace");
+    }
+
+    @Test
+    void generatesFreshTraceIdWhenAbsent() throws Exception {
+        TraceContextFilter filter = new TraceContextFilter();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicReference<String> seen = new AtomicReference<>();
+
+        FilterChain chain = new FilterChain() {
+            @Override
+            public void doFilter(ServletRequest req, ServletResponse res) {
+                seen.set(((jakarta.servlet.http.HttpServletRequest) req).getHeader(TraceHeaders.TRACE_ID));
+            }
+        };
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(seen.get()).isNotBlank().hasSize(32);
         assertThat(response.getHeader(TraceHeaders.TRACE_ID)).isEqualTo(seen.get());
-        assertThat(seen.get()).hasSize(32);
     }
 }

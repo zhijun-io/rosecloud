@@ -70,11 +70,10 @@ public class TenantProfileRepositoryImpl implements TenantProfileRepository {
 
     @Override
     public void makeDefault(String id) {
+        // Single atomic statement so concurrent calls cannot leave all rows with
+        // is_default = 0, nor produce multiple defaults.
         mapper.update(null, new LambdaUpdateWrapper<TenantProfileEntity>()
-                .set(TenantProfileEntity::getIsDefault, 0));
-        mapper.update(null, new LambdaUpdateWrapper<TenantProfileEntity>()
-                .eq(TenantProfileEntity::getId, id)
-                .set(TenantProfileEntity::getIsDefault, 1));
+                .setSql("is_default = CASE WHEN id = ? THEN 1 ELSE 0 END", id));
     }
 
     @Override

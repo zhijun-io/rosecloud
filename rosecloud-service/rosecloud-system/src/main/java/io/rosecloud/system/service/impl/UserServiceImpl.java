@@ -92,6 +92,7 @@ public class UserServiceImpl implements UserService, UserApi {
 
     @AuditLog(action = "user-delete", description = "删除用户")
     @Override
+    @Transactional
     public void delete(Long id) {
         userRepository.deleteById(id);
     }
@@ -118,6 +119,7 @@ public class UserServiceImpl implements UserService, UserApi {
 
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
     @Override
+    @Transactional
     public void assignRoles(Long userId, List<Long> roleIds) {
         if (userRepository.findById(userId).isEmpty()) {
             throw new BizException(SystemErrorCode.USER_NOT_FOUND);

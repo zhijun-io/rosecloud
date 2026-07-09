@@ -1,6 +1,7 @@
 package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class UserCredentialEntity extends BaseEntity {
     private LocalDateTime usedTime;
     private LocalDateTime sendTime;
     private LocalDateTime lastLoginTime;
+    @Version
     private Long version;
 
     public Long getUserId() { return userId; }

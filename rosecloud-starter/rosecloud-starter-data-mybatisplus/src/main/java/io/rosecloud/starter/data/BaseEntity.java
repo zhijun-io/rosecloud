@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Common audit base for MyBatis-Plus persistent objects. Services extend this in
@@ -80,5 +81,21 @@ public class BaseEntity implements Serializable {
 
     public void setDeleted(Integer deleted) {
         this.deleted = deleted;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof BaseEntity other) || getId() == null || other.getId() == null) {
+            return false;
+        }
+        return Objects.equals(getId(), other.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getId() == null ? 0 : Objects.hash(getId());
     }
 }

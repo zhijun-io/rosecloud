@@ -38,7 +38,9 @@ public class InMemorySessionStore implements SessionStore {
         evictExpired();
         Set<String> toRemove = new HashSet<>();
         for (Map.Entry<String, LoginSession> entry : sessions.entrySet()) {
-            if (entry.getValue().token().equals(token)) {
+            LoginSession session = entry.getValue();
+            if (session.token().equals(token)
+                    || (session.refreshToken() != null && session.refreshToken().equals(token))) {
                 toRemove.add(entry.getKey());
             }
         }
@@ -66,7 +68,9 @@ public class InMemorySessionStore implements SessionStore {
     @Override
     public boolean isRevoked(String token) {
         evictExpired();
-        return sessions.values().stream().noneMatch(s -> s.token().equals(token));
+        return sessions.values().stream().noneMatch(s ->
+                s.token().equals(token)
+                        || (s.refreshToken() != null && s.refreshToken().equals(token)));
     }
 
     /**

@@ -8,11 +8,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
+import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
+import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -157,6 +159,10 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Long insert(User user, String passwordHash) {
+        if (user.getUsername() == null || user.getUsername().isBlank()
+                || (!isEmail(user.getUsername()) && !isPhone(user.getUsername()))) {
+            throw new BizException(SystemErrorCode.USERNAME_INVALID);
+        }
         UserEntity po = new UserEntity();
         po.setNickname(user.getNickname());
         po.setStatus(user.getStatus());
@@ -256,6 +262,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public void deleteById(Long id) {
+        userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getUserId, id));
         userMapper.deleteById(id);
     }
 

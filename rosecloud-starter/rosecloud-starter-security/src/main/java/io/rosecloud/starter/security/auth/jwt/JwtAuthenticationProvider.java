@@ -54,7 +54,11 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
             throw new BadCredentialsException("User is disabled");
         }
 
-        return new JwtAuthenticationToken((SecurityUser) userDetails);
+        if (!(userDetails instanceof SecurityUser securityUser)) {
+            throw new BadCredentialsException(
+                    "Unsupported UserDetails type: " + userDetails.getClass().getName());
+        }
+        return new JwtAuthenticationToken(securityUser);
     }
 
     @Override

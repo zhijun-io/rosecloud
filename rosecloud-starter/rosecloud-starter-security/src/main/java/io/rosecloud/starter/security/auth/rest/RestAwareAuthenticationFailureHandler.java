@@ -18,10 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
-import static com.fasterxml.jackson.core.JsonEncoding.UTF8;
 
 public class RestAwareAuthenticationFailureHandler implements AuthenticationFailureHandler {
 

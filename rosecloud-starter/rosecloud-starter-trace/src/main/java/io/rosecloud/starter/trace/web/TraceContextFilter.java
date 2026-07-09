@@ -31,7 +31,8 @@ public class TraceContextFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest http = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        String traceId = generateTraceId();
+        String inbound = http.getHeader(TraceHeaders.TRACE_ID);
+        String traceId = (inbound != null && !inbound.isBlank()) ? inbound : generateTraceId();
         MDC.put(MDC_TRACE_ID, traceId);
         httpResponse.setHeader(TraceHeaders.TRACE_ID, traceId);
         try {

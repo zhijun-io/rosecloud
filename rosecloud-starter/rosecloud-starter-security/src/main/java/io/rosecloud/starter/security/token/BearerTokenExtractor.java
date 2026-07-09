@@ -10,7 +10,7 @@ public class BearerTokenExtractor {
 
     public String extract(HttpServletRequest request) {
         String header = request.getHeader(AUTHORIZATION_HEADER);
-        if (header == null || !header.startsWith(BEARER_PREFIX)) {
+        if (header == null || !header.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
             throw new AuthenticationServiceException("Authorization header is missing or invalid");
         }
         String token = header.substring(BEARER_PREFIX.length()).trim();

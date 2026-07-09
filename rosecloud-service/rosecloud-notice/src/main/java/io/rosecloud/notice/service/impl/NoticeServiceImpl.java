@@ -4,6 +4,7 @@ import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.common.core.error.CommonErrorCode;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.notice.channel.NoticeDispatchService;
 import io.rosecloud.notice.domain.Notice;
@@ -55,7 +56,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
         LocalDateTime publishTime;
         if (publishType == NoticePublishType.SCHEDULED.code()) {
             if (request.publishTime() == null || !request.publishTime().isAfter(now)) {
-                throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
+                throw new BizException(CommonErrorCode.PARAM_INVALID);
             }
             status = NoticeStatus.DRAFT.code();
             publishTime = request.publishTime();
@@ -137,11 +138,16 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
     public int publishScheduledNotices() {
         LocalDateTime now = LocalDateTime.now();
         List<Notice> due = noticeRepository.findDueScheduled(now);
+        int dispatched = 0;
         for (Notice notice : due) {
-            noticeRepository.markPublished(notice.getId());
-            dispatchService.dispatch(notice);
+            // Only the replica that actually flips DRAFT -> PUBLISHED dispatches,
+            // preventing duplicate emails/SMS across multiple scheduled workers.
+            if (noticeRepository.markPublished(notice.getId()) > 0) {
+                dispatchService.dispatch(notice);
+                dispatched++;
+            }
         }
-        return due.size();
+        return dispatched;
     }
 
     @Scheduled(fixedDelayString = "${rosecloud.notice.publish-check-ms:60000}")
@@ -212,21 +218,35 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
     private void validateTarget(NoticePublishRequest request) {
         int type = request.targetType() == null ? -1 : request.targetType();
         if (type == NoticeTargetType.TENANT.code() && request.targetTenantId() == null) {
-            throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
+            throw new BizException(CommonErrorCode.PARAM_INVALID);
         }
         if (type == NoticeTargetType.ROLE.code() && (request.targetRoleCode() == null || request.targetRoleCode().isBlank())) {
-            throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
+            throw new BizException(CommonErrorCode.PARAM_INVALID);
         }
         if (type == NoticeTargetType.USER.code() && (request.targetUsername() == null || request.targetUsername().isBlank())) {
-            throw new BizException(NoticeErrorCode.NOTICE_NOT_FOUND);
+            throw new BizException(CommonErrorCode.PARAM_INVALID);
         }
     }
 
     private MyNotice toMyNotice(Notice notice, NoticeRecord record) {
         boolean read = record != null && record.getReadTime() != null;
         boolean confirmed = record != null && record.getConfirmTime() != null;
-        return new MyNotice(notice, read, confirmed,
+        return new MyNotice(sanitizeForRecipient(notice), read, confirmed,
                 record == null ? null : record.getReadTime(),
                 record == null ? null : record.getConfirmTime());
+    }
+
+    /**
+     * Returns a copy of the notice safe to expose to a recipient: the recipient
+     * snapshot (other users' emails/phones) is dropped, and publisher-only
+     * targeting metadata ({@code targetUsername}, {@code targetTenantId},
+     * {@code senderId}) is stripped to avoid leaking cross-user PII.
+     */
+    private static Notice sanitizeForRecipient(Notice n) {
+        return new Notice(n.getId(), n.getTitle(), n.getContent(), n.getTargetType(),
+                null, n.getTargetRoleCode(), null, n.getPublishType(), n.getPublishTime(),
+                n.getEffectiveTime(), n.getExpireTime(), n.getStatus(), n.getNeedConfirm(),
+                null, n.getTenantId(), n.getChannels(), List.of(),
+                n.getCreateTime(), n.getCreateBy(), n.getUpdateTime(), n.getUpdateBy());
     }
 }

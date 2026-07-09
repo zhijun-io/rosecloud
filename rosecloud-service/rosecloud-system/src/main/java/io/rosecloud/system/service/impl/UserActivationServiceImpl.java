@@ -15,9 +15,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UserActivationServiceImpl implements UserActivationService {
@@ -29,16 +33,20 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final NoticePublishApi noticePublishApi;
     private final long activationTtlHours;
     private final String activationLinkBaseUrl;
+    private final long resendCooldownSeconds;
+    private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
 
     public UserActivationServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                                     NoticePublishApi noticePublishApi,
-                                     @Value("${rosecloud.user.activation-ttl-hours:24}") long activationTtlHours,
-                                     @Value("${rosecloud.user.activation-link-base-url:}") String activationLinkBaseUrl) {
+                                      NoticePublishApi noticePublishApi,
+                                      @Value("${rosecloud.user.activation-ttl-hours:24}") long activationTtlHours,
+                                      @Value("${rosecloud.user.activation-link-base-url:}") String activationLinkBaseUrl,
+                                      @Value("${rosecloud.user.activation-resend-cooldown-seconds:60}") long resendCooldownSeconds) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.noticePublishApi = noticePublishApi;
         this.activationTtlHours = activationTtlHours;
         this.activationLinkBaseUrl = activationLinkBaseUrl;
+        this.resendCooldownSeconds = resendCooldownSeconds;
     }
 
     @Override
@@ -67,19 +75,28 @@ public class UserActivationServiceImpl implements UserActivationService {
     @Override
     @Transactional
     public UserActivationInfo resend(String username) {
-        UserActivationInfo info = userRepository.findActivationByUsername(username)
-                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
-        if (info.used()) {
-            throw new BizException(SystemErrorCode.USER_ACTIVATION_TOKEN_USED);
+        UserActivationInfo info = userRepository.findActivationByUsername(username).orElse(null);
+        if (info == null || info.used()) {
+            // Generic success — never reveal whether the account exists or is already activated,
+            // which would otherwise let an attacker enumerate valid usernames.
+            return null;
         }
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireTime = now.plusHours(activationTtlHours);
+        Instant now = Instant.now();
+        Instant last = lastResendAt.get(username);
+        if (last != null && Duration.between(last, now).toSeconds() < resendCooldownSeconds) {
+            // Within the cooldown window: ignore the request without re-sending, mitigating email bombing.
+            return info;
+        }
+        lastResendAt.put(username, now);
+        LocalDateTime sendTime = LocalDateTime.now();
+        LocalDateTime expireTime = sendTime.plusHours(activationTtlHours);
         String token = generateToken();
         long nextVersion = info.version() == null ? DEFAULT_VERSION : info.version() + 1;
-        userRepository.saveActivationToken(info.userId(), token, expireTime, now, nextVersion);
-        UserActivationInfo updated = userRepository.findActivationByToken(token)
-                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
-        publishActivationNotice(updated);
+        userRepository.saveActivationToken(info.userId(), token, expireTime, sendTime, nextVersion);
+        UserActivationInfo updated = userRepository.findActivationByToken(token).orElse(null);
+        if (updated != null) {
+            publishActivationNotice(updated);
+        }
         return updated;
     }
 

@@ -3,6 +3,7 @@ package io.rosecloud.system.persistence;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.system.domain.Menu;
 import io.rosecloud.system.domain.MenuRepository;
+import io.rosecloud.system.persistence.RoleMenuEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -45,6 +46,7 @@ public class MenuRepositoryImpl implements MenuRepository {
 
     @Override
     public void deleteById(Long id) {
+        roleMenuMapper.delete(new LambdaQueryWrapper<RoleMenuEntity>().eq(RoleMenuEntity::getMenuId, id));
         menuMapper.deleteById(id);
     }
 

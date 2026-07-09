@@ -28,6 +28,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class CacheAutoConfiguration {
 
     @Bean
+    @ConditionalOnProperty(prefix = "rosecloud.cache", name = "type", havingValue = "in-memory", matchIfMissing = true)
     @ConditionalOnMissingBean(RoseCloudCache.class)
     public RoseCloudCache localRoseCloudCache() {
         return new LocalRoseCloudCache();
