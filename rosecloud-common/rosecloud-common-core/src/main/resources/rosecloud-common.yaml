@@ -52,5 +52,5 @@ rosecloud:
       - sys_user_setting
   security:
     jwt:
-      secret: ${ROSECLOUD_SECURITY_JWT_SECRET:rosecloud-dev-secret-please-change-me-0123456789}
+      secret: ${ROSECLOUD_SECURITY_JWT_SECRET:fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
       issuer: ${ROSECLOUD_SECURITY_JWT_ISSUER:rosecloud}
