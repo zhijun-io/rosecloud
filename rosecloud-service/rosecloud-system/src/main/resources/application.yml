@@ -37,7 +37,6 @@ rosecloud:
       - /api/system/users/auth/**
       - /api/system/login-logs
       - /api/system/audit-logs
-      - /api/system/notice/recipients
       - /actuator/**
       - /error
 

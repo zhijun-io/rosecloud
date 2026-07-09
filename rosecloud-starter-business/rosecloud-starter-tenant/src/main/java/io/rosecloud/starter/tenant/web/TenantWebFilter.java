@@ -1,7 +1,7 @@
 package io.rosecloud.starter.tenant.web;
 
 import io.rosecloud.common.security.SecurityHeaders;
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +12,7 @@ import java.io.IOException;
 
 /**
  * Servlet filter that resolves the tenant id from the {@code X-Tenant-Id} header,
- * binds it to {@link TenantContext} for the request, and clears it afterwards.
+ * binds it to {@link TenantContextHolder} for the request, and clears it afterwards.
  */
 public class TenantWebFilter extends OncePerRequestFilter {
     @Override
@@ -20,11 +20,11 @@ public class TenantWebFilter extends OncePerRequestFilter {
         String tenantId = parse(request);
         try {
             if (tenantId != null) {
-                TenantContext.setTenantId(tenantId);
+                TenantContextHolder.setTenantId(tenantId);
             }
             filterChain.doFilter(request, response);
         } finally {
-            TenantContext.clear();
+            TenantContextHolder.clear();
         }
     }
 

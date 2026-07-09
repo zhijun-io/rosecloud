@@ -17,7 +17,7 @@ import io.rosecloud.notice.service.NoticeService;
 import io.rosecloud.notice.service.dto.MyNotice;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -65,7 +65,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
         }
         SecurityUser sender = currentUser();
         Long senderId = sender == null ? null : sender.getUserId();
-        String senderTenantId = TenantContext.getTenantId();
+        String senderTenantId = TenantContextHolder.getTenantId();
         int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), request.targetUsername(), publishType, publishTime,
@@ -90,7 +90,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
             return PageResult.empty(current, size);
         }
         LocalDateTime now = LocalDateTime.now();
-        PageResult<Notice> notices = noticeRepository.myNotices(current, size, TenantContext.getTenantId(), roleNames(),
+        PageResult<Notice> notices = noticeRepository.myNotices(current, size, TenantContextHolder.getTenantId(), roleNames(),
                 user.getUsername(), now);
         Map<Long, NoticeRecord> records = noticeRepository
                 .findRecords(notices.records().stream().map(Notice::getId).toList(), user.getUserId())
@@ -117,7 +117,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
         if (user == null || user.getUserId() == null) {
             return;
         }
-        noticeRepository.upsertRead(id, user.getUserId(), TenantContext.getTenantId(), LocalDateTime.now());
+        noticeRepository.upsertRead(id, user.getUserId(), TenantContextHolder.getTenantId(), LocalDateTime.now());
     }
 
     @Override
@@ -130,7 +130,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
         if (user == null || user.getUserId() == null) {
             return;
         }
-        noticeRepository.upsertConfirm(id, user.getUserId(), TenantContext.getTenantId(), LocalDateTime.now());
+        noticeRepository.upsertConfirm(id, user.getUserId(), TenantContextHolder.getTenantId(), LocalDateTime.now());
     }
 
     @Override
@@ -179,7 +179,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
             return true;
         }
         if (type == NoticeTargetType.TENANT.code()) {
-            return user != null && TenantContext.getTenantId() != null && TenantContext.getTenantId().equals(n.getTargetTenantId());
+            return user != null && TenantContextHolder.getTenantId() != null && TenantContextHolder.getTenantId().equals(n.getTargetTenantId());
         }
         if (type == NoticeTargetType.ROLE.code()) {
             return user != null && n.getTargetRoleCode() != null && !roleNames().isEmpty()

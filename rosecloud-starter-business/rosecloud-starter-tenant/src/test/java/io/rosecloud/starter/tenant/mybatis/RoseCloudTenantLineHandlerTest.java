@@ -1,6 +1,6 @@
 package io.rosecloud.starter.tenant.mybatis;
 
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.starter.tenant.core.TenantProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ class RoseCloudTenantLineHandlerTest {
 
     @AfterEach
     void tearDown() {
-        TenantContext.clear();
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -37,7 +37,7 @@ class RoseCloudTenantLineHandlerTest {
                 "sys_user_setting"
         ));
 
-        TenantContext.setTenantId("tenant-100");
+        TenantContextHolder.setTenantId("tenant-100");
         RoseCloudTenantLineHandler handler = new RoseCloudTenantLineHandler(properties);
 
         assertTrue(handler.ignoreTable("sys_role"));

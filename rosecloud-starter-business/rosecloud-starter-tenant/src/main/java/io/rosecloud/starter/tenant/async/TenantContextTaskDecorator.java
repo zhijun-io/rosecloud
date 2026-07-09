@@ -1,6 +1,6 @@
 package io.rosecloud.starter.tenant.async;
 
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.core.task.TaskDecorator;
 import org.springframework.lang.NonNull;
 
@@ -13,15 +13,15 @@ public class TenantContextTaskDecorator implements TaskDecorator {
     @Override
     @NonNull
     public Runnable decorate(@NonNull Runnable runnable) {
-        String tenantId = TenantContext.getTenantId();
+        String tenantId = TenantContextHolder.getTenantId();
         return () -> {
             try {
                 if (tenantId != null) {
-                    TenantContext.setTenantId(tenantId);
+                    TenantContextHolder.setTenantId(tenantId);
                 }
                 runnable.run();
             } finally {
-                TenantContext.clear();
+                TenantContextHolder.clear();
             }
         };
     }

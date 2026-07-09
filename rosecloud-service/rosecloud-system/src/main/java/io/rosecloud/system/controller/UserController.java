@@ -82,7 +82,7 @@ public class UserController {
     }
 
     @GetMapping("/auth/{username}")
-    public ApiResponse<SecurityUser> getAuthInfo(@PathVariable String username) {
+    public ApiResponse<SecurityUser> loadByUsername(@PathVariable String username) {
         return ApiResponse.ok(userService.loadByUsername(username));
     }
 }

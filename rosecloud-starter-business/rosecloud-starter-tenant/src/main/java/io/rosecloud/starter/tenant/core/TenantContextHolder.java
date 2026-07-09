@@ -7,11 +7,11 @@ package io.rosecloud.starter.tenant.core;
  * boundaries by {@code TenantContextTaskDecorator}. Callers must clear it
  * when the unit of work ends.
  */
-public final class TenantContext {
+public final class TenantContextHolder {
 
     private static final ThreadLocal<String> TENANT_ID = new ThreadLocal<>();
 
-    private TenantContext() {
+    private TenantContextHolder() {
     }
 
     public static String getTenantId() {

@@ -2,7 +2,7 @@ package io.rosecloud.starter.audit;
 
 import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -54,7 +54,7 @@ public class AuditLogAspect {
     }
 
     private static String currentTenantId() {
-        return TenantContext.getTenantId();
+        return TenantContextHolder.getTenantId();
     }
 
     private static String resolvePrincipal() {

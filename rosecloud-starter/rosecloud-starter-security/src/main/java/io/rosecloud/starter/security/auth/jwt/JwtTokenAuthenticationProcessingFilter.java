@@ -1,6 +1,7 @@
 package io.rosecloud.starter.security.auth.jwt;
 
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
+import io.rosecloud.starter.security.auth.AbstractJwtAuthenticationToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import jakarta.servlet.FilterChain;
@@ -30,10 +31,14 @@ public class JwtTokenAuthenticationProcessingFilter extends AbstractAuthenticati
         this.tokenExtractor = tokenExtractor;
     }
 
+    private static final String RAW_TOKEN_ATTR = "io.rosecloud.raw-access-token";
+
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
-        RawAccessJwtToken token = new RawAccessJwtToken(tokenExtractor.extract(request));
+        String raw = tokenExtractor.extract(request);
+        request.setAttribute(RAW_TOKEN_ATTR, raw);
+        RawAccessJwtToken token = new RawAccessJwtToken(raw);
         return getAuthenticationManager().authenticate(new JwtAuthenticationToken(token));
     }
 
@@ -44,6 +49,10 @@ public class JwtTokenAuthenticationProcessingFilter extends AbstractAuthenticati
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authResult);
         SecurityContextHolder.setContext(context);
+        Object raw = request.getAttribute(RAW_TOKEN_ATTR);
+        if (raw instanceof String s && authResult instanceof AbstractJwtAuthenticationToken token) {
+            token.setDetails(s);
+        }
         chain.doFilter(request, response);
     }
 

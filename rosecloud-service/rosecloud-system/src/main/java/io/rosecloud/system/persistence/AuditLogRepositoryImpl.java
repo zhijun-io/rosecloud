@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.model.PageResult;
-import io.rosecloud.starter.tenant.core.TenantContext;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.AuditLogRepository;
 import org.springframework.stereotype.Repository;
@@ -44,8 +44,8 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     public PageResult<AuditLog> page(long current, long size, String action, String username) {
         Page<AuditLogEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
-        if (TenantContext.getTenantId() != null) {
-            wrapper.eq(AuditLogEntity::getTenantId, TenantContext.getTenantId());
+        if (TenantContextHolder.getTenantId() != null) {
+            wrapper.eq(AuditLogEntity::getTenantId, TenantContextHolder.getTenantId());
         }
         if (action != null && !action.isBlank()) {
             wrapper.eq(AuditLogEntity::getAction, action);
