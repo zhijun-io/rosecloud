@@ -25,9 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Service
-public class UserServiceImpl implements UserService, UserDetailsService {
+public class UserServiceImpl implements UserService, UserDetailsService, Function<String, Optional<SecurityUser>> {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -110,6 +111,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public Optional<SecurityUser> loadByUsername(String username) {
         return userRepository.loadByUsername(username);
+    }
+
+    @Override
+    public Optional<SecurityUser> apply(String username) {
+        return loadByUsername(username);
     }
 
     @Override

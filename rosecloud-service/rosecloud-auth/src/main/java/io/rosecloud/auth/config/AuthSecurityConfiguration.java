@@ -8,6 +8,7 @@ import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +28,7 @@ import java.util.function.Function;
  * login-log and user-profile side effects.
  */
 @Configuration
+@ConditionalOnBean(SystemUserApi.class)
 public class AuthSecurityConfiguration {
 
     @Bean

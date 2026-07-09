@@ -28,7 +28,6 @@ import org.springframework.security.web.SecurityFilterChain;
  import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.Optional;
 
@@ -44,14 +43,10 @@ import io.rosecloud.common.security.model.SecurityUser;
     public static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
 
     private final SecurityProperties properties;
-    private final Function<String, Optional<SecurityUser>> userLookup;
     private final ObjectMapper objectMapper;
 
-    public SecurityConfiguration(SecurityProperties properties,
-                                 Function<String, Optional<SecurityUser>> userLookup,
-                                 ObjectMapper objectMapper) {
+    public SecurityConfiguration(SecurityProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
-        this.userLookup = userLookup;
         this.objectMapper = objectMapper;
     }
  
@@ -95,19 +90,25 @@ import io.rosecloud.common.security.model.SecurityUser;
      }
  
     @Bean
-    public RestAuthenticationProvider restAuthenticationProvider(PasswordEncoder passwordEncoder) {
+    public RestAuthenticationProvider restAuthenticationProvider(
+            Function<String, Optional<SecurityUser>> userLookup,
+            PasswordEncoder passwordEncoder) {
         return new RestAuthenticationProvider(userLookup, passwordEncoder);
     }
  
      @Bean
     public JwtAuthenticationProvider jwtAuthenticationProvider(
-            JwtTokenFactory jwtTokenFactory, SessionStore sessionStore) {
+            JwtTokenFactory jwtTokenFactory,
+            SessionStore sessionStore,
+            Function<String, Optional<SecurityUser>> userLookup) {
         return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userLookup);
     }
  
      @Bean
     public RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider(
-            JwtTokenFactory jwtTokenFactory, SessionStore sessionStore) {
+            JwtTokenFactory jwtTokenFactory,
+            SessionStore sessionStore,
+            Function<String, Optional<SecurityUser>> userLookup) {
         return new RefreshTokenAuthenticationProvider(jwtTokenFactory, userLookup);
     }
  

@@ -50,6 +50,8 @@ class MonolithContextLoadTest {
     @Test
     void contextLoads() {
         assertThat(ctx).isNotNull();
-        assertThat(ctx.getBean(io.rosecloud.api.user.SystemUserApi.class)).isNotNull();
+        assertThat(ctx.getBean(io.rosecloud.system.service.UserService.class)).isNotNull();
+        assertThat(ctx.getBean(io.rosecloud.api.notice.NoticeRecipientApi.class)).isNotNull();
+        assertThat(ctx.getBean(io.rosecloud.api.notice.NoticePublishApi.class)).isNotNull();
     }
 }
