@@ -1,15 +1,17 @@
 package io.rosecloud.starter.audit;
 
+import io.rosecloud.starter.tenant.core.TenantContext;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 
 /**
  * Around-advises {@link AuditLog} methods, timing them and publishing an
- * {@link AuditLogEvent} regardless of outcome. The operator and tenant are
+ * {@link AuditLogEvent} regardless of outcome. The operator is
  * read from {@link SecurityContextHolder}.
  */
 @Aspect
@@ -51,8 +53,6 @@ public class AuditLogAspect {
     }
 
     private static String currentTenantId() {
-        // Tenant ID is resolved by the tenant module, not stored in SecurityUser.
-        // Services that need tenant tracking provide their own AuditPrincipalResolver.
-        return null;
+        return TenantContext.getTenantId();
     }
 }
