@@ -25,7 +25,7 @@ public class LocalSystemUserApi implements SystemUserApi {
     }
 
     @Override
-    public ApiResponse<SecurityUser> getAuthInfo(String username) {
+    public ApiResponse<SecurityUser> loadUserByUsername(String username) {
         return ApiResponse.ok(userService.loadByUsername(username).orElse(null));
     }
 

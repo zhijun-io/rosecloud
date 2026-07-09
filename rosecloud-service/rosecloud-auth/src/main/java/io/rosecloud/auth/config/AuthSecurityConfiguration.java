@@ -8,8 +8,6 @@ import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -32,11 +30,6 @@ import java.util.function.Function;
 public class AuthSecurityConfiguration {
 
     @Bean
-    public PasswordEncoder authPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
     Consumer<LoginSucceededEvent> loginSucceededHandler(
             LoginLogApi loginLogApi, SystemUserApi systemUserApi) {
         return event -> {
@@ -54,6 +47,6 @@ public class AuthSecurityConfiguration {
 
     @Bean
     Function<String, Optional<SecurityUser>> userLookup(SystemUserApi systemUserApi) {
-        return username -> Optional.ofNullable(systemUserApi.getAuthInfo(username).data());
+        return username -> Optional.ofNullable(systemUserApi.loadUserByUsername(username).data());
     }
 }

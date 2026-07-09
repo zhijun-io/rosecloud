@@ -19,7 +19,7 @@ public interface SystemUserApi {
 
     /** Returns the auth snapshot for a login identifier, or {@code null} data if not found. */
         @GetMapping("/auth/{username}")
-    ApiResponse<SecurityUser> getAuthInfo(@PathVariable("username") String username);
+    ApiResponse<SecurityUser> loadUserByUsername(@PathVariable("username") String username);
 
     /** Records the timestamp of the user's last successful login. */
     @PostMapping("/{userId}/last-login")

@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
  import org.springframework.security.authentication.AuthenticationManager;
  import org.springframework.security.authentication.ProviderManager;
@@ -46,7 +47,7 @@ import org.springframework.security.web.SecurityFilterChain;
     private final ObjectMapper objectMapper;
 
     public SecurityConfiguration(SecurityProperties properties,
-                                 UserDetailsService userDetailsService,
+                                 @Lazy UserDetailsService userDetailsService,
                                  ObjectMapper objectMapper) {
         this.properties = properties;
         this.userDetailsService = userDetailsService;
