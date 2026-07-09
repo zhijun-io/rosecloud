@@ -51,7 +51,7 @@ class SettingKeyServiceImplTest {
     }
 
     private static void setCurrentUser(Long userId, String username) {
-        SecurityUser su = new SecurityUser(userId, username, null, null, true,
+        SecurityUser su = new SecurityUser(userId, username, null, null, true, null,
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, username), List.of());
         var auth = new UsernamePasswordAuthenticationToken(su, null, su.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);

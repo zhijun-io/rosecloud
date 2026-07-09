@@ -49,6 +49,11 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         if (userDetails == null) {
             throw new BadCredentialsException("User not found");
         }
+
+        if (!userDetails.isEnabled()) {
+            throw new BadCredentialsException("User is disabled");
+        }
+
         return new RefreshAuthenticationToken((SecurityUser) userDetails);
     }
 

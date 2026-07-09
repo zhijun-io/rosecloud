@@ -9,20 +9,23 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive gateway filter that propagates {@link SecurityHeaders#TENANT_ID}
- * to downstream services.
+ * Reactive gateway filter that <em>strips</em> any client-supplied
+ * {@link SecurityHeaders#TENANT_ID} header at the trust boundary.
+ *
+ * <p>Downstream services derive the tenant from the authenticated principal
+ * (see {@code TenantWebFilter}), never from this header, so a spoofed
+ * {@code X-Tenant-Id} must not reach them.
  */
 public class TenantGatewayFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String tenantId = request.getHeaders().getFirst(SecurityHeaders.TENANT_ID);
-        if (tenantId == null || tenantId.isBlank()) {
+        if (!request.getHeaders().containsHeader(SecurityHeaders.TENANT_ID)) {
             return chain.filter(exchange);
         }
         ServerHttpRequest mutated = request.mutate()
-                .header(SecurityHeaders.TENANT_ID, tenantId)
+                .headers(headers -> headers.remove(SecurityHeaders.TENANT_ID))
                 .build();
         return chain.filter(exchange.mutate().request(mutated).build());
     }

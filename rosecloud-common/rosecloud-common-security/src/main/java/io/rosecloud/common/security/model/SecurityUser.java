@@ -32,6 +32,7 @@ public class SecurityUser implements UserDetails {
     private final String nickname;
     private final String password;
     private final boolean enabled;
+    private final String tenantId;
     private final UserPrincipal userPrincipal;
     private final List<String> authorityStrings;
 
@@ -44,13 +45,14 @@ public class SecurityUser implements UserDetails {
      * {@link #fromJson}) Jackson.
      */
     public SecurityUser(Long userId, String username, String nickname, String password,
-                        boolean enabled, UserPrincipal userPrincipal,
+                        boolean enabled, String tenantId, UserPrincipal userPrincipal,
                         Collection<GrantedAuthority> authorities) {
         this.userId = userId;
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.enabled = enabled;
+        this.tenantId = tenantId;
         this.userPrincipal = userPrincipal;
         this.authorityStrings = authorities != null
                 ? authorities.stream().map(GrantedAuthority::getAuthority).toList()
@@ -68,12 +70,13 @@ public class SecurityUser implements UserDetails {
             @JsonProperty("nickname") String nickname,
             @JsonProperty("password") String password,
             @JsonProperty("enabled") boolean enabled,
+            @JsonProperty("tenantId") String tenantId,
             @JsonProperty("userPrincipal") UserPrincipal userPrincipal,
             @JsonProperty("authorities") List<String> authorityStrings) {
         List<GrantedAuthority> authorities = authorityStrings != null
                 ? authorityStrings.stream().<GrantedAuthority>map(SimpleGrantedAuthority::new).toList()
                 : List.of();
-        return new SecurityUser(userId, username, nickname, password, enabled, userPrincipal,
+        return new SecurityUser(userId, username, nickname, password, enabled, tenantId, userPrincipal,
                 authorities);
     }
 
@@ -134,6 +137,10 @@ public class SecurityUser implements UserDetails {
 
     public Long getUserId() {
         return userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
     }
 
     public String getNickname() {

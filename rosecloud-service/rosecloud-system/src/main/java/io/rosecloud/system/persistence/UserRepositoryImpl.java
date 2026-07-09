@@ -71,7 +71,7 @@ public class UserRepositoryImpl implements UserRepository {
         return Optional.of(new SecurityUser(
                 po.getId(), loginName(po), loginName(po), password,
                 po.getStatus() != null && po.getStatus() == 1,
-                principal, authorities));
+                po.getTenantId(), principal, authorities));
     }
 
     @Override

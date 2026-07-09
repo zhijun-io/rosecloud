@@ -4,6 +4,7 @@ import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.starter.security.annotation.InternalApi;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.service.AuditLogService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +35,7 @@ public class AuditLogController {
         return ApiResponse.ok(auditLogService.page(current, size, action, username));
     }
 
+    @InternalApi
     @PostMapping
     public ApiResponse<Void> save(@RequestBody AuditLogRequest auditLogRequest) {
         auditLogService.save(auditLogRequest);

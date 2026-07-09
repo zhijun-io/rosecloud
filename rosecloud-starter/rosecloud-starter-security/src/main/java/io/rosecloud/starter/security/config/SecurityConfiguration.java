@@ -3,7 +3,9 @@ package io.rosecloud.starter.security.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
+import io.rosecloud.starter.security.web.InternalApiAuthenticationFilter;
 import io.rosecloud.starter.security.auth.jwt.*;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import io.rosecloud.starter.security.auth.rest.RestAuthenticationProvider;
 import io.rosecloud.starter.security.auth.rest.RestAwareAccessDeniedHandler;
 import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationEntryPoint;
@@ -12,11 +14,15 @@ import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationSuccessHan
 import io.rosecloud.starter.security.auth.rest.RestLoginProcessingFilter;
 import io.rosecloud.starter.security.context.LogoutProcessingFilter;
 import io.rosecloud.starter.security.session.InMemorySessionStore;
+import io.rosecloud.starter.security.session.RedisSessionStore;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -27,6 +33,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -81,15 +88,38 @@ public class SecurityConfiguration {
                 .addFilterBefore(restLoginProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(refreshTokenProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtTokenAuthenticationProcessingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(logoutProcessingFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(logoutProcessingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new InternalApiAuthenticationFilter(), JwtTokenAuthenticationProcessingFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public SessionStore sessionStore() {
-        return new InMemorySessionStore();
+    /**
+     * Session store used for JWT revocation lookups. When a {@link StringRedisTemplate}
+     * is available (Redis on the classpath and configured) a shared
+     * {@link RedisSessionStore} is used so that logout/revocation propagates across all
+     * services; otherwise it falls back to an in-process {@link InMemorySessionStore}.
+     *
+     * <p>Using an in-memory store in a multi-service deployment would make every service
+     * treat externally-issued tokens as revoked — so Redis is strongly preferred whenever
+     * present.
+     */
+    @Configuration(proxyBeanMethods = false)
+    static class SessionStoreConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(SessionStore.class)
+        @ConditionalOnClass(StringRedisTemplate.class)
+        public SessionStore redisAwareSessionStore(ObjectProvider<StringRedisTemplate> redisTemplate) {
+            StringRedisTemplate template = redisTemplate.getIfAvailable();
+            return template != null ? new RedisSessionStore(template) : new InMemorySessionStore();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean(SessionStore.class)
+        public SessionStore inMemorySessionStore() {
+            return new InMemorySessionStore();
+        }
     }
 
     @Bean
@@ -195,7 +225,9 @@ public class SecurityConfiguration {
         pathsToSkip.add(LOGIN_ENTRY_POINT);
         pathsToSkip.add(REFRESH_ENTRY_POINT);
         pathsToSkip.add(LOGOUT_ENTRY_POINT);
-        SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
+        List<RequestMatcher> internalSkips = List.of(
+                new RequestHeaderRequestMatcher(InternalApiAuthenticationFilter.INTERNAL_HEADER));
+        SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, internalSkips, TOKEN_BASED_AUTH_ENTRY_POINT);
         JwtTokenAuthenticationProcessingFilter filter = new JwtTokenAuthenticationProcessingFilter(
                 matcher, restAwareAuthenticationFailureHandler, new BearerTokenExtractor());
         filter.setAuthenticationManager(authenticationManager);
@@ -209,12 +241,13 @@ public class SecurityConfiguration {
     }
 
     private CorsConfigurationSource corsConfigurationSource() {
+        SecurityProperties.Cors cors = properties.getCors();
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+        config.setAllowedOrigins(cors.getAllowedOrigins());
+        config.setAllowedMethods(cors.getAllowedMethods());
+        config.setAllowedHeaders(cors.getAllowedHeaders());
+        config.setAllowCredentials(cors.isAllowCredentials());
+        config.setMaxAge(cors.getMaxAge());
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

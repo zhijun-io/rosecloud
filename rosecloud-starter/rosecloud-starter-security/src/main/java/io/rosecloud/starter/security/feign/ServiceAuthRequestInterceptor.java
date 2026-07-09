@@ -3,6 +3,7 @@ package io.rosecloud.starter.security.feign;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import io.rosecloud.common.security.SecurityHeaders;
+import io.rosecloud.starter.security.web.InternalApiAuthenticationFilter;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
@@ -39,6 +40,7 @@ public class ServiceAuthRequestInterceptor implements RequestInterceptor {
         if (auth != null && auth.getDetails() instanceof String rawToken) {
             template.header("Authorization", "Bearer " + rawToken);
         }
+        template.header(InternalApiAuthenticationFilter.INTERNAL_HEADER, "true");
         template.header("X-Service-Name", serviceName);
     }
 }

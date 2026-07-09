@@ -50,7 +50,7 @@ class UserSettingServiceImplTest {
 
     private static void setCurrentUser(Long userId, String username) {
         SecurityUser securityUser = new SecurityUser(
-                userId, username, null, null, true,
+                userId, username, null, null, true, null,
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, username),
                 List.of());
         UsernamePasswordAuthenticationToken auth =

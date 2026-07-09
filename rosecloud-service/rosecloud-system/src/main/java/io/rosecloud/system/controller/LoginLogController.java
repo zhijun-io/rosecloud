@@ -4,6 +4,7 @@ import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.api.log.LoginLogRequest;
+import io.rosecloud.starter.security.annotation.InternalApi;
 import io.rosecloud.system.domain.LoginLog;
 import io.rosecloud.system.service.LoginLogService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +37,7 @@ public class LoginLogController {
         return ApiResponse.ok(loginLogService.page(current, size, username, success));
     }
 
+    @InternalApi
     @PostMapping
     public ApiResponse<Void> record(@RequestBody LoginLogRequest request) {
         loginLogService.record(request);

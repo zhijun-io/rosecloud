@@ -5,11 +5,8 @@ import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.api.user.UserApi;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
-import io.rosecloud.common.security.session.SessionStore;
-import io.rosecloud.starter.security.session.RedisSessionStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.function.Consumer;
@@ -37,11 +34,6 @@ public class AuthSecurityConfiguration {
     Consumer<LoginFailedEvent> loginFailedHandler(LoginLogApi loginLogApi) {
         return event -> loginLogApi.record(new LoginLogRequest(
                 event.username(), false, event.reason(), event.ip(), event.userAgent()));
-    }
-
-    @Bean
-    SessionStore sessionStore(StringRedisTemplate redisTemplate) {
-        return new RedisSessionStore(redisTemplate);
     }
 
     @Bean

@@ -19,6 +19,7 @@ class SecurityUserJsonTest {
                 "平台管理员",
                 "$2a$10$ipYqBLPr/rGe5c1AVgvWoODGrthzi8FKOjGE7HZQQ0EATEPaY/OJa",
                 true,
+                null,
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, "admin@rosecloud.local"),
                 List.of(new SimpleGrantedAuthority("ROLE_platform-admin"))
         );
