@@ -2,27 +2,27 @@ package io.rosecloud.starter.security.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.starter.security.token.JwtTokenFactory;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
+import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
+import io.rosecloud.starter.security.token.JwtTokenFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.Optional;
+import java.util.function.Function;
 
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
-    private final UserDetailsService userDetailsService;
+    private final Function<String, Optional<SecurityUser>> userLookup;
 
     public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
-                                              UserDetailsService userDetailsService) {
+                                              Function<String, Optional<SecurityUser>> userLookup) {
         this.tokenFactory = tokenFactory;
-        this.userDetailsService = userDetailsService;
+        this.userLookup = userLookup;
     }
 
     @Override
@@ -35,12 +35,11 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         Jws<Claims> jws = tokenFactory.parseRefreshToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
 
-        try {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
-            return new RefreshAuthenticationToken((SecurityUser) userDetails);
-        } catch (UsernameNotFoundException e) {
-            throw new BadCredentialsException("User not found", e);
+        SecurityUser userDetails = userLookup.apply(claims.getSubject()).orElse(null);
+        if (userDetails == null) {
+            throw new BadCredentialsException("User not found");
         }
+        return new RefreshAuthenticationToken((SecurityUser) userDetails);
     }
 
     @Override

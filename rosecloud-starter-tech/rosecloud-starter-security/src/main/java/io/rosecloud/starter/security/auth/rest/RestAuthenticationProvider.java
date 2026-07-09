@@ -7,19 +7,21 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
 
+import java.util.Optional;
+import java.util.function.Function;
+
 public class RestAuthenticationProvider implements AuthenticationProvider {
 
-    private final UserDetailsService userDetailsService;
+    private final Function<String, Optional<io.rosecloud.common.security.model.SecurityUser>> userLookup;
     private final PasswordEncoder passwordEncoder;
 
-    public RestAuthenticationProvider(UserDetailsService userDetailsService,
+    public RestAuthenticationProvider(Function<String, Optional<io.rosecloud.common.security.model.SecurityUser>> userLookup,
                                       PasswordEncoder passwordEncoder) {
-        this.userDetailsService = userDetailsService;
+        this.userLookup = userLookup;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -38,12 +40,7 @@ public class RestAuthenticationProvider implements AuthenticationProvider {
         String username = userPrincipal.getValue();
         String password = (String) authentication.getCredentials();
 
-        UserDetails userDetails;
-        try {
-            userDetails = userDetailsService.loadUserByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            throw new BadCredentialsException("Bad credentials");
-        }
+        UserDetails userDetails = userLookup.apply(username).orElse(null);
         if (userDetails == null) {
             throw new BadCredentialsException("Bad credentials");
         }

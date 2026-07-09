@@ -1,6 +1,6 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 
 public interface UserActivationService {
 

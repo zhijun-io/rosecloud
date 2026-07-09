@@ -10,7 +10,7 @@ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.model.PageResult;

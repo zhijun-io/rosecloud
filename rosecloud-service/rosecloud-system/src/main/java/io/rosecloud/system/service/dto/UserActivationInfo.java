@@ -1,4 +1,4 @@
-package io.rosecloud.api.user;
+package io.rosecloud.system.service.dto;
 
 import java.time.LocalDateTime;
 

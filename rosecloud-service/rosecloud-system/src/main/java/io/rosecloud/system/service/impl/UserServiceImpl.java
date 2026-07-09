@@ -153,4 +153,5 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public void updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
         userRepository.updateLastLoginTime(userId, lastLoginTime);
     }
+
 }

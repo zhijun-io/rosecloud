@@ -3,7 +3,7 @@ package io.rosecloud.system.service;
 import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.domain.Role;

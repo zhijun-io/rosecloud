@@ -1,6 +1,6 @@
 package io.rosecloud.system.service.impl;
 
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;

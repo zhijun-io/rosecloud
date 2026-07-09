@@ -1,7 +1,7 @@
 package io.rosecloud.system.domain;
 
  import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.common.core.model.PageResult;
 

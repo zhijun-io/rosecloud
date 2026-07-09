@@ -1,8 +1,8 @@
 package io.rosecloud.system.controller;
 
-import io.rosecloud.api.user.ActivationConfirmRequest;
-import io.rosecloud.api.user.ActivationResendRequest;
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.ActivationConfirmRequest;
+import io.rosecloud.system.service.dto.ActivationResendRequest;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.service.UserActivationService;
 import org.springframework.web.bind.annotation.GetMapping;

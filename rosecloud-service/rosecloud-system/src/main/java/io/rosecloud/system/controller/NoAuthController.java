@@ -1,8 +1,8 @@
 package io.rosecloud.system.controller;
 
-import io.rosecloud.api.user.ActivationConfirmRequest;
-import io.rosecloud.api.user.ActivationResendRequest;
-import io.rosecloud.api.user.UserActivationInfo;
+import io.rosecloud.system.service.dto.ActivationConfirmRequest;
+import io.rosecloud.system.service.dto.ActivationResendRequest;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -22,8 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/noauth")

@@ -13,14 +13,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
  import org.springframework.security.authentication.AuthenticationManager;
  import org.springframework.security.authentication.ProviderManager;
  import org.springframework.security.config.annotation.web.builders.HttpSecurity;
  import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
  import org.springframework.security.config.http.SessionCreationPolicy;
- import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,9 +27,12 @@ import org.springframework.security.web.SecurityFilterChain;
  import org.springframework.web.cors.CorsConfigurationSource;
  import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  
- import java.util.List;
- import java.util.function.Consumer;
- import java.util.function.Function;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.Optional;
+
+import io.rosecloud.common.security.model.SecurityUser;
  
  @Configuration
  @EnableWebSecurity
@@ -39,18 +40,18 @@ import org.springframework.security.web.SecurityFilterChain;
  
      public static final String LOGIN_ENTRY_POINT = "/api/auth/login";
      public static final String REFRESH_ENTRY_POINT = "/api/auth/refresh";
-     public static final String LOGOUT_ENTRY_POINT = "/api/auth/logout";
-     public static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
- 
+    public static final String LOGOUT_ENTRY_POINT = "/api/auth/logout";
+    public static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
+
     private final SecurityProperties properties;
-    private final UserDetailsService userDetailsService;
+    private final Function<String, Optional<SecurityUser>> userLookup;
     private final ObjectMapper objectMapper;
 
     public SecurityConfiguration(SecurityProperties properties,
-                                 @Lazy UserDetailsService userDetailsService,
+                                 Function<String, Optional<SecurityUser>> userLookup,
                                  ObjectMapper objectMapper) {
         this.properties = properties;
-        this.userDetailsService = userDetailsService;
+        this.userLookup = userLookup;
         this.objectMapper = objectMapper;
     }
  
@@ -95,19 +96,19 @@ import org.springframework.security.web.SecurityFilterChain;
  
     @Bean
     public RestAuthenticationProvider restAuthenticationProvider(PasswordEncoder passwordEncoder) {
-        return new RestAuthenticationProvider(userDetailsService, passwordEncoder);
+        return new RestAuthenticationProvider(userLookup, passwordEncoder);
     }
  
      @Bean
     public JwtAuthenticationProvider jwtAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory, SessionStore sessionStore) {
-        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService);
+        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userLookup);
     }
  
      @Bean
     public RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory, SessionStore sessionStore) {
-        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, userDetailsService);
+        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, userLookup);
     }
  
      @Bean
