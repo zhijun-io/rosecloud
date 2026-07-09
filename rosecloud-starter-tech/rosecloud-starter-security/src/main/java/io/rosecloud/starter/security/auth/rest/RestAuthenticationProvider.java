@@ -1,18 +1,17 @@
 package io.rosecloud.starter.security.auth.rest;
 
-import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.model.UserPrincipal;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
-
-import static io.rosecloud.common.security.exception.SecurityErrorCode.*;
 
 public class RestAuthenticationProvider implements AuthenticationProvider {
 
@@ -42,15 +41,15 @@ public class RestAuthenticationProvider implements AuthenticationProvider {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         if (userDetails == null) {
-            throw new BizException(USER_NOT_FOUND);
+            throw new UsernameNotFoundException("User not found");
         }
 
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new BizException(BAD_CREDENTIALS);
+            throw new BadCredentialsException("Bad credentials");
         }
 
         if (!userDetails.isEnabled()) {
-            throw new BizException(USER_DISABLED);
+            throw new DisabledException("User is disabled");
         }
 
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

@@ -17,6 +17,8 @@ spring:
         enabled: false
     discovery:
       enabled: false
+  flyway:
+    out-of-order: true
 
 server:
   port: 8080
