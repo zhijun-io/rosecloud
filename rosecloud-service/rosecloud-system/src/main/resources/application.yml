@@ -31,7 +31,9 @@ rosecloud:
     enabled: true
   security:
     public-paths:
-      - /api/auth/**
+      - /api/auth/login
+      - /api/auth/refresh
+      - /api/auth/logout
       - /api/noauth/**
       - /api/public/**
       - /api/system/users/auth/**

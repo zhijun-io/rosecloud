@@ -11,7 +11,8 @@ public class SecurityProperties {
     private Jwt jwt = new Jwt();
     private long accessTokenExpirationSeconds = 3600;
     private long refreshTokenExpirationSeconds = 86400;
-    private String[] publicPaths = {"/api/auth/**", "/api/noauth/**", "/api/public/**", "/actuator/health/**", "/error"};
+    private String[] publicPaths = {"/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
+            "/api/noauth/**", "/api/public/**", "/actuator/health/**", "/error"};
     private Cors cors = new Cors();
 
     public Jwt getJwt() { return jwt; }

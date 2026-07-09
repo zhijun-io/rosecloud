@@ -4,6 +4,7 @@ import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.starter.security.annotation.InternalApi;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
@@ -81,6 +82,7 @@ public class UserController {
         return ApiResponse.ok();
     }
 
+    @InternalApi
     @GetMapping("/auth/{username}")
     public ApiResponse<SecurityUser> loadByUsername(@PathVariable String username) {
         return ApiResponse.ok(userService.loadByUsername(username));
