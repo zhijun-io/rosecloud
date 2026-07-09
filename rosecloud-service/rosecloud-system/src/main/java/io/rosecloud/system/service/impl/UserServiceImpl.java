@@ -1,12 +1,10 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
@@ -28,7 +26,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Service
-public class UserServiceImpl implements UserService, SystemUserApi, Function<String, Optional<SecurityUser>> {
+public class UserServiceImpl implements UserService, Function<String, Optional<SecurityUser>> {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -106,11 +104,6 @@ public class UserServiceImpl implements UserService, SystemUserApi, Function<Str
     }
 
     @Override
-    public ApiResponse<SecurityUser> loadUserByUsername(String username) {
-        return ApiResponse.ok(loadByUsername(username).orElse(null));
-    }
-
-    @Override
     public Optional<SecurityUser> apply(String username) {
         return loadByUsername(username);
     }
@@ -150,12 +143,6 @@ public class UserServiceImpl implements UserService, SystemUserApi, Function<Str
         User user = userRepository.findById(securityUser.getUserId())
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
         return new UserProfile(user, userRepository.findRoleCodesByUserId(securityUser.getUserId()));
-    }
-
-    @Override
-    public ApiResponse<Void> updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
-        userRepository.updateLastLoginTime(userId, lastLoginTime);
-        return ApiResponse.ok();
     }
 
     @Transactional

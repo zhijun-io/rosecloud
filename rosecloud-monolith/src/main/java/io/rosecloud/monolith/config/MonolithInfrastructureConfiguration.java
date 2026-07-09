@@ -3,11 +3,9 @@ package io.rosecloud.monolith.config;
 import io.rosecloud.auth.RoseCloudAuthApplication;
 import io.rosecloud.notice.RoseCloudNoticeApplication;
 import io.rosecloud.system.RoseCloudSystemApplication;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Aggregates the auth, system and notice modules into the monolith runtime.

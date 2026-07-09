@@ -1,12 +1,13 @@
 spring:
+  profiles:
+    include: monolith
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+    default: dev
   config:
     import:
       - optional:classpath:rosecloud-common.yaml
   application:
     name: rosecloud-monolith
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
-    default: dev
   cloud:
     nacos:
       config:
