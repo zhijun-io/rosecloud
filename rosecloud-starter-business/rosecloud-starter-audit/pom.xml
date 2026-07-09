@@ -13,22 +13,28 @@
 
     <artifactId>rosecloud-starter-audit</artifactId>
     <name>RoseCloud Audit Starter</name>
-    <description>Method-level audit logging via @AuditLog + AOP event publishing. Gated by rosecloud.audit.enabled.</description>
+    <description>Method-level audit logging via @AuditLog + AOP event publishing. Gated by rosecloud.audit.enabled.
+    </description>
 
     <dependencies>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-common-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-tenant</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-security</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-tenant</artifactId>
+            <artifactId>rosecloud-api</artifactId>
             <version>0.1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>

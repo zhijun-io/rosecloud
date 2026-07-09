@@ -1,14 +1,12 @@
 package io.rosecloud.starter.audit;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import io.rosecloud.api.audit.AuditLogRequest;
+
+import java.lang.annotation.*;
 
 /**
  * Marks a method for audit logging. When {@code rosecloud.audit.enabled=true},
- * the surrounding aspect publishes an {@link AuditLogEvent} on completion
+ * the surrounding aspect publishes an {@link AuditLogRequest} on completion
  * (success or failure).
  */
 @Target(ElementType.METHOD)

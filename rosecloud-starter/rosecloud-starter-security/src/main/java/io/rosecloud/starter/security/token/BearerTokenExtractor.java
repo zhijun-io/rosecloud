@@ -1,14 +1,13 @@
-package io.rosecloud.starter.security.auth.extractor;
+package io.rosecloud.starter.security.token;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
-public class BearerTokenExtractor implements TokenExtractor {
+public class BearerTokenExtractor {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    @Override
     public String extract(HttpServletRequest request) {
         String header = request.getHeader(AUTHORIZATION_HEADER);
         if (header == null || !header.startsWith(BEARER_PREFIX)) {

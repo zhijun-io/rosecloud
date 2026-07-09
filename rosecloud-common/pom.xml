@@ -18,6 +18,5 @@
     <modules>
         <module>rosecloud-common-core</module>
         <module>rosecloud-common-security</module>
-        <module>rosecloud-common-web</module>
     </modules>
 </project>

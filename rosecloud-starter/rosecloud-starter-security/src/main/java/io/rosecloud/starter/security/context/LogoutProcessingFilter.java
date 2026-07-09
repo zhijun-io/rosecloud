@@ -2,7 +2,7 @@
  
  import com.fasterxml.jackson.databind.ObjectMapper;
  import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.starter.security.auth.extractor.BearerTokenExtractor;
+import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.common.security.session.SessionStore;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

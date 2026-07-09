@@ -28,11 +28,7 @@
                 <artifactId>rosecloud-common-security</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-common-web</artifactId>
-                <version>${rosecloud.version}</version>
-            </dependency>
+
 
             <!-- api -->
             <dependency>

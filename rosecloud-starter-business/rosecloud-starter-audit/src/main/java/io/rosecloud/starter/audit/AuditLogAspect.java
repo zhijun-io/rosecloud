@@ -1,28 +1,28 @@
 package io.rosecloud.starter.audit;
 
+import io.rosecloud.api.audit.AuditLogRequest;
+import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.starter.tenant.core.TenantContext;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Around-advises {@link AuditLog} methods, timing them and publishing an
- * {@link AuditLogEvent} regardless of outcome. The operator is
- * read from {@link SecurityContextHolder}.
+ * {@link AuditLogRequest} regardless of outcome.
  */
 @Aspect
 public class AuditLogAspect {
 
     private final ApplicationEventPublisher publisher;
-    private final AuditPrincipalResolver principalResolver;
 
-    public AuditLogAspect(ApplicationEventPublisher publisher, AuditPrincipalResolver principalResolver) {
+    public AuditLogAspect(ApplicationEventPublisher publisher) {
         this.publisher = publisher;
-        this.principalResolver = principalResolver;
     }
 
     @Around("@annotation(auditLog)")
@@ -39,20 +39,33 @@ public class AuditLogAspect {
             String action = auditLog.action().isBlank()
                     ? pjp.getSignature().toShortString()
                     : auditLog.action();
-            publisher.publishEvent(new AuditLogEvent(
+            publisher.publishEvent(new AuditLogRequest(
                     action,
                     auditLog.description(),
-                    principalResolver.resolve(),
+                    resolvePrincipal(),
                     currentTenantId(),
                     pjp.getSignature().toShortString(),
                     elapsed,
-                    Instant.now(),
-                    failure
+                    failure != null,
+                    failure.getMessage(),
+                    LocalDateTime.now()
             ));
         }
     }
 
     private static String currentTenantId() {
         return TenantContext.getTenantId();
+    }
+
+    private static String resolvePrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || !(auth.getPrincipal() instanceof SecurityUser securityUser)) {
+            return "anonymous";
+        }
+        if (securityUser.getUsername() != null && !securityUser.getUsername().isBlank()) {
+            return securityUser.getUsername();
+        }
+        return String.valueOf(securityUser.getUserId());
     }
 }

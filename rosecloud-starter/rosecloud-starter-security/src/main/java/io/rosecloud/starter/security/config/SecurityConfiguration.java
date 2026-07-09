@@ -2,7 +2,7 @@ package io.rosecloud.starter.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.security.session.SessionStore;
-import io.rosecloud.starter.security.auth.extractor.BearerTokenExtractor;
+import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.auth.jwt.*;
 import io.rosecloud.starter.security.auth.rest.RestAuthenticationProvider;
 import io.rosecloud.starter.security.auth.rest.RestAwareAccessDeniedHandler;
@@ -59,8 +59,7 @@ public class SecurityConfiguration {
             RestLoginProcessingFilter restLoginProcessingFilter,
             RefreshTokenProcessingFilter refreshTokenProcessingFilter,
             JwtTokenAuthenticationProcessingFilter jwtTokenAuthenticationProcessingFilter,
-            LogoutProcessingFilter logoutProcessingFilter,
-            HttpSecurityHeadersCustomizer headersCustomizer) throws Exception {
+            LogoutProcessingFilter logoutProcessingFilter) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -72,7 +71,6 @@ public class SecurityConfiguration {
                 .headers(headers -> {
                     headers.cacheControl(cache -> cache.disable());
                     headers.frameOptions(frame -> frame.sameOrigin());
-                    headersCustomizer.customize(headers);
                 })
                 .authorizeHttpRequests(auth -> {
                     for (String path : properties.getPublicPaths()) {
@@ -100,20 +98,9 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public BearerTokenExtractor bearerTokenExtractor() {
-        return new BearerTokenExtractor();
-    }
-
-    @Bean
     @ConditionalOnMissingBean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public HttpSecurityHeadersCustomizer httpSecurityHeadersCustomizer() {
-        return HttpSecurityHeadersCustomizer.noop();
     }
 
     @Bean
@@ -201,7 +188,6 @@ public class SecurityConfiguration {
     @Bean
     public JwtTokenAuthenticationProcessingFilter jwtTokenAuthenticationProcessingFilter(
             RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
-            BearerTokenExtractor bearerTokenExtractor,
             AuthenticationManager authenticationManager) {
         List<String> pathsToSkip = new java.util.ArrayList<>(new LinkedHashSet<>(List.of(
                 properties.getPublicPaths()
@@ -211,16 +197,15 @@ public class SecurityConfiguration {
         pathsToSkip.add(LOGOUT_ENTRY_POINT);
         SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
         JwtTokenAuthenticationProcessingFilter filter = new JwtTokenAuthenticationProcessingFilter(
-                matcher, restAwareAuthenticationFailureHandler, bearerTokenExtractor);
+                matcher, restAwareAuthenticationFailureHandler, new BearerTokenExtractor());
         filter.setAuthenticationManager(authenticationManager);
         return filter;
     }
 
     @Bean
     public LogoutProcessingFilter logoutProcessingFilter(
-            BearerTokenExtractor bearerTokenExtractor,
             SessionStore sessionStore) {
-        return new LogoutProcessingFilter(bearerTokenExtractor, sessionStore, objectMapper);
+        return new LogoutProcessingFilter(new BearerTokenExtractor(), sessionStore, objectMapper);
     }
 
     private CorsConfigurationSource corsConfigurationSource() {

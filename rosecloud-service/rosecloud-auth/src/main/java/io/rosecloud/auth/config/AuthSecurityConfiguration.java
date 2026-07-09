@@ -2,7 +2,7 @@ package io.rosecloud.auth.config;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
-import io.rosecloud.api.user.SystemUserApi;
+import io.rosecloud.api.user.UserApi;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
 import io.rosecloud.common.security.session.SessionStore;
@@ -45,9 +45,7 @@ public class AuthSecurityConfiguration {
     }
 
     @Bean
-    UserDetailsService userDetailsService(SystemUserApi systemUserApi) {
-        return username -> {
-            return systemUserApi.loadUserByUsername(username).data();
-        };
+    UserDetailsService userDetailsService(UserApi userApi) {
+        return username -> userApi.loadUserByUsername(username);
     }
 }

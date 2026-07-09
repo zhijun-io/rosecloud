@@ -27,6 +27,8 @@ server:
   port: 9110
 
 rosecloud:
+  audit:
+    enabled: true
   security:
     public-paths:
       - /api/auth/**

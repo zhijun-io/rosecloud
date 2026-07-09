@@ -1,5 +1,6 @@
 package io.rosecloud.system.service.impl;
 
+import io.rosecloud.api.user.UserApi;
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
@@ -24,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserApi {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -151,6 +152,11 @@ public class UserServiceImpl implements UserService {
         }
         PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
         userRepository.updatePassword(userId, passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
+    }
+
+    @Override
+    public SecurityUser loadUserByUsername(String username) {
+        return userRepository.loadByUsername(username).orElse(null);
     }
 
 }

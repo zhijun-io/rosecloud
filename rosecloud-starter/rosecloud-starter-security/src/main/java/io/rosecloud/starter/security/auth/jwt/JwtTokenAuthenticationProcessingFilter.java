@@ -1,7 +1,7 @@
 package io.rosecloud.starter.security.auth.jwt;
 
+import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
-import io.rosecloud.starter.security.auth.extractor.TokenExtractor;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,11 +20,11 @@ import java.io.IOException;
 public class JwtTokenAuthenticationProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     private final AuthenticationFailureHandler failureHandler;
-    private final TokenExtractor tokenExtractor;
+    private final BearerTokenExtractor tokenExtractor;
 
     public JwtTokenAuthenticationProcessingFilter(RequestMatcher matcher,
                                                   AuthenticationFailureHandler failureHandler,
-                                                  TokenExtractor tokenExtractor) {
+                                                  BearerTokenExtractor tokenExtractor) {
         super(matcher);
         this.failureHandler = failureHandler;
         this.tokenExtractor = tokenExtractor;

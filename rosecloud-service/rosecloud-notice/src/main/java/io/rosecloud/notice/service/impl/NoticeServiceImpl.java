@@ -1,5 +1,6 @@
 package io.rosecloud.notice.service.impl;
 
+import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
@@ -17,9 +18,12 @@ import io.rosecloud.notice.service.dto.MyNotice;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.starter.tenant.core.TenantContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,7 +33,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-public class NoticeServiceImpl implements NoticeService {
+public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
+
+    private static final Logger log = LoggerFactory.getLogger(NoticeServiceImpl.class);
 
     private final NoticeRepository noticeRepository;
     private final NoticeDispatchService dispatchService;
@@ -39,7 +45,7 @@ public class NoticeServiceImpl implements NoticeService {
         this.dispatchService = dispatchService;
     }
 
-    @AuditLog(action = "notice-publish", description = "\u53d1\u5e03\u901a\u77e5")
+    @AuditLog(action = "notice-publish", description = "发布通知")
     @Override
     public Long publish(NoticePublishRequest request) {
         validateTarget(request);
@@ -136,6 +142,14 @@ public class NoticeServiceImpl implements NoticeService {
             dispatchService.dispatch(notice);
         }
         return due.size();
+    }
+
+    @Scheduled(fixedDelayString = "${rosecloud.notice.publish-check-ms:60000}")
+    public void publishDue() {
+        int published = publishScheduledNotices();
+        if (published > 0) {
+            log.info("published {} scheduled notice(s)", published);
+        }
     }
 
     private Notice loadAndCheckVisible(Long id) {

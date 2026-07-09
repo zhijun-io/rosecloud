@@ -3,7 +3,6 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.system.domain.LoginLog;
 import io.rosecloud.system.service.LoginLogService;
@@ -23,11 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoginLogController {
 
     private final LoginLogService loginLogService;
-    private final LoginLogApi loginLogApi;
 
-    public LoginLogController(LoginLogService loginLogService, LoginLogApi loginLogApi) {
+    public LoginLogController(LoginLogService loginLogService) {
         this.loginLogService = loginLogService;
-        this.loginLogApi = loginLogApi;
     }
 
     @PreAuthorize("hasAuthority('system:loginlog:list')")
@@ -41,6 +38,7 @@ public class LoginLogController {
 
     @PostMapping
     public ApiResponse<Void> record(@RequestBody LoginLogRequest request) {
-        return loginLogApi.record(request);
+        loginLogService.record(request);
+        return ApiResponse.ok();
     }
 }

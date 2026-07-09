@@ -11,4 +11,5 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan("io.rosecloud.notice.persistence")
 @EnableScheduling
 public class NoticeCoreConfiguration {
+
 }

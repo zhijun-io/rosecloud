@@ -5,7 +5,6 @@ import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.domain.RoleRepository;
 import io.rosecloud.system.domain.TenantRepository;
@@ -48,7 +47,7 @@ class TenantProvisionerTest {
     @Test
     void provisionEnablesTenantWithoutAdminUsername() {
         when(tenantRepository.findAdminUsername("tenant-1")).thenReturn(Optional.of(" "));
-        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(ApiResponse.ok(1L));
+        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
         service().provision("tenant-1");
 
@@ -65,7 +64,7 @@ class TenantProvisionerTest {
         when(userService.createWithoutPassword("admin", "admin", "tenant-2")).thenReturn(88L);
         when(userActivationService.resend("admin")).thenReturn(new UserActivationInfo(88L, "admin", "tenant-2",
                 "token", java.time.LocalDateTime.now().plusHours(24), null, java.time.LocalDateTime.now(), 1L));
-        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(ApiResponse.ok(1L));
+        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
         service().provision("tenant-2");
 
