@@ -54,7 +54,7 @@ class SystemSettingServiceImplTest {
     void saveStoresValueAndOperator() {
         setCurrentUser(9L, "admin");
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey("ui.theme", "主题", null, LocalDateTime.now(), 1L)));
+                new SettingKey(9L,"ui.theme", "主题", null)));
         service().save("ui.theme", new SettingValueRequest("{\"mode\":\"dark\"}"));
         ArgumentCaptor<SystemSetting> captor = ArgumentCaptor.forClass(SystemSetting.class);
         verify(systemSettingRepository).save(captor.capture());

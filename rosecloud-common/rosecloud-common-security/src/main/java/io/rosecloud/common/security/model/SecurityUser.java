@@ -69,7 +69,7 @@ public class SecurityUser implements UserDetails {
             @JsonProperty("password") String password,
             @JsonProperty("enabled") boolean enabled,
             @JsonProperty("userPrincipal") UserPrincipal userPrincipal,
-           @JsonProperty("authorities") List<String> authorityStrings) {
+            @JsonProperty("authorities") List<String> authorityStrings) {
         List<GrantedAuthority> authorities = authorityStrings != null
                 ? authorityStrings.stream().<GrantedAuthority>map(SimpleGrantedAuthority::new).toList()
                 : List.of();
@@ -100,31 +100,47 @@ public class SecurityUser implements UserDetails {
     }
 
     @Override
-    @JsonIgnore(false)
-    @JsonProperty("password")
-    public String getPassword() { return password; }
+    public String getPassword() {
+        return password;
+    }
 
     @Override
-    public String getUsername() { return username; }
-
-    @Override
-    @JsonIgnore
-    public boolean isAccountNonExpired() { return true; }
+    public String getUsername() {
+        return username;
+    }
 
     @Override
     @JsonIgnore
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
     @JsonIgnore
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return enabled; }
+    @JsonIgnore
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
-    // ---- Accessors exposed to downstream code ----
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
 
-    public Long getUserId() { return userId; }
-    public String getNickname() { return nickname; }
-    public UserPrincipal getUserPrincipal() { return userPrincipal; }
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public UserPrincipal getUserPrincipal() {
+        return userPrincipal;
+    }
 }

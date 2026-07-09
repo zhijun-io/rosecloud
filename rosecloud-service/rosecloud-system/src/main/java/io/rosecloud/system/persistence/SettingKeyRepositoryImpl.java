@@ -49,7 +49,7 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
     @Override
     public List<SettingKey> findAll() {
         return mapper.selectList(new LambdaQueryWrapper<SettingKeyEntity>()
-                .orderByAsc(SettingKeyEntity::getSettingKey)).stream().map(this::toDomain).toList();
+                .orderByAsc(SettingKeyEntity::getKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -57,27 +57,26 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
         Page<SettingKeyEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<SettingKeyEntity> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isBlank()) {
-            wrapper.and(w -> w.like(SettingKeyEntity::getSettingKey, keyword)
+            wrapper.and(w -> w.like(SettingKeyEntity::getKey, keyword)
                     .or().like(SettingKeyEntity::getName, keyword)
                     .or().like(SettingKeyEntity::getRemark, keyword));
         }
-        wrapper.orderByAsc(SettingKeyEntity::getSettingKey);
+        wrapper.orderByAsc(SettingKeyEntity::getKey);
         IPage<SettingKeyEntity> result = mapper.selectPage(page, wrapper);
         List<SettingKey> records = result.getRecords().stream().map(this::toDomain).toList();
         return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     private SettingKey toDomain(SettingKeyEntity po) {
-        return new SettingKey(po.getSettingKey(), po.getName(), po.getRemark(), po.getUpdatedAt(), po.getUpdatedBy());
+        return new SettingKey(po.getId(), po.getKey(), po.getName(), po.getRemark());
     }
 
     private SettingKeyEntity toEntity(SettingKey settingKey) {
         SettingKeyEntity po = new SettingKeyEntity();
-        po.setSettingKey(settingKey.getKey());
+        po.setId(settingKey.getId());
+        po.setKey(settingKey.getKey());
         po.setName(settingKey.getName());
         po.setRemark(settingKey.getRemark());
-        po.setUpdatedAt(settingKey.getUpdatedAt());
-        po.setUpdatedBy(settingKey.getUpdatedBy());
         return po;
     }
 }

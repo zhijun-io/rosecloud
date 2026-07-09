@@ -1,5 +1,6 @@
 package io.rosecloud.starter.security.auth.rest;
 
+import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.model.UserPrincipal;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -7,21 +8,20 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
 
-import java.util.Optional;
-import java.util.function.Function;
+import static io.rosecloud.common.security.exception.SecurityErrorCode.*;
 
 public class RestAuthenticationProvider implements AuthenticationProvider {
 
-    private final Function<String, Optional<io.rosecloud.common.security.model.SecurityUser>> userLookup;
+    private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
-    public RestAuthenticationProvider(Function<String, Optional<io.rosecloud.common.security.model.SecurityUser>> userLookup,
+    public RestAuthenticationProvider(UserDetailsService userDetailsService,
                                       PasswordEncoder passwordEncoder) {
-        this.userLookup = userLookup;
+        this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -40,17 +40,17 @@ public class RestAuthenticationProvider implements AuthenticationProvider {
         String username = userPrincipal.getValue();
         String password = (String) authentication.getCredentials();
 
-        UserDetails userDetails = userLookup.apply(username).orElse(null);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         if (userDetails == null) {
-            throw new BadCredentialsException("Bad credentials");
+            throw new BizException(USER_NOT_FOUND);
         }
 
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new BadCredentialsException("Bad credentials");
+            throw new BizException(BAD_CREDENTIALS);
         }
 
         if (!userDetails.isEnabled()) {
-            throw new BadCredentialsException("User is disabled");
+            throw new BizException(USER_DISABLED);
         }
 
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

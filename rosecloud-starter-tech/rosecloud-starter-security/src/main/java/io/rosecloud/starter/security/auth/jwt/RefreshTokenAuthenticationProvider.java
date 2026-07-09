@@ -11,6 +11,8 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -19,14 +21,14 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
 
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
-    private final Function<String, Optional<SecurityUser>> userLookup;
+    private final UserDetailsService userDetailsService;
 
     public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
                                               SessionStore sessionStore,
-                                              Function<String, Optional<SecurityUser>> userLookup) {
+                                              UserDetailsService userDetailsService) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
-        this.userLookup = userLookup;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -43,7 +45,7 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
             throw new BadCredentialsException("Refresh token is revoked");
         }
 
-        SecurityUser userDetails = userLookup.apply(claims.getSubject()).orElse(null);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
         if (userDetails == null) {
             throw new BadCredentialsException("User not found");
         }

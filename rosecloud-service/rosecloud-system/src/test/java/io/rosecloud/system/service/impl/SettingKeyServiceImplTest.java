@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.model.SecurityUser;
@@ -18,9 +19,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,24 +31,32 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class SettingKeyServiceImplTest {
-    @Mock SettingKeyRepository settingKeyRepository;
-    @Mock SystemSettingRepository systemSettingRepository;
-    @Mock UserSettingRepository userSettingRepository;
+    @Mock
+    SettingKeyRepository settingKeyRepository;
+    @Mock
+    SystemSettingRepository systemSettingRepository;
+    @Mock
+    UserSettingRepository userSettingRepository;
+
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
+
     private SettingKeyServiceImpl service() {
         return new SettingKeyServiceImpl(settingKeyRepository, systemSettingRepository, userSettingRepository);
     }
+
     private static void setCurrentUser(Long userId, String username) {
         SecurityUser su = new SecurityUser(userId, username, null, null, true,
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, username), List.of());
         var auth = new UsernamePasswordAuthenticationToken(su, null, su.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
+
     @Test
     void createRejectsDuplicateKey() {
         when(settingKeyRepository.existsByKey("ui.theme")).thenReturn(true);
@@ -54,6 +65,7 @@ class SettingKeyServiceImplTest {
         assertEquals(SystemErrorCode.SETTING_KEY_EXISTS, ex.getErrorCode());
         verify(settingKeyRepository, never()).insert(any());
     }
+
     @Test
     void createStoresMetadataFromCurrentUser() {
         setCurrentUser(7L, "alice");
@@ -64,8 +76,8 @@ class SettingKeyServiceImplTest {
         assertEquals("ui.theme", captor.getValue().getKey());
         assertEquals("主题", captor.getValue().getName());
         assertEquals("desc", captor.getValue().getRemark());
-        assertEquals(7L, captor.getValue().getUpdatedBy());
     }
+
     @Test
     void updateRejectsMissingKey() {
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.empty());
@@ -73,15 +85,17 @@ class SettingKeyServiceImplTest {
                 () -> service().update("ui.theme", new SettingKeyUpdateRequest("主题", "desc")));
         assertEquals(SystemErrorCode.SETTING_KEY_NOT_FOUND, ex.getErrorCode());
     }
+
     @Test
     void deleteCascadesToSystemAndUserSettings() {
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey("ui.theme", "主题", "desc", LocalDateTime.now(), 7L)));
+                new SettingKey(1L, "ui.theme", "主题", "desc")));
         service().delete("ui.theme");
         verify(systemSettingRepository).deleteByKey("ui.theme");
         verify(userSettingRepository).deleteByKey("ui.theme");
         verify(settingKeyRepository).deleteByKey("ui.theme");
     }
+
     @Test
     void pageDelegatesToRepository() {
         PageResult<SettingKey> result = PageResult.of(List.of(), 0, 1, 10);

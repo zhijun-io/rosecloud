@@ -2,19 +2,22 @@ package io.rosecloud.common.core.model;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
-/** Base data container with common creation metadata. */
+/**
+ * Base data container with common creation metadata.
+ */
 public abstract class BaseData {
 
     public static final ObjectMapper mapper = new ObjectMapper();
 
-    private long createdTime;
+    private LocalDateTime createdTime;
 
     protected BaseData() {
     }
 
-    protected BaseData(long createdTime) {
+    protected BaseData(LocalDateTime createdTime) {
         this.createdTime = createdTime;
     }
 
@@ -22,11 +25,11 @@ public abstract class BaseData {
         this.createdTime = data.createdTime;
     }
 
-    public long getCreatedTime() {
+    public LocalDateTime getCreatedTime() {
         return createdTime;
     }
 
-    public void setCreatedTime(long createdTime) {
+    public void setCreatedTime(LocalDateTime createdTime) {
         this.createdTime = createdTime;
     }
 

@@ -2,6 +2,7 @@ package io.rosecloud.system.service;
 
 import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.api.notice.NoticePublishRequest;
+import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.error.BizException;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +53,7 @@ class TenantProvisionerTest {
     @Test
     void provisionEnablesTenantWithoutAdminUsername() {
         when(tenantRepository.findAdminUsername("tenant-1")).thenReturn(Optional.of(" "));
+        when(userRepository.findContacts(NoticeTargetType.TENANT.code(), "tenant-1", null, null)).thenReturn(List.of());
         when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(ApiResponse.ok(1L));
 
         service().provision("tenant-1");
@@ -68,6 +71,8 @@ class TenantProvisionerTest {
         when(userService.createWithoutPassword("admin", "admin", "tenant-2")).thenReturn(88L);
         when(userActivationService.resend("admin")).thenReturn(new UserActivationInfo(88L, "admin", "tenant-2",
                 "token", java.time.LocalDateTime.now().plusHours(24), null, java.time.LocalDateTime.now(), 1L));
+        when(userRepository.findContacts(NoticeTargetType.TENANT.code(), "tenant-2", null, null)).thenReturn(
+                List.of(new NoticeRecipient(9L, "admin@example.com", "13800000000")));
         when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(ApiResponse.ok(1L));
 
         service().provision("tenant-2");
@@ -80,6 +85,8 @@ class TenantProvisionerTest {
         verify(noticePublishApi).publish(noticeCaptor.capture());
         assertEquals(NoticeTargetType.TENANT.code(), noticeCaptor.getValue().targetType());
         assertEquals("tenant-2", noticeCaptor.getValue().targetTenantId());
+        assertEquals(1, noticeCaptor.getValue().recipients().size());
+        assertEquals("admin@example.com", noticeCaptor.getValue().recipients().get(0).email());
     }
 
     @Test

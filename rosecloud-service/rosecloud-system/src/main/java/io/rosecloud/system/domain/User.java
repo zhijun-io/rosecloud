@@ -9,7 +9,9 @@ import io.rosecloud.common.core.model.HasTenantId;
 
 import java.util.Objects;
 
-/** Domain view of a user. ORM-free; the persistence layer maps to/from {@code sys_user}. */
+/**
+ * Domain view of a user. ORM-free; the persistence layer maps to/from {@code sys_user}.
+ */
 public final class User extends BaseDataWithAdditionalInfo implements HasAdditionalInfo, HasId, HasStatus<Integer>, HasTenantId {
 
     private final Long id;
@@ -17,6 +19,7 @@ public final class User extends BaseDataWithAdditionalInfo implements HasAdditio
     private final String nickname;
     private final Integer status;
     private final String tenantId;
+
     public User(Long id, String username, String nickname, Integer status, String tenantId, JsonNode additionalInfo) {
         super(additionalInfo);
         this.id = id;
@@ -26,11 +29,25 @@ public final class User extends BaseDataWithAdditionalInfo implements HasAdditio
         this.tenantId = tenantId;
     }
 
-    public Long getId() { return id; }
-    public String getUsername() { return username; }
-    public String getNickname() { return nickname; }
-    public Integer getStatus() { return status; }
-    public String getTenantId() { return tenantId; }
+    public Long getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
 
     @Override
     public boolean equals(Object o) {

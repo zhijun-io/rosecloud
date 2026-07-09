@@ -5,6 +5,8 @@ import io.rosecloud.common.core.error.ErrorCode;
 public enum SecurityErrorCode implements ErrorCode {
 
     UNAUTHORIZED("未授权，需要登录"),
+    USER_NOT_FOUND("用户不存在"),
+    USER_DISABLED("用户已禁用"),
     BAD_CREDENTIALS("用户名或密码错误"),
     FORBIDDEN("无权限访问"),
     TOKEN_EXPIRED("Token 已过期"),

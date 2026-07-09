@@ -37,3 +37,4 @@ rosecloud:
       - /api/system/notice/recipients
       - /actuator/**
       - /error
+

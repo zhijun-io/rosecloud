@@ -34,8 +34,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserSettingServiceImplTest {
 
-    @Mock SettingKeyRepository settingKeyRepository;
-    @Mock UserSettingRepository userSettingRepository;
+    @Mock
+    SettingKeyRepository settingKeyRepository;
+    @Mock
+    UserSettingRepository userSettingRepository;
 
     @AfterEach
     void tearDown() {
@@ -46,11 +48,11 @@ class UserSettingServiceImplTest {
         return new UserSettingServiceImpl(settingKeyRepository, userSettingRepository);
     }
 
-   private static void setCurrentUser(Long userId, String username) {
-       SecurityUser securityUser = new SecurityUser(
-               userId, username, null, null, true,
-               new UserPrincipal(UserPrincipal.Type.USER_NAME, username),
-               List.of());
+    private static void setCurrentUser(Long userId, String username) {
+        SecurityUser securityUser = new SecurityUser(
+                userId, username, null, null, true,
+                new UserPrincipal(UserPrincipal.Type.USER_NAME, username),
+                List.of());
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
@@ -68,7 +70,7 @@ class UserSettingServiceImplTest {
     void saveStoresCurrentUserId() {
         setCurrentUser(11L, "alice");
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey("ui.theme", "主题", null, LocalDateTime.now(), 1L)));
+                new SettingKey(11L, "ui.theme", "主题", null)));
 
         service().saveMine("ui.theme", new SettingValueRequest("dark"));
 

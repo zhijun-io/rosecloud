@@ -34,8 +34,6 @@ public interface UserService {
 
     SecurityUser loadByUsername(String username);
 
-    Optional<AuthUserInfo> loadAuthInfoByUsername(String username);
-
     void changePassword(ChangePasswordRequest request);
 
     void updatePassword(Long userId, UserPasswordUpdateRequest request);

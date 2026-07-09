@@ -13,6 +13,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -21,13 +22,13 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
-    private final Function<String, Optional<SecurityUser>> userLookup;
+    private final UserDetailsService userDetailsService;
 
     public JwtAuthenticationProvider(JwtTokenFactory tokenFactory, SessionStore sessionStore,
-                                     Function<String, Optional<SecurityUser>> userLookup) {
+                                     UserDetailsService userDetailsService) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
-        this.userLookup = userLookup;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
             throw new JwtExpiredTokenException("Token is outdated");
         }
 
-        SecurityUser userDetails = userLookup.apply(claims.getSubject()).orElse(null);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
         if (userDetails == null) {
             throw new BadCredentialsException("User not found");
         }

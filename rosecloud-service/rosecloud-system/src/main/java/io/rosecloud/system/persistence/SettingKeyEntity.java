@@ -4,15 +4,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
+import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
 
 @TableName("sys_setting_key")
-public class SettingKeyEntity {
+public class SettingKeyEntity extends BaseEntity {
 
-    @TableId(value = "setting_key", type = IdType.INPUT)
-    private String settingKey;
-
+    private String key;
     private String name;
     private String remark;
 
@@ -22,20 +21,20 @@ public class SettingKeyEntity {
     @TableField("updated_by")
     private Long updatedBy;
 
-    public String getSettingKey() {
-        return settingKey;
-    }
-
-    public void setSettingKey(String settingKey) {
-        this.settingKey = settingKey;
-    }
-
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public String getRemark() {

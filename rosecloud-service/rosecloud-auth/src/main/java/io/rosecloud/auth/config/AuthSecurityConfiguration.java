@@ -14,10 +14,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Provides functional-interface beans that bridge the security starter's
@@ -50,9 +49,10 @@ public class AuthSecurityConfiguration {
     }
 
     @Bean
-    Function<String, Optional<SecurityUser>> userLookup(SystemUserApi systemUserApi) {
-        return username -> Optional.ofNullable(systemUserApi.loadUserByUsername(username).data())
-                .map(AuthSecurityConfiguration::toSecurityUser);
+    UserDetailsService userDetailsService(SystemUserApi systemUserApi) {
+        return username -> {
+            return systemUserApi.loadUserByUsername(username).data();
+        };
     }
 
     private static SecurityUser toSecurityUser(AuthUserInfo authUserInfo) {

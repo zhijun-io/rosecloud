@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Service
-public class UserServiceImpl implements UserService, Function<String, Optional<SecurityUser>> {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -89,8 +89,7 @@ public class UserServiceImpl implements UserService, Function<String, Optional<S
 
     @Override
     public User get(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
+        return userRepository.findById(id).orElse(null);
     }
 
     @AuditLog(action = "user-delete", description = "删除用户")
@@ -102,16 +101,6 @@ public class UserServiceImpl implements UserService, Function<String, Optional<S
     @Override
     public SecurityUser loadByUsername(String username) {
         return userRepository.loadByUsername(username).orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
-    }
-
-    @Override
-    public Optional<AuthUserInfo> loadAuthInfoByUsername(String username) {
-        return userRepository.loadAuthInfoByUsername(username);
-    }
-
-    @Override
-    public Optional<SecurityUser> apply(String username) {
-        return userRepository.loadByUsername(username);
     }
 
     @Override

@@ -19,8 +19,6 @@ public interface UserRepository {
 
     Optional<SecurityUser> loadByUsername(String username);
 
-    Optional<AuthUserInfo> loadAuthInfoByUsername(String username);
-
     Optional<UserActivationInfo> findActivationByToken(String activateToken);
 
     Optional<UserActivationInfo> findActivationByUsername(String username);

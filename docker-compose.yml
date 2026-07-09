@@ -51,7 +51,7 @@ services:
     volumes:
       - rosecloud-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,14 +60,14 @@ services:
     image: redis:7-alpine
     container_name: rosecloud-redis
     restart: unless-stopped
-    profiles: [microservice]  # 仅微服务模式需要Redis
+    profiles: [ microservice ]  # 仅微服务模式需要Redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-rosecloud123}
     ports:
       - "6379:6379"
     volumes:
       - rosecloud-redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-rosecloud123}", "ping"]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-rosecloud123}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,7 +76,7 @@ services:
     image: rabbitmq:3.13-management
     container_name: rosecloud-rabbitmq
     restart: unless-stopped
-    profiles: [microservice]  # 仅微服务模式需要RabbitMQ
+    profiles: [ microservice ]  # 仅微服务模式需要RabbitMQ
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rosecloud}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-rosecloud123}
@@ -86,7 +86,7 @@ services:
     volumes:
       - rosecloud-rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -96,7 +96,7 @@ services:
     image: nacos/nacos-server:v3.2.2
     container_name: rosecloud-nacos
     restart: unless-stopped
-    profiles: [microservice]  # 仅微服务模式需要Nacos
+    profiles: [ microservice ]  # 仅微服务模式需要Nacos
     environment:
       MODE: standalone
       NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-false}
@@ -109,7 +109,7 @@ services:
     volumes:
       - rosecloud-nacos-data:/home/nacos/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/ || exit 1"]
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8848/nacos/ || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -135,32 +135,32 @@ services:
 
   # ---------- 应用服务（Docker 运行）----------
   rosecloud-auth:
-    profiles: [microservice]
+    profiles: [ microservice ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-auth/target/rosecloud-auth-0.1.0-SNAPSHOT-exec.jar } }
     environment: { <<: *app-env }
-    depends_on: [mysql, nacos, redis]
+    depends_on: [ mysql, nacos, redis ]
 
   rosecloud-system:
-    profiles: [microservice]
+    profiles: [ microservice ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-system/target/rosecloud-system-0.1.0-SNAPSHOT-exec.jar } }
     environment: { <<: *app-env }
-    depends_on: [mysql, nacos, redis]
+    depends_on: [ mysql, nacos, redis ]
 
   rosecloud-notice:
-    profiles: [microservice]
+    profiles: [ microservice ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-notice/target/rosecloud-notice-0.1.0-SNAPSHOT-exec.jar } }
     environment: { <<: *app-env }
-    depends_on: [mysql, nacos, redis]
+    depends_on: [ mysql, nacos, redis ]
 
   rosecloud-gateway:
-    profiles: [microservice]
+    profiles: [ microservice ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-gateway/target/rosecloud-gateway-0.1.0-SNAPSHOT.jar } }
     environment: { <<: *app-env }
-    depends_on: [mysql, nacos, redis, rosecloud-auth, rosecloud-system, rosecloud-notice]
-    ports: ["8080:8080"]
+    depends_on: [ mysql, nacos, redis, rosecloud-auth, rosecloud-system, rosecloud-notice ]
+    ports: [ "8080:8080" ]
 
   rosecloud-monolith:
-    profiles: [monolith]
+    profiles: [ monolith ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-monolith/target/rosecloud-monolith-0.1.0-SNAPSHOT.jar } }
     environment:
       # 单体仅依赖 MySQL，无 Nacos/Redis/RabbitMQ
@@ -169,9 +169,9 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
       ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
       ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
-    depends_on: [mysql]
+    depends_on: [ mysql,redis ]
     # 与 gateway 同用宿主 8080；二者 profile（monolith / microservice）互斥，不会同时运行
-    ports: ["8080:8080"]
+    ports: [ "8080:8080" ]
 
 volumes:
   rosecloud-mysql-data:

@@ -76,31 +76,6 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public Optional<AuthUserInfo> loadAuthInfoByUsername(String username) {
-        UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
-                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
-                        .or()
-                        .eq(UserEntity::getPhone, username)));
-        if (po == null) {
-            return Optional.empty();
-        }
-        UserCredentialEntity credential = credentialByUserId(po.getId());
-        String password = credential == null ? null : credential.getPassword();
-
-        List<String> authorities = new ArrayList<>();
-        for (String role : loadRoleCodes(po.getId())) {
-            authorities.add("ROLE_" + role);
-        }
-        authorities.addAll(loadPerms(po.getId()));
-
-        return Optional.of(new AuthUserInfo(
-                po.getId(), loginName(po), loginName(po), password,
-                po.getStatus() != null && po.getStatus() == 1,
-                new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po)),
-                authorities.stream().distinct().toList()));
-    }
-
-    @Override
     public Optional<UserActivationInfo> findActivationByToken(String activateToken) {
         if (activateToken == null || activateToken.isBlank()) {
             return Optional.empty();
