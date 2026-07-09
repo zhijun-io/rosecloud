@@ -16,6 +16,22 @@
     <description>Servlet web 入口：排除 Jackson 3、使用 Jackson 2，并提供全局异常处理。</description>
 
     <dependencies>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-common-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-common-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+
         <!-- Web：排除 Jackson 3 starter，改用 Jackson 2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -47,14 +63,10 @@
         </dependency>
 
         <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 </project>

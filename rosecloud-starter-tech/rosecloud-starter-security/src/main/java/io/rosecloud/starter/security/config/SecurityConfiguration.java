@@ -5,6 +5,8 @@ import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.security.auth.extractor.BearerTokenExtractor;
 import io.rosecloud.starter.security.auth.jwt.*;
 import io.rosecloud.starter.security.auth.rest.RestAuthenticationProvider;
+import io.rosecloud.starter.security.auth.rest.RestAwareAccessDeniedHandler;
+import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationEntryPoint;
 import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationFailureHandler;
 import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationSuccessHandler;
 import io.rosecloud.starter.security.auth.rest.RestLoginProcessingFilter;
@@ -64,6 +66,9 @@ public class SecurityConfiguration {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAwareAuthenticationEntryPoint())
+                        .accessDeniedHandler(restAwareAccessDeniedHandler()))
                 .headers(headers -> {
                     headers.cacheControl(cache -> cache.disable());
                     headers.frameOptions(frame -> frame.sameOrigin());
@@ -120,6 +125,16 @@ public class SecurityConfiguration {
     @Bean
     public RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler(ApplicationEventPublisher eventPublisher) {
         return new RestAwareAuthenticationFailureHandler(eventPublisher, objectMapper);
+    }
+
+    @Bean
+    public RestAwareAuthenticationEntryPoint restAwareAuthenticationEntryPoint() {
+        return new RestAwareAuthenticationEntryPoint(objectMapper);
+    }
+
+    @Bean
+    public RestAwareAccessDeniedHandler restAwareAccessDeniedHandler() {
+        return new RestAwareAccessDeniedHandler(objectMapper);
     }
 
     @Bean

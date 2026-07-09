@@ -12,6 +12,8 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.discovery.enabled=false",
         "spring.cloud.service-registry.auto-registration.enabled=false",
         "rosecloud.security.jwt.secret=01234567890123456789012345678901",
+        "rosecloud.tenant.enabled=true",
         "rosecloud.audit.enabled=true",
         "rosecloud.notice.publish-check-ms=3600000"
 })
@@ -51,7 +54,7 @@ class MonolithContextLoadTest {
     void contextLoads() {
         assertThat(ctx).isNotNull();
         assertThat(ctx.getBean(io.rosecloud.system.service.UserService.class)).isNotNull();
-        assertThat(ctx.getBean(io.rosecloud.api.notice.NoticeRecipientApi.class)).isNotNull();
         assertThat(ctx.getBean(io.rosecloud.api.notice.NoticePublishApi.class)).isNotNull();
+        assertThat(ctx.getBean(TenantLineInnerInterceptor.class)).isNotNull();
     }
 }

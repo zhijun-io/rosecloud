@@ -22,6 +22,8 @@ server:
   port: 8080
 
 rosecloud:
+  tenant:
+    enabled: true
   cache:
     enabled: true
     type: in-memory

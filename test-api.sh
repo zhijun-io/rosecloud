@@ -28,6 +28,14 @@ expect_fail() {
   jq -e '.success == false' <<<"$resp" >/dev/null
 }
 
+expect_api_error_code() {
+  local expected=$1
+  shift
+  local resp
+  resp=$("$@" 2>/dev/null || true)
+  jq -e --arg code "$expected" '.success == false and .code == $code' <<<"$resp" >/dev/null
+}
+
 # monolith 与 gateway 同为宿主 8080（profile 互斥），无法用端口区分，改用 ROSECLOUD_MODE
 # 取值：monolith | microservice（默认 microservice）
 is_monolith() {
@@ -57,6 +65,7 @@ echo "BASE_URL=$BASE_URL"
 
 now=$(date +%s)
 future=$(date -v+30d +%F 2>/dev/null || date -d '+30 days' +%F)
+past=$(date -v-1d +%F 2>/dev/null || date -d '-1 day' +%F)
 user_email="u${now}@test.local"
 tenant_admin_email="tenant${now}@test.local"
 
@@ -67,7 +76,8 @@ admin_token=$(jq -e -r '.data.accessToken' <<<"$login")
 admin_refresh=$(jq -e -r '.data.refreshToken' <<<"$login")
 jq -e '.success == true' <<<"$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/refresh" --raw "$(jq -nc --arg rt "$admin_refresh" '{refreshToken:$rt}')" 'Content-Type: application/json')" >/dev/null
 jq -e '.success == true and .data.user.username == "admin@rosecloud.local"' <<<"$(xh --ignore-stdin -b -A bearer -a "$admin_token" GET "$BASE_URL/api/system/users/me")" >/dev/null
-expect_fail xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" \
+expect_api_error_code security.unauthorized xh --ignore-stdin -b GET "$BASE_URL/api/system/users/me"
+expect_api_error_code security.bad_credentials xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" \
   --raw "$(jq -nc --arg username 'admin@rosecloud.local' --arg password 'bad' '{username:$username,password:$password}')" \
   'Content-Type: application/json'
 
@@ -83,7 +93,7 @@ internal_api() {
 
 echo "users"
 user_id=$(api "$admin_token" POST "$BASE_URL/api/system/users" username="$user_email" password=Test@1234 nickname="u" | jq -r '.data')
-expect_fail api "$admin_token" POST "$BASE_URL/api/system/users" username="$user_email" password=Test@1234 nickname="u"
+expect_api_error_code system.username_exists api "$admin_token" POST "$BASE_URL/api/system/users" username="$user_email" password=Test@1234 nickname="u"
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/users/$user_id")" >/dev/null
 put_json "$admin_token" "$BASE_URL/api/system/users/$user_id/roles" "$(jq -nc '{roleIds:[1]}')" >/dev/null
 jq -e '.success == true and .data[0] == 1' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/users/$user_id/roles")" >/dev/null
@@ -130,6 +140,9 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/disable")" >/dev/null
+jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$past" remark=remark tenantProfileId=)" >/dev/null
+expect_api_error_code system.tenant_status_invalid api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable"
+jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark tenantProfileId=)" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/audit-logs?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/login-logs?current=1&size=10")" >/dev/null
@@ -154,19 +167,18 @@ echo "tenant login"
 tenant_token=$(login_token "$tenant_admin_email" Tp@123456)
 jq -e '.success == true and .data.user.tenantId != null and .data.roles[0] == "tenant-admin"' <<<"$(api "$tenant_token" GET "$BASE_URL/api/system/users/me")" >/dev/null
 jq -e '.success == true' <<<"$(api "$tenant_token" GET "$BASE_URL/api/notice/notices/me?current=1&size=10")" >/dev/null
+expect_api_error_code security.forbidden api "$tenant_token" GET "$BASE_URL/api/system/tenants?current=1&size=10"
 
 echo "session / revoke"
 logout_token=$(login_token 'admin@rosecloud.local' admin123)
 jq -e '.success == true' <<<"$(api "$logout_token" POST "$BASE_URL/api/auth/logout")" >/dev/null
-expect_401 api "$logout_token" GET "$BASE_URL/api/system/users/me"
+expect_api_error_code security.unauthorized api "$logout_token" GET "$BASE_URL/api/system/users/me"
 
 if is_monolith && [[ "${RUN_INTERNAL:-0}" == "1" ]]; then
   echo "internal"
   jq -e '.success == true and .data.username == "admin@rosecloud.local"' <<<"$(internal_api GET "$BASE_URL/internal/users/auth/admin@rosecloud.local")" >/dev/null
   jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
   jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
-
-
 fi
 
 echo "kick / logout"
@@ -174,10 +186,10 @@ kick_token=$(login_token 'admin@rosecloud.local' admin123)
 kick_id=$(api "$admin_token" GET "$BASE_URL/api/auth/sessions/online?current=1&size=100" | jq -r --arg token "$kick_token" '.data.records[] | select(.token == $token) | .id' | head -n1)
 [[ -n "$kick_id" ]]
 api "$admin_token" DELETE "$BASE_URL/api/auth/sessions?sessionId=$kick_id" >/dev/null
-expect_401 api "$kick_token" GET "$BASE_URL/api/system/users/me"
+expect_api_error_code security.unauthorized api "$kick_token" GET "$BASE_URL/api/system/users/me"
 
 logout_token=$(login_token 'admin@rosecloud.local' admin123)
 jq -e '.success == true' <<<"$(api "$logout_token" POST "$BASE_URL/api/auth/logout")" >/dev/null
-expect_401 api "$logout_token" GET "$BASE_URL/api/system/users/me"
+expect_api_error_code security.unauthorized api "$logout_token" GET "$BASE_URL/api/system/users/me"
 
 echo "done"

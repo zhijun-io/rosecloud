@@ -2,7 +2,6 @@ package io.rosecloud.system.service.impl;
 
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.api.notice.NoticePublishApi;
-import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
@@ -92,11 +91,9 @@ public class UserActivationServiceImpl implements UserActivationService {
         String link = activationLink(info.activateToken());
         String content = "请使用以下激活链接完成首次登录并设置密码：\n" + link;
         try {
-            List<NoticeRecipient> recipients = userRepository.findContacts(
-                    NoticeTargetType.USER.code(), null, null, info.username());
             noticePublishApi.publish(new NoticePublishRequest("租户管理员激活", content,
                     NoticeTargetType.USER.code(), null, null, info.username(),
-                    null, LocalDateTime.now(), null, null, false, 2 | 4, recipients));
+                    null, LocalDateTime.now(), null, null, false, 2 | 4, List.of()));
         } catch (Exception ignored) {
             // best effort: token generation and persistence are the source of truth
         }

@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static com.fasterxml.jackson.core.JsonEncoding.UTF8;
 
@@ -47,7 +48,7 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
 
         SecurityErrorCode errorCode = errorCode(e);
         response.setStatus(errorCode.httpStatus());
-        response.setCharacterEncoding(Charset.forName("UTF-8"));
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(),
                 ApiResponse.failure(errorCode.code(), message(e, errorCode)));
