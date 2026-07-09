@@ -31,8 +31,8 @@ public class AuditLogServiceImpl implements AuditLogService, AuditLogApi {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal) {
-        return auditLogRepository.page(current, size, tenantId, action, principal);
+    public PageResult<AuditLog> page(long current, long size, String action, String username) {
+        return auditLogRepository.page(current, size, action, username);
     }
 
     @Override

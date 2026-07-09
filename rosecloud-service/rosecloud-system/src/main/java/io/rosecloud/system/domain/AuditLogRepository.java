@@ -12,5 +12,5 @@ public interface AuditLogRepository {
 
     java.util.Optional<AuditLog> findById(Long id);
 
-    PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal);
+    PageResult<AuditLog> page(long current, long size, String action, String username);
 }

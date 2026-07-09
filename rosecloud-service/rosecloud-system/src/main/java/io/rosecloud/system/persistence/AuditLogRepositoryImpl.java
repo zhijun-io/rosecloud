@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.starter.tenant.core.TenantContext;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.AuditLogRepository;
 import org.springframework.stereotype.Repository;
@@ -40,17 +41,17 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, String tenantId, String action, String principal) {
+    public PageResult<AuditLog> page(long current, long size, String action, String username) {
         Page<AuditLogEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
-        if (tenantId != null) {
-            wrapper.eq(AuditLogEntity::getTenantId, tenantId);
+        if (TenantContext.getTenantId() != null) {
+            wrapper.eq(AuditLogEntity::getTenantId, TenantContext.getTenantId());
         }
         if (action != null && !action.isBlank()) {
             wrapper.eq(AuditLogEntity::getAction, action);
         }
-        if (principal != null && !principal.isBlank()) {
-            wrapper.eq(AuditLogEntity::getPrincipal, principal);
+        if (username != null && !username.isBlank()) {
+            wrapper.eq(AuditLogEntity::getPrincipal, username);
         }
         wrapper.orderByDesc(AuditLogEntity::getCreateTime);
         IPage<AuditLogEntity> result = mapper.selectPage(page, wrapper);

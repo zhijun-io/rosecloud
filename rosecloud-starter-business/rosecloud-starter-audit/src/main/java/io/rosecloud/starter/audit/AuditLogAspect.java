@@ -47,7 +47,7 @@ public class AuditLogAspect {
                     pjp.getSignature().toShortString(),
                     elapsed,
                     failure != null,
-                    failure.getMessage(),
+                    failure != null ? failure.getMessage() : null,
                     LocalDateTime.now()
             ));
         }
