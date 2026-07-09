@@ -2,12 +2,11 @@ package io.rosecloud.system.config;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeRecipientApi;
-import io.rosecloud.api.notice.NoticeRecipientRequest;
 import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.service.LoginLogService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -40,8 +39,10 @@ public class SystemLocalApiConfiguration {
     public SystemUserApi systemUserApi(UserRepository userRepository) {
         return new SystemUserApi() {
             @Override
-            public ApiResponse<SecurityUser> loadUserByUsername(String username) {
-                return ApiResponse.ok(userRepository.loadByUsername(username).orElse(null));
+            public ApiResponse<AuthUserInfo> loadUserByUsername(String username) {
+                return ApiResponse.ok(userRepository.loadByUsername(username)
+                        .map(AuthUserInfo::from)
+                        .orElse(null));
             }
         };
     }

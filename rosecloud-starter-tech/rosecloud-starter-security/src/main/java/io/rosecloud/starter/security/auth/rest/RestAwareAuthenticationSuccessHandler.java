@@ -51,7 +51,7 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
         long expiresInSeconds = tokenFactory.getAccessTokenExpirationSeconds();
         Instant expireAt = now.plusSeconds(expiresInSeconds);
         sessionStore.save(new LoginSession(
-                sessionId, token, securityUser.getUserId(), securityUser.getUsername(),
+                sessionId, token, tokenPair.refreshToken(), securityUser.getUserId(), securityUser.getUsername(),
                 securityUser.getNickname(), ip, truncate(userAgent, 512), now, expireAt));
 
         eventPublisher.publishEvent(new LoginSucceededEvent(securityUser, ip, truncate(userAgent, 512)));

@@ -3,6 +3,7 @@ package io.rosecloud.starter.security.auth.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
@@ -17,11 +18,14 @@ import java.util.function.Function;
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
+    private final SessionStore sessionStore;
     private final Function<String, Optional<SecurityUser>> userLookup;
 
     public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
+                                              SessionStore sessionStore,
                                               Function<String, Optional<SecurityUser>> userLookup) {
         this.tokenFactory = tokenFactory;
+        this.sessionStore = sessionStore;
         this.userLookup = userLookup;
     }
 
@@ -34,6 +38,10 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
 
         Jws<Claims> jws = tokenFactory.parseRefreshToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
+
+        if (sessionStore.isRevoked(rawAccessToken.token())) {
+            throw new BadCredentialsException("Refresh token is revoked");
+        }
 
         SecurityUser userDetails = userLookup.apply(claims.getSubject()).orElse(null);
         if (userDetails == null) {

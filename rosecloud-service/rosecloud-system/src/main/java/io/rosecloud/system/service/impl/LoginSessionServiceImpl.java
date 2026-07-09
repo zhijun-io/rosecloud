@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,22 +35,27 @@ public class LoginSessionServiceImpl implements LoginSessionService {
     @Override
     public void save(LoginSession session) {
         String sessionKey = sessionKey(session.id());
-        redisTemplate.opsForHash().putAll(sessionKey, Map.of(
-                "id", session.id(),
-                "token", session.token(),
-                "userId", String.valueOf(session.userId()),
-                "username", session.username(),
-                "nickname", nullToEmpty(session.nickname()),
-                "clientIp", nullToEmpty(session.clientIp()),
-                "userAgent", nullToEmpty(session.userAgent()),
-                "loginAt", session.loginAt().toString(),
-                "expireAt", session.expireAt().toString()
-        ));
+        Map<String, String> values = new HashMap<>();
+        values.put("id", session.id());
+        values.put("token", session.token());
+        values.put("refreshToken", nullToEmpty(session.refreshToken()));
+        values.put("userId", String.valueOf(session.userId()));
+        values.put("username", session.username());
+        values.put("nickname", nullToEmpty(session.nickname()));
+        values.put("clientIp", nullToEmpty(session.clientIp()));
+        values.put("userAgent", nullToEmpty(session.userAgent()));
+        values.put("loginAt", session.loginAt().toString());
+        values.put("expireAt", session.expireAt().toString());
+        redisTemplate.opsForHash().putAll(sessionKey, values);
         redisTemplate.expire(sessionKey, TTL);
         redisTemplate.opsForSet().add(ALL_INDEX_KEY, session.id());
         redisTemplate.expire(ALL_INDEX_KEY, TTL);
         redisTemplate.opsForSet().add(tokenIndexKey(session.token()), session.id());
         redisTemplate.expire(tokenIndexKey(session.token()), TTL);
+        if (session.refreshToken() != null && !session.refreshToken().isBlank()) {
+            redisTemplate.opsForSet().add(tokenIndexKey(session.refreshToken()), session.id());
+            redisTemplate.expire(tokenIndexKey(session.refreshToken()), TTL);
+        }
         redisTemplate.opsForSet().add(userIndexKey(session.userId()), session.id());
         redisTemplate.expire(userIndexKey(session.userId()), TTL);
     }
@@ -133,6 +139,7 @@ public class LoginSessionServiceImpl implements LoginSessionService {
             return Optional.of(new LoginSession(
                     sessionId,
                     stringValue(values.get("token")),
+                    emptyToNull(stringValue(values.get("refreshToken"))),
                     Long.valueOf(stringValue(values.get("userId"))),
                     stringValue(values.get("username")),
                     emptyToNull(stringValue(values.get("nickname"))),
@@ -148,7 +155,8 @@ public class LoginSessionServiceImpl implements LoginSessionService {
 
     private void deleteSession(String sessionId) {
         readSession(sessionId).ifPresent(session -> {
-            redisTemplate.opsForSet().remove(tokenIndexKey(session.token()), sessionId);
+            removeTokenIndex(session.token(), sessionId);
+            removeTokenIndex(session.refreshToken(), sessionId);
             redisTemplate.opsForSet().remove(userIndexKey(session.userId()), sessionId);
             redisTemplate.opsForSet().remove(ALL_INDEX_KEY, sessionId);
         });
@@ -181,5 +189,11 @@ public class LoginSessionServiceImpl implements LoginSessionService {
 
     private static String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private void removeTokenIndex(String token, String sessionId) {
+        if (token != null && !token.isBlank()) {
+            redisTemplate.opsForSet().remove(tokenIndexKey(token), sessionId);
+        }
     }
 }

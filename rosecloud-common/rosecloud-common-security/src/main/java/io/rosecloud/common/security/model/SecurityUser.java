@@ -100,7 +100,8 @@ public class SecurityUser implements UserDetails {
     }
 
     @Override
-    @JsonIgnore
+    @JsonIgnore(false)
+    @JsonProperty("password")
     public String getPassword() { return password; }
 
     @Override

@@ -14,10 +14,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.http.HttpMethod;
- import org.springframework.security.authentication.AuthenticationManager;
- import org.springframework.security.authentication.ProviderManager;
- import org.springframework.security.config.annotation.web.builders.HttpSecurity;
- import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
  import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -36,6 +37,7 @@ import io.rosecloud.common.security.model.SecurityUser;
  
  @Configuration
  @EnableWebSecurity
+ @EnableMethodSecurity
  public class SecurityConfiguration {
  
      public static final String LOGIN_ENTRY_POINT = "/api/auth/login";
@@ -110,7 +112,7 @@ import io.rosecloud.common.security.model.SecurityUser;
             JwtTokenFactory jwtTokenFactory,
             SessionStore sessionStore,
             Function<String, Optional<SecurityUser>> userLookup) {
-        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, userLookup);
+        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, sessionStore, userLookup);
     }
  
      @Bean

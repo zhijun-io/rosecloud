@@ -2,6 +2,7 @@ package io.rosecloud.auth.config;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
@@ -11,6 +12,8 @@ import io.rosecloud.starter.security.session.RedisSessionStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -19,9 +22,6 @@ import java.util.function.Function;
 /**
  * Provides functional-interface beans that bridge the security starter's
  * event-driven callbacks to the system service over Feign clients.
- *
- * <p>Each bean is a standard {@link FunctionalInterface} (Consumer, Function)
- * so no custom interface types are needed in the starter.
  *
  * <p>Login/logout session persistence is handled by {@link io.rosecloud.common.security.session.SessionStore}
  * through the provided implementation; this configuration only bridges the
@@ -51,6 +51,22 @@ public class AuthSecurityConfiguration {
 
     @Bean
     Function<String, Optional<SecurityUser>> userLookup(SystemUserApi systemUserApi) {
-        return username -> Optional.ofNullable(systemUserApi.loadUserByUsername(username).data());
+        return username -> Optional.ofNullable(systemUserApi.loadUserByUsername(username).data())
+                .map(AuthSecurityConfiguration::toSecurityUser);
+    }
+
+    private static SecurityUser toSecurityUser(AuthUserInfo authUserInfo) {
+        return new SecurityUser(
+                authUserInfo.userId(),
+                authUserInfo.username(),
+                authUserInfo.nickname(),
+                authUserInfo.password(),
+                authUserInfo.enabled(),
+                authUserInfo.userPrincipal(),
+                authUserInfo.authorities().stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .map(authority -> (GrantedAuthority) authority)
+                        .toList()
+        );
     }
 }
