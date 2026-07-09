@@ -9,7 +9,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  * system service and are fetched over Feign (see LoginUserLookupImpl). Feign
  * client scanning is scoped to {@code io.rosecloud.api} where contracts live.
  */
-@EnableFeignClients(basePackages = "io.rosecloud.api")
 @SpringBootApplication
 public class RoseCloudAuthApplication {
 

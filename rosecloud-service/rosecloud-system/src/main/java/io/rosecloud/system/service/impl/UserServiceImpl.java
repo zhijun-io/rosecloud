@@ -1,10 +1,13 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.api.user.SystemUserApi;
+import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -15,9 +18,6 @@ import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.support.PasswordPolicyValidator;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Service
-public class UserServiceImpl implements UserService, UserDetailsService, Function<String, Optional<SecurityUser>> {
+public class UserServiceImpl implements UserService, SystemUserApi, Function<String, Optional<SecurityUser>> {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -36,14 +36,6 @@ public class UserServiceImpl implements UserService, UserDetailsService, Functio
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    // ==================== UserDetailsService ====================
-
-    @Override
-    public SecurityUser loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.loadByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
     // ==================== helper ====================
@@ -114,6 +106,11 @@ public class UserServiceImpl implements UserService, UserDetailsService, Functio
     }
 
     @Override
+    public ApiResponse<SecurityUser> loadUserByUsername(String username) {
+        return ApiResponse.ok(loadByUsername(username).orElse(null));
+    }
+
+    @Override
     public Optional<SecurityUser> apply(String username) {
         return loadByUsername(username);
     }
@@ -158,6 +155,24 @@ public class UserServiceImpl implements UserService, UserDetailsService, Functio
     @Override
     public void updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
         userRepository.updateLastLoginTime(userId, lastLoginTime);
+    }
+
+    @Override
+    @Transactional
+    public ApiResponse<Void> updatePassword(Long userId, UserPasswordUpdateRequest request) {
+        SecurityUser securityUser = currentSecurityUser();
+        if (!securityUser.getUserId().equals(userId)) {
+            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
+        }
+        SecurityUser authInfo = userRepository.loadByUsername(securityUser.getUsername())
+                .orElseThrow(() -> new BizException(SecurityErrorCode.UNAUTHORIZED));
+        if (authInfo.getPassword() == null || authInfo.getPassword().isBlank()
+                || !passwordEncoder.matches(request.currentPassword(), authInfo.getPassword())) {
+            throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
+        }
+        PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
+        userRepository.updatePassword(userId, passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
+        return ApiResponse.ok();
     }
 
 }
