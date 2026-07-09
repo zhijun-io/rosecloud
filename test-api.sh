@@ -140,10 +140,18 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/disable")" >/dev/null
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if jq -e --arg tenant_id "$tenant_id" '.success == true and any(.data.records[]?; .id == $tenant_id and .status == "DISABLED")' \
+      <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null; then
+    break
+  fi
+  sleep 1
+done
+jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark tenantProfileId=)" >/dev/null
+sleep 1
+jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$past" remark=remark tenantProfileId=)" >/dev/null
 expect_api_error_code system.tenant_status_invalid api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable"
-jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark tenantProfileId=)" >/dev/null
-jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/audit-logs?current=1&size=10")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/login-logs?current=1&size=10")" >/dev/null
 

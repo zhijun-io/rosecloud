@@ -6,9 +6,9 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud-starter-tech</artifactId>
+        <artifactId>rosecloud-starter</artifactId>
         <version>0.1.0-SNAPSHOT</version>
-        <relativePath>../../rosecloud-starter-tech/pom.xml</relativePath>
+        <relativePath>../../rosecloud-starter/pom.xml</relativePath>
     </parent>
 
     <artifactId>rosecloud-starter-data-mybatisplus</artifactId>

@@ -11,7 +11,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-starter-tech</artifactId>
+    <artifactId>rosecloud-starter</artifactId>
     <packaging>pom</packaging>
     <name>RoseCloud Tech Starters</name>
     <description>Aggregator for technical starters such as web, security, persistence, cache, lock, and storage.</description>

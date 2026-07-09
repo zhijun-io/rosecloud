@@ -6,14 +6,14 @@
 
     <parent>
         <groupId>io.rosecloud</groupId>
-        <artifactId>rosecloud-starter-tech</artifactId>
+        <artifactId>rosecloud-starter</artifactId>
         <version>0.1.0-SNAPSHOT</version>
-        <relativePath>../../rosecloud-starter-tech/pom.xml</relativePath>
+        <relativePath>../../rosecloud-starter/pom.xml</relativePath>
     </parent>
 
-    <artifactId>rosecloud-starter-storage</artifactId>
-    <name>RoseCloud Storage Starter</name>
-    <description>文件存储抽象：本地文件系统默认（路径防穿越），消费方可覆盖提供 S3/OSS bean。rosecloud.storage.enabled 开启。</description>
+    <artifactId>rosecloud-starter-lock</artifactId>
+    <name>RoseCloud Lock Starter</name>
+    <description>分布式锁：本地默认（单实例）+ Redis 条件装配（跨实例）。rosecloud.lock.enabled 开启。</description>
 
     <dependencies>
         <dependency>
@@ -23,6 +23,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- 可选：Redis 跨实例锁实现；引入但不激活，消费方需自带 spring-boot-starter-data-redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>

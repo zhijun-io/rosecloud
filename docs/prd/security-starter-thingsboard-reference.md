@@ -538,7 +538,7 @@ META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 
 ## 15. 实施建议
 
-1. 建 `pom.xml` + `AutoConfiguration.imports`，注册到 `rosecloud-starter-tech`
+1. 建 `pom.xml` + `AutoConfiguration.imports`，注册到 `rosecloud-starter`
 2. 实现 model：`SecurityUser`、`UserPrincipal`、`TenantStatus`、`LoginSession`
 3. 实现 enums：`Resource`、`Operation`
 4. 实现 record：`RawAccessJwtToken`、`AccessJwtToken`、`JwtToken`

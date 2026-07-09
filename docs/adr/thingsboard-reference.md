@@ -2,7 +2,7 @@
 
 > 源码基准：`~/github/thingsboard`，浅克隆最新 master，提交 `9a4f1c5`。下文 ThingsBoard 文件以 `../thingsboard/...` 引用，行号基于该提交。
 >
-> 对照基准：RoseCloud 现状见 `rosecloud-starter-tech/`、`rosecloud-starter-business/`、`rosecloud-service/`（auth/gateway/system/notice/monolith）。
+> 对照基准：RoseCloud 现状见 `rosecloud-starter/`、`rosecloud-starter-business/`、`rosecloud-service/`（auth/gateway/system/notice/monolith）。
 >
 > 路线图基线（`docs/prd/product-requirements.md` §4.12、§5.2、§5.4、§5.5）：OAuth2 与 MFA 属 P1，**默认关闭但必须预留**；完整 OAuth2 Authorization Server 与全量 MFA 不在第一阶段做满。
 >

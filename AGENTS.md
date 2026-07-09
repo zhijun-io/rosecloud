@@ -10,7 +10,7 @@ RoseCloud 是一个企业后台 + SaaS 平台底座，基于 Spring Boot 4.1、S
 - 认证授权使用 Spring Security + JWT，统一收口到 `rosecloud-starter-security`，其内承载 JWT、OAuth2 JWT 资源服务器和后续 MFA hooks
 - 持久化使用 MyBatis-Plus
 - 运行形态分为单体 `rosecloud-monolith` 和微服务 `rosecloud-service/*`
-- 共享技术模块分为 `rosecloud-common/`、`rosecloud-api/`、`rosecloud-starter-tech/`、`rosecloud-starter-business/`
+- 共享技术模块分为 `rosecloud-common/`、`rosecloud-api/`、`rosecloud-starter/`、`rosecloud-starter-business/`
 
 设计原则是轻量分层、面向接口、不做过度抽象。更完整的需求和技术背景见 `docs/prd/product-requirements.md`、`docs/prd/technical-requirements.md`。
 
@@ -22,7 +22,7 @@ RoseCloud 是一个企业后台 + SaaS 平台底座，基于 Spring Boot 4.1、S
 | `rosecloud-bom/` | 外部消费者使用的版本 BOM |
 | `rosecloud-common/` | 公共基础类型、security/web 共享能力 |
 | `rosecloud-api/` | 服务间契约、DTO、record、枚举 |
-| `rosecloud-starter-tech/` | 技术型 starter 聚合 |
+| `rosecloud-starter/` | 技术型 starter 聚合 |
 | `rosecloud-starter-business/` | 业务型 starter 聚合 |
 | `rosecloud-service/` | gateway/auth/system/notice 服务 |
 | `rosecloud-monolith/` | 单体入口 |

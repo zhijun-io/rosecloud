@@ -21,7 +21,7 @@ rosecloud
 │   ├── rosecloud-common-security
 │   └── rosecloud-common-web
 ├── rosecloud-api
-├── rosecloud-starter-tech        # 技术型 starter 父模块
+├── rosecloud-starter        # 技术型 starter 父模块
 │   ├── rosecloud-starter-web
 │   ├── rosecloud-starter-security
 │   ├── rosecloud-starter-trace
@@ -42,7 +42,7 @@ rosecloud
 
 ## 可插拔能力
 
-starter 分成两个父模块：`rosecloud-starter-tech` 承载技术型 starter，`rosecloud-starter-business` 承载业务型 starter。二者都通过 `@AutoConfiguration` 装配；业务型 starter（tenant/audit）用 `rosecloud.{name}.enabled=true` 门控，核心基建 starter（`rosecloud-starter-security`、`rosecloud-starter-trace`）按 classpath 引入即装配：
+starter 分成两个父模块：`rosecloud-starter` 承载技术型 starter，`rosecloud-starter-business` 承载业务型 starter。二者都通过 `@AutoConfiguration` 装配；业务型 starter（tenant/audit）用 `rosecloud.{name}.enabled=true` 门控，核心基建 starter（`rosecloud-starter-security`、`rosecloud-starter-trace`）按 classpath 引入即装配：
 
 | starter | 开关 | 说明 |
 |---|---|---|
