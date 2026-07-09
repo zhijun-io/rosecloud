@@ -46,7 +46,7 @@ public class AuditLogAspect {
                     currentTenantId(),
                     pjp.getSignature().toShortString(),
                     elapsed,
-                    failure != null,
+                    failure == null,
                     failure != null ? failure.getMessage() : null,
                     LocalDateTime.now()
             ));

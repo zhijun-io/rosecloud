@@ -3,22 +3,13 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/system/tenants")
@@ -84,15 +75,5 @@ public class TenantController {
                                                  @RequestParam(defaultValue = "10") long size,
                                                  @RequestParam(required = false) String keyword) {
         return ApiResponse.ok(tenantService.page(current, size, keyword));
-    }
-
-    @PreAuthorize("hasAuthority('system:audit:list')")
-    @GetMapping("/{id}/audit")
-    public ApiResponse<PageResult<AuditLog>> audit(@PathVariable String id,
-                                                   @RequestParam(defaultValue = "1") long current,
-                                                   @RequestParam(defaultValue = "10") long size,
-                                                   @RequestParam(required = false) String action,
-                                                   @RequestParam(required = false) String principal) {
-        return ApiResponse.ok(auditLogService.page(current, size, id, action, principal));
     }
 }

@@ -20,6 +20,12 @@ public class AuditLogController {
     }
 
     @PreAuthorize("hasAuthority('system:auditlog:list')")
+    @GetMapping("/{id}")
+    public ApiResponse<AuditLog> get(@PathVariable Long id) {
+        return ApiResponse.ok(auditLogService.get(id));
+    }
+
+    @PreAuthorize("hasAuthority('system:auditlog:list')")
     @GetMapping
     public ApiResponse<PageResult<AuditLog>> page(@RequestParam(defaultValue = "1") long current,
                                                   @RequestParam(defaultValue = "10") long size,
@@ -29,7 +35,8 @@ public class AuditLogController {
     }
 
     @PostMapping
-    public void save(@RequestBody AuditLogRequest auditLogRequest) {
+    public ApiResponse<Void> save(@RequestBody AuditLogRequest auditLogRequest) {
         auditLogService.save(auditLogRequest);
+        return ApiResponse.ok();
     }
 }

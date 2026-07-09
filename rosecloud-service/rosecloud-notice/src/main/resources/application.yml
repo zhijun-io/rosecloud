@@ -29,4 +29,3 @@ server:
 rosecloud:
   audit:
     enabled: true
-    remote: true  # forward audit events to system service (microservices mode)
