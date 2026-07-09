@@ -3,6 +3,8 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.api.user.SystemUserApi;
+import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
@@ -21,7 +23,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
+/**
+ * System user endpoints and Feign-facing auth hooks.
+ */
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/system/users")
 public class UserController {
@@ -83,5 +89,10 @@ public class UserController {
     public ApiResponse<Void> assignRoles(@PathVariable Long id, @RequestBody UserRoleAssignRequest request) {
         userService.assignRoles(id, request.roleIds());
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/auth/{username}")
+    public ApiResponse<SecurityUser> getAuthInfo(@PathVariable String username) {
+        return ApiResponse.ok(userService.loadByUsername(username));
     }
 }

@@ -3,15 +3,13 @@ package io.rosecloud.auth.config;
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.api.user.SystemUserApi;
-import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
+import io.rosecloud.common.security.model.SecurityUser;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,12 +30,10 @@ import java.util.function.Function;
 public class AuthSecurityConfiguration {
 
     @Bean
-    Consumer<LoginSucceededEvent> loginSucceededHandler(
-            LoginLogApi loginLogApi, SystemUserApi systemUserApi) {
+    Consumer<LoginSucceededEvent> loginSucceededHandler(LoginLogApi loginLogApi) {
         return event -> {
             loginLogApi.record(new LoginLogRequest(event.securityUser().getUsername(), true, null,
                     event.ip(), event.userAgent()));
-            systemUserApi.updateLastLoginTime(event.securityUser().getUserId(), LocalDateTime.now(ZoneId.systemDefault()));
         };
     }
 

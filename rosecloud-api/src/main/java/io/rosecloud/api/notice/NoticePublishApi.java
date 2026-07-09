@@ -3,7 +3,7 @@ package io.rosecloud.api.notice;
 import io.rosecloud.common.core.model.ApiResponse;
 
 /**
- * Internal contract for publishing notices through the notice service.
+ * Service contract for publishing notices.
  * Transport-specific annotations live on {@link NoticePublishFeignApi}.
  */
 public interface NoticePublishApi {

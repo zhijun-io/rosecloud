@@ -8,16 +8,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "rosecloud-system", contextId = "systemUserApi", path = "/internal/users")
+@FeignClient(name = "rosecloud-system", contextId = "systemUserApi", path = "/api/system/users")
 public interface SystemUserFeignApi extends SystemUserApi {
 
     @Override
     @GetMapping("/auth/{username}")
     ApiResponse<SecurityUser> loadUserByUsername(@PathVariable("username") String username);
-
-    @Override
-    @PostMapping("/{userId}/last-login")
-    ApiResponse<Void> updateLastLoginTime(@PathVariable("userId") Long userId,
-                                          @RequestBody java.time.LocalDateTime lastLoginTime);
 
 }

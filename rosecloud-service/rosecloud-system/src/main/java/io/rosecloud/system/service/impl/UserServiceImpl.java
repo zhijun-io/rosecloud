@@ -99,13 +99,13 @@ public class UserServiceImpl implements UserService, Function<String, Optional<S
     }
 
     @Override
-    public Optional<SecurityUser> loadByUsername(String username) {
-        return userRepository.loadByUsername(username);
+    public SecurityUser loadByUsername(String username) {
+        return userRepository.loadByUsername(username).orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
     }
 
     @Override
     public Optional<SecurityUser> apply(String username) {
-        return loadByUsername(username);
+        return userRepository.loadByUsername(username);
     }
 
     @Override

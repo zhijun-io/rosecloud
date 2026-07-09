@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-@FeignClient(name = "rosecloud-system", contextId = "noticeRecipientApi", path = "/internal/notice/recipients")
+@FeignClient(name = "rosecloud-system", contextId = "noticeRecipientApi", path = "/api/system/notice/recipients")
 public interface NoticeRecipientFeignApi extends NoticeRecipientApi {
 
     @Override

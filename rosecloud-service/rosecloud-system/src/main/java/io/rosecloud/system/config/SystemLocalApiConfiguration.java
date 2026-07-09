@@ -43,12 +43,6 @@ public class SystemLocalApiConfiguration {
             public ApiResponse<SecurityUser> loadUserByUsername(String username) {
                 return ApiResponse.ok(userRepository.loadByUsername(username).orElse(null));
             }
-
-            @Override
-            public ApiResponse<Void> updateLastLoginTime(Long userId, java.time.LocalDateTime lastLoginTime) {
-                userRepository.updateLastLoginTime(userId, lastLoginTime);
-                return ApiResponse.ok();
-            }
         };
     }
 }

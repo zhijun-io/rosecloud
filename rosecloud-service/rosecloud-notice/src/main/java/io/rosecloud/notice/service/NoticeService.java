@@ -1,16 +1,13 @@
 package io.rosecloud.notice.service;
 
 import io.rosecloud.api.notice.NoticePublishRequest;
-import io.rosecloud.api.notice.NoticePublishApi;
-import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.service.dto.MyNotice;
 
-public interface NoticeService extends NoticePublishApi {
+public interface NoticeService {
 
-    @Override
-    ApiResponse<Long> publish(NoticePublishRequest request);
+    Long publish(NoticePublishRequest request);
 
     PageResult<Notice> page(long current, long size, String keyword);
 

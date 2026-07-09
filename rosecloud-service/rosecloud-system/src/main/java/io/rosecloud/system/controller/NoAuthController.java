@@ -51,8 +51,7 @@ public class NoAuthController {
     public ApiResponse<LoginTokenPairResponse> activate(@RequestBody ActivationConfirmRequest request,
                                                         HttpServletRequest http) {
         UserActivationInfo info = userActivationService.confirm(request.activateToken(), request.password());
-        SecurityUser securityUser = userService.loadByUsername(info.username())
-                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
+        SecurityUser securityUser = userService.loadByUsername(info.username());
         JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
 
         String ip = resolveIp(http);

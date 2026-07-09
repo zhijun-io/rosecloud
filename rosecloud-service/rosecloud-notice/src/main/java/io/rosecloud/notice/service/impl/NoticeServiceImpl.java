@@ -3,7 +3,6 @@ package io.rosecloud.notice.service.impl;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.notice.channel.NoticeDispatchService;
 import io.rosecloud.notice.domain.Notice;
@@ -42,7 +41,7 @@ public class NoticeServiceImpl implements NoticeService {
 
     @AuditLog(action = "notice-publish", description = "\u53d1\u5e03\u901a\u77e5")
     @Override
-    public ApiResponse<Long> publish(NoticePublishRequest request) {
+    public Long publish(NoticePublishRequest request) {
         validateTarget(request);
         LocalDateTime now = LocalDateTime.now();
         int publishType = request.publishType() == null ? NoticePublishType.IMMEDIATE.code() : request.publishType();
@@ -70,7 +69,7 @@ public class NoticeServiceImpl implements NoticeService {
         if (status == NoticeStatus.PUBLISHED.code()) {
             dispatchService.dispatch(notice.withId(id));
         }
-        return ApiResponse.ok(id);
+        return id;
     }
 
     @Override

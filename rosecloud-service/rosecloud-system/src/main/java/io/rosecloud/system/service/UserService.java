@@ -31,7 +31,7 @@ public interface UserService {
 
     void delete(Long id);
 
-    Optional<SecurityUser> loadByUsername(String username);
+    SecurityUser loadByUsername(String username);
 
     void changePassword(ChangePasswordRequest request);
 
