@@ -1,6 +1,6 @@
 package io.rosecloud.system.controller;
 
-import io.rosecloud.api.user.UserAuthInfo;
+ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.core.model.ApiResponse;
 import java.time.LocalDateTime;
 import io.rosecloud.system.service.UserService;
@@ -29,8 +29,8 @@ public class InternalUserController {
     }
 
     @GetMapping("/auth/{username}")
-    public ApiResponse<UserAuthInfo> getAuthInfo(@PathVariable String username) {
-        return ApiResponse.ok(userService.findAuthInfo(username).orElse(null));
+    public ApiResponse<SecurityUser> getAuthInfo(@PathVariable String username) {
+        return ApiResponse.ok(userService.loadByUsername(username).orElse(null));
     }
 
     @PostMapping("/{userId}/last-login")

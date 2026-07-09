@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.common.security.model.UserPrincipal;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import io.rosecloud.api.user.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
@@ -16,6 +19,7 @@ import io.rosecloud.system.domain.UserRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +48,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public Optional<UserAuthInfo> findAuthInfo(String username) {
+    public Optional<SecurityUser> loadByUsername(String username) {
         UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
                 .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
                         .or()
@@ -54,9 +58,20 @@ public class UserRepositoryImpl implements UserRepository {
         }
         UserCredentialEntity credential = credentialByUserId(po.getId());
         String password = credential == null ? null : credential.getPassword();
-        return Optional.of(new UserAuthInfo(po.getId(), loginName(po), password,
-                po.getStatus(), po.getTenantId(), loadRoleCodes(po.getId()), loadPerms(po.getId()),
-                credential == null ? null : credential.getPasswordChangedTime()));
+
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        for (String role : loadRoleCodes(po.getId())) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        }
+        for (String perm : loadPerms(po.getId())) {
+            authorities.add(new SimpleGrantedAuthority(perm));
+        }
+
+        UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po));
+        return Optional.of(new SecurityUser(
+                po.getId(), loginName(po), loginName(po), password,
+                po.getStatus() != null && po.getStatus() == 1,
+                principal, authorities));
     }
 
     @Override

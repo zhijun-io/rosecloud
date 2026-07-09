@@ -1,6 +1,6 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.api.user.UserAuthInfo;
+ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.core.model.PageResult;
 import java.time.LocalDateTime;
 import io.rosecloud.system.domain.User;
@@ -26,7 +26,7 @@ public interface UserService {
 
     void delete(Long id);
 
-    Optional<UserAuthInfo> findAuthInfo(String username);
+    Optional<SecurityUser> loadByUsername(String username);
 
     void changePassword(ChangePasswordRequest request);
 

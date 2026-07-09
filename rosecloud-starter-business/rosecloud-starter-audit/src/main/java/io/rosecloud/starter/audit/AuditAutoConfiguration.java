@@ -12,9 +12,9 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for audit logging.
  *
  * <p>Activated by {@code rosecloud.audit.enabled=true}; dormant otherwise. The
- * default principal resolver reads {@code UserContext}; the aspect publishes
- * {@link AuditLogEvent}s, and a listener logs them for out-of-the-box
- * observability.
+ * default principal resolver reads from {@code SecurityContextHolder}; the
+ * aspect publishes {@link AuditLogEvent}s, and a listener logs them for
+ * out-of-the-box observability.
  */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "rosecloud.audit", name = "enabled", havingValue = "true")

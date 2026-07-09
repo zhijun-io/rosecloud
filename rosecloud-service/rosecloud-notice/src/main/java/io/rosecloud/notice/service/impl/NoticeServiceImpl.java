@@ -1,22 +1,25 @@
 package io.rosecloud.notice.service.impl;
 
+import io.rosecloud.api.notice.NoticePublishRequest;
+import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
-import io.rosecloud.api.notice.NoticePublishRequest;
+import io.rosecloud.notice.channel.NoticeDispatchService;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticeChannel;
 import io.rosecloud.notice.domain.NoticePublishType;
 import io.rosecloud.notice.domain.NoticeRecord;
 import io.rosecloud.notice.domain.NoticeRepository;
 import io.rosecloud.notice.domain.NoticeStatus;
-import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.notice.error.NoticeErrorCode;
 import io.rosecloud.notice.service.NoticeService;
 import io.rosecloud.notice.service.dto.MyNotice;
-import io.rosecloud.notice.channel.NoticeDispatchService;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.starter.tenant.core.TenantContext;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -36,7 +39,7 @@ public class NoticeServiceImpl implements NoticeService {
         this.dispatchService = dispatchService;
     }
 
-    @AuditLog(action = "notice-publish", description = "发布通知")
+    @AuditLog(action = "notice-publish", description = "\u53d1\u5e03\u901a\u77e5")
     @Override
     public Long publish(NoticePublishRequest request) {
         validateTarget(request);
@@ -54,9 +57,9 @@ public class NoticeServiceImpl implements NoticeService {
             status = NoticeStatus.PUBLISHED.code();
             publishTime = request.publishTime() != null ? request.publishTime() : now;
         }
-        CurrentUser sender = UserContext.get();
-        Long senderId = sender == null ? null : sender.userId();
-        String senderTenantId = sender == null ? null : sender.tenantId();
+        SecurityUser sender = currentUser();
+        Long senderId = sender == null ? null : sender.getUserId();
+        String senderTenantId = TenantContext.getTenantId();
         int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), request.targetUsername(), publishType, publishTime,
@@ -76,15 +79,15 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Override
     public PageResult<MyNotice> myNotices(long current, long size) {
-        CurrentUser user = UserContext.get();
-        if (user == null || user.userId() == null) {
+        SecurityUser user = currentUser();
+        if (user == null || user.getUserId() == null) {
             return PageResult.empty(current, size);
         }
         LocalDateTime now = LocalDateTime.now();
-        PageResult<Notice> notices = noticeRepository.myNotices(current, size, user.tenantId(), user.roles(),
-                user.username(), now);
+        PageResult<Notice> notices = noticeRepository.myNotices(current, size, TenantContext.getTenantId(), roleNames(),
+                user.getUsername(), now);
         Map<Long, NoticeRecord> records = noticeRepository
-                .findRecords(notices.records().stream().map(Notice::getId).toList(), user.userId())
+                .findRecords(notices.records().stream().map(Notice::getId).toList(), user.getUserId())
                 .stream().collect(Collectors.toMap(NoticeRecord::getNoticeId, Function.identity()));
         List<MyNotice> mine = notices.records().stream()
                 .map(n -> toMyNotice(n, records.get(n.getId())))
@@ -95,20 +98,20 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public MyNotice getMine(Long id) {
         Notice notice = loadAndCheckVisible(id);
-        CurrentUser user = UserContext.get();
+        SecurityUser user = currentUser();
         NoticeRecord record = user == null ? null
-                : noticeRepository.findRecords(List.of(id), user.userId()).stream().findFirst().orElse(null);
+                : noticeRepository.findRecords(List.of(id), user.getUserId()).stream().findFirst().orElse(null);
         return toMyNotice(notice, record);
     }
 
     @Override
     public void markRead(Long id) {
         Notice notice = loadAndCheckVisible(id);
-        CurrentUser user = UserContext.get();
-        if (user == null || user.userId() == null) {
+        SecurityUser user = currentUser();
+        if (user == null || user.getUserId() == null) {
             return;
         }
-        noticeRepository.upsertRead(id, user.userId(), user.tenantId(), LocalDateTime.now());
+        noticeRepository.upsertRead(id, user.getUserId(), TenantContext.getTenantId(), LocalDateTime.now());
     }
 
     @Override
@@ -117,11 +120,11 @@ public class NoticeServiceImpl implements NoticeService {
         if (!Boolean.TRUE.equals(notice.getNeedConfirm())) {
             throw new BizException(NoticeErrorCode.NOTICE_NOT_CONFIRMABLE);
         }
-        CurrentUser user = UserContext.get();
-        if (user == null || user.userId() == null) {
+        SecurityUser user = currentUser();
+        if (user == null || user.getUserId() == null) {
             return;
         }
-        noticeRepository.upsertConfirm(id, user.userId(), user.tenantId(), LocalDateTime.now());
+        noticeRepository.upsertConfirm(id, user.getUserId(), TenantContext.getTenantId(), LocalDateTime.now());
     }
 
     @Override
@@ -138,14 +141,13 @@ public class NoticeServiceImpl implements NoticeService {
     private Notice loadAndCheckVisible(Long id) {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new BizException(NoticeErrorCode.NOTICE_NOT_FOUND));
-        CurrentUser user = UserContext.get();
-        if (!visibleTo(notice, user, LocalDateTime.now())) {
+        if (!visibleTo(notice, currentUser(), LocalDateTime.now())) {
             throw new BizException(NoticeErrorCode.NOTICE_NOT_VISIBLE);
         }
         return notice;
     }
 
-    private boolean visibleTo(Notice n, CurrentUser user, LocalDateTime now) {
+    private boolean visibleTo(Notice n, SecurityUser user, LocalDateTime now) {
         if (n.getStatus() == null || n.getStatus() != NoticeStatus.PUBLISHED.code()) {
             return false;
         }
@@ -163,16 +165,34 @@ public class NoticeServiceImpl implements NoticeService {
             return true;
         }
         if (type == NoticeTargetType.TENANT.code()) {
-            return user != null && user.tenantId() != null && user.tenantId().equals(n.getTargetTenantId());
+            return user != null && TenantContext.getTenantId() != null && TenantContext.getTenantId().equals(n.getTargetTenantId());
         }
         if (type == NoticeTargetType.ROLE.code()) {
-            return user != null && n.getTargetRoleCode() != null && user.roles() != null
-                    && user.roles().contains(n.getTargetRoleCode());
+            return user != null && n.getTargetRoleCode() != null && !roleNames().isEmpty()
+                    && roleNames().contains(n.getTargetRoleCode());
         }
         if (type == NoticeTargetType.USER.code()) {
-            return user != null && n.getTargetUsername() != null && n.getTargetUsername().equals(user.username());
+            return user != null && n.getTargetUsername() != null && n.getTargetUsername().equals(user.getUsername());
         }
         return false;
+    }
+
+    private static SecurityUser currentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof SecurityUser su)) {
+            return null;
+        }
+        return su;
+    }
+
+    private static List<String> roleNames() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return List.of();
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .toList();
     }
 
     private void validateTarget(NoticePublishRequest request) {

@@ -23,5 +23,6 @@
         <module>rosecloud-starter-lock</module>
         <module>rosecloud-starter-cache</module>
         <module>rosecloud-starter-storage</module>
+        <module>rosecloud-starter-security</module>
     </modules>
 </project>

@@ -25,15 +25,3 @@ rosecloud:
   cache:
     enabled: true
     type: redis
-  security:
-    auth-chain:
-      enabled: true
-  auth:
-    login-protection:
-      enabled: true
-      max-attempts: 5
-      lock-window: 15m
-      base-lock-duration: 15m
-      max-lock-duration: 24h
-      ip-max-attempts: 100
-      ip-window: 10m

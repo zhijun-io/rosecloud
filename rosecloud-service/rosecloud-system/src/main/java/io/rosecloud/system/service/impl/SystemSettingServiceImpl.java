@@ -1,8 +1,6 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.SettingKeyRepository;
 import io.rosecloud.system.domain.SystemSetting;
@@ -10,6 +8,8 @@ import io.rosecloud.system.domain.SystemSettingRepository;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.SystemSettingService;
 import io.rosecloud.system.service.dto.SettingValueRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -66,7 +66,10 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     }
 
     private static Long currentUserId() {
-        CurrentUser current = UserContext.get();
-        return current == null ? null : current.userId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof io.rosecloud.common.security.model.SecurityUser su)) {
+            return null;
+        }
+        return su.getUserId();
     }
 }

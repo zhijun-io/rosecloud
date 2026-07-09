@@ -12,9 +12,21 @@
     </parent>
 
     <artifactId>rosecloud-common-security</artifactId>
-    <description>Shared, servlet-independent security primitives: caller context, security headers, and JWT codec used by both servlet services and the reactive gateway.</description>
+    <description>Shared, servlet-independent security primitives: caller context, security headers, JWT codec, and Feign contracts used by both servlet services and the reactive gateway.</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-common-core</artifactId>

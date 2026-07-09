@@ -60,9 +60,19 @@
             <artifactId>rosecloud-starter-security</artifactId>
             <version>${project.version}</version>
         </dependency>
+         <dependency>
+             <groupId>io.rosecloud</groupId>
+             <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
+             <version>${project.version}</version>
+         </dependency>
+         <!-- flyway-core for NoticeFlywayAutoConfiguration (compile-time) -->
+         <dependency>
+             <groupId>org.flywaydb</groupId>
+             <artifactId>flyway-core</artifactId>
+         </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
+            <artifactId>rosecloud-starter-tenant</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -86,6 +96,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>

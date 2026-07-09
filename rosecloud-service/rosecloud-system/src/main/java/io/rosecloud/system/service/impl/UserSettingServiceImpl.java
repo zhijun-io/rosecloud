@@ -1,10 +1,10 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
-import io.rosecloud.starter.security.SecurityErrorCode;
+import io.rosecloud.common.security.exception.SecurityErrorCode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import io.rosecloud.system.domain.SettingKeyRepository;
 import io.rosecloud.system.domain.UserSetting;
 import io.rosecloud.system.domain.UserSettingRepository;
@@ -64,11 +64,11 @@ public class UserSettingServiceImpl implements UserSettingService {
     }
 
     private static Long currentUserId() {
-        CurrentUser current = UserContext.get();
-        if (current == null || current.userId() == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof io.rosecloud.common.security.model.SecurityUser su) || su.getUserId() == null) {
             throw new BizException(SecurityErrorCode.UNAUTHORIZED);
         }
-        return current.userId();
+        return su.getUserId();
     }
 
     private static LocalDateTime now() {

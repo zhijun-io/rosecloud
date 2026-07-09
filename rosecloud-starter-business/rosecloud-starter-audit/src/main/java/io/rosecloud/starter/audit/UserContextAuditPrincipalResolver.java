@@ -1,24 +1,27 @@
 package io.rosecloud.starter.audit;
 
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
+import io.rosecloud.common.security.model.SecurityUser;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Default {@link AuditPrincipalResolver}: reads the operator from
- * {@link UserContext} (username, falling back to user id, then "anonymous").
- * Override with a custom {@link AuditPrincipalResolver} bean for other sources.
+ * {@link SecurityContextHolder} (username from {@link SecurityUser}, falling
+ * back to user id, then "anonymous"). Override with a custom
+ * {@link AuditPrincipalResolver} bean for other sources.
  */
 public class UserContextAuditPrincipalResolver implements AuditPrincipalResolver {
 
     @Override
     public String resolve() {
-        CurrentUser user = UserContext.get();
-        if (user == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || !(auth.getPrincipal() instanceof SecurityUser securityUser)) {
             return "anonymous";
         }
-        if (user.username() != null && !user.username().isBlank()) {
-            return user.username();
+        if (securityUser.getUsername() != null && !securityUser.getUsername().isBlank()) {
+            return securityUser.getUsername();
         }
-        return user.userId() == null ? "anonymous" : String.valueOf(user.userId());
+        return String.valueOf(securityUser.getUserId());
     }
 }

@@ -1,30 +1,33 @@
 package io.rosecloud.system.service.impl;
 
-import io.rosecloud.api.user.UserAuthInfo;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
-import io.rosecloud.starter.security.SecurityErrorCode;
+import io.rosecloud.common.security.exception.SecurityErrorCode;
+import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
-import java.time.LocalDateTime;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.support.PasswordPolicyValidator;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -33,6 +36,27 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+
+    // ==================== UserDetailsService ====================
+
+    @Override
+    public SecurityUser loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.loadByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    // ==================== helper ====================
+
+    private static SecurityUser currentSecurityUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || !(auth.getPrincipal() instanceof SecurityUser securityUser)) {
+            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
+        }
+        return securityUser;
+    }
+
+    // ==================== crud ====================
 
     @AuditLog(action = "user-create", description = "创建用户")
     @Transactional
@@ -84,26 +108,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<UserAuthInfo> findAuthInfo(String username) {
-        return userRepository.findAuthInfo(username);
+    public Optional<SecurityUser> loadByUsername(String username) {
+        return userRepository.loadByUsername(username);
     }
 
     @Override
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
-        CurrentUser current = UserContext.get();
-        if (current == null || current.userId() == null || current.username() == null) {
-            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
-        }
-        UserAuthInfo authInfo = userRepository.findAuthInfo(current.username())
+        SecurityUser securityUser = currentSecurityUser();
+        SecurityUser authInfo = userRepository.loadByUsername(securityUser.getUsername())
                 .orElseThrow(() -> new BizException(SecurityErrorCode.UNAUTHORIZED));
-        if (authInfo.passwordHash() == null || authInfo.passwordHash().isBlank()
-                || !passwordEncoder.matches(request.currentPassword(), authInfo.passwordHash())) {
+        if (authInfo.getPassword() == null || authInfo.getPassword().isBlank()
+                || !passwordEncoder.matches(request.currentPassword(), authInfo.getPassword())) {
             throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
         }
         PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
-        userRepository.updatePassword(current.userId(),
-                passwordEncoder.encode(request.newPassword()), java.time.LocalDateTime.now());
+        userRepository.updatePassword(securityUser.getUserId(),
+                passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
     }
 
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
@@ -122,13 +143,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserProfile me() {
-        CurrentUser current = UserContext.get();
-        if (current == null || current.userId() == null) {
-            throw new BizException(SecurityErrorCode.UNAUTHORIZED);
-        }
-        User user = userRepository.findById(current.userId())
+        SecurityUser securityUser = currentSecurityUser();
+        User user = userRepository.findById(securityUser.getUserId())
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
-        return new UserProfile(user, userRepository.findRoleCodesByUserId(current.userId()));
+        return new UserProfile(user, userRepository.findRoleCodesByUserId(securityUser.getUserId()));
     }
 
     @Override

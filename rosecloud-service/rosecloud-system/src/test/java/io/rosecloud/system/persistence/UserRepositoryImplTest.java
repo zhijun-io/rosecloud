@@ -1,7 +1,10 @@
 package io.rosecloud.system.persistence;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.rosecloud.api.user.UserAuthInfo;
+import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.common.security.model.UserPrincipal;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import io.rosecloud.system.domain.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,7 +67,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    void findAuthInfoReadsPasswordFromUserCredential() {
+    void loadByUsernameReadsPasswordFromUserCredential() {
         UserEntity user = new UserEntity();
         user.setId(201L);
         user.setEmail("alice@example.com");
@@ -78,9 +81,9 @@ class UserRepositoryImplTest {
         when(userCredentialMapper.selectOne(any())).thenReturn(credential);
         when(userRoleMapper.selectList(any())).thenReturn(List.of());
 
-        Optional<UserAuthInfo> authInfo = repository().findAuthInfo("alice@example.com");
+        Optional<SecurityUser> authInfo = repository().loadByUsername("alice@example.com");
 
-        assertEquals("hash-456", authInfo.orElseThrow().passwordHash());
+        assertEquals("hash-456", authInfo.orElseThrow().getPassword());
     }
 
     @Test

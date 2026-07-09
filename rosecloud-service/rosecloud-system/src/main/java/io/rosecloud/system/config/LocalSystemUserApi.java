@@ -1,7 +1,7 @@
 package io.rosecloud.system.config;
 
 import io.rosecloud.api.user.SystemUserApi;
-import io.rosecloud.api.user.UserAuthInfo;
+ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.common.core.model.ApiResponse;
 import java.time.LocalDateTime;
@@ -25,8 +25,8 @@ public class LocalSystemUserApi implements SystemUserApi {
     }
 
     @Override
-    public ApiResponse<UserAuthInfo> getAuthInfo(String username) {
-        return ApiResponse.ok(userService.findAuthInfo(username).orElse(null));
+    public ApiResponse<SecurityUser> getAuthInfo(String username) {
+        return ApiResponse.ok(userService.loadByUsername(username).orElse(null));
     }
 
     @Override

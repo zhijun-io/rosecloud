@@ -1,6 +1,6 @@
 package io.rosecloud.system.domain;
 
-import io.rosecloud.api.user.UserAuthInfo;
+ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.api.user.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.common.core.model.PageResult;
@@ -16,7 +16,7 @@ import java.util.Optional;
  */
 public interface UserRepository {
 
-    Optional<UserAuthInfo> findAuthInfo(String username);
+    Optional<SecurityUser> loadByUsername(String username);
 
     Optional<UserActivationInfo> findActivationByToken(String activateToken);
 

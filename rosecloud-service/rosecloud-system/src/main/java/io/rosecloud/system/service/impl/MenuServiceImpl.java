@@ -1,8 +1,6 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.Menu;
 import io.rosecloud.system.domain.MenuRepository;
@@ -13,6 +11,8 @@ import io.rosecloud.system.service.MenuService;
 import io.rosecloud.system.service.dto.MenuRequest;
 import io.rosecloud.system.service.dto.MenuTreeNode;
 import io.rosecloud.system.service.dto.UserMenuResult;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -64,11 +64,11 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public UserMenuResult myMenus() {
-        CurrentUser current = UserContext.get();
-        if (current == null || current.userId() == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof io.rosecloud.common.security.model.SecurityUser su) || su.getUserId() == null) {
             return UserMenuResult.empty();
         }
-        List<Long> roleIds = userRepository.findRoleIdsByUserId(current.userId());
+        List<Long> roleIds = userRepository.findRoleIdsByUserId(su.getUserId());
         if (roleIds.isEmpty()) {
             return UserMenuResult.empty();
         }

@@ -1,42 +1,26 @@
-spring:
-  config:
-    import:
-      - optional:classpath:rosecloud-common.yaml
-  application:
-    name: rosecloud-monolith
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
-    default: dev
-  # Flyway 数据库版本化迁移配置
-  flyway:
-    locations: classpath*:db/migration  # 扫描所有依赖jar包中的迁移脚本（system/notice模块的SQL）
-    validate-migration-naming: false  # 允许不同模块使用相同版本号前缀（如system和notice都有V1.0__xxx）
-  cloud:
-    nacos:
-      config:
-        import-check:
-          enabled: false  # 禁用Nacos配置导入检查（Nacos包被服务模块传递依赖进来）
-      discovery:
-        enabled: false  # 禁用Nacos服务发现
-    discovery:
-      enabled: false  # 完全禁用Spring Cloud服务发现
-
-server:
-  port: 8080
-
-rosecloud:
-  cache:
-    enabled: true
-    type: in-memory
-  security:
-    auth-chain:
-      enabled: true
-  auth:
-    login-protection:
-      enabled: true
-      max-attempts: 5
-      lock-window: 15m
-      base-lock-duration: 15m
-      max-lock-duration: 24h
-      ip-max-attempts: 100
-      ip-window: 10m
+ spring:
+   config:
+     import:
+       - optional:classpath:rosecloud-common.yaml
+   application:
+     name: rosecloud-monolith
+   profiles:
+     active: ${SPRING_PROFILES_ACTIVE:dev}
+     default: dev
+   cloud:
+     nacos:
+       config:
+         import-check:
+           enabled: false
+       discovery:
+         enabled: false
+     discovery:
+       enabled: false
+ 
+ server:
+   port: 8080
+ 
+ rosecloud:
+   cache:
+     enabled: true
+     type: in-memory

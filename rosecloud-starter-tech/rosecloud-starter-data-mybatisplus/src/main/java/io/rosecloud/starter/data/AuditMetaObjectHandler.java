@@ -1,16 +1,18 @@
 package io.rosecloud.starter.data;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import io.rosecloud.common.security.context.CurrentUser;
-import io.rosecloud.common.security.context.UserContext;
+import io.rosecloud.common.security.model.SecurityUser;
 import org.apache.ibatis.reflection.MetaObject;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 
 /**
- * Auto-fills audit fields ({@code createTime}/{@code updateTime}/
- * {@code createBy}/{@code updateBy}) on insert/update, taking the operator from
- * {@link UserContext}. No-ops when no user is bound (e.g. system/jobs).
+ * Auto-fills audit fields ({@code createTime}, {@code updateTime},
+ * {@code createBy}, {@code updateBy}) on insert/update, taking the operator
+ * from {@link SecurityContextHolder#getContext()}. No-ops when no user is
+ * bound (e.g. system/jobs).
  */
 public class AuditMetaObjectHandler implements MetaObjectHandler {
 
@@ -36,7 +38,11 @@ public class AuditMetaObjectHandler implements MetaObjectHandler {
     }
 
     private static Long currentUserId() {
-        CurrentUser user = UserContext.get();
-        return user == null ? null : user.userId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()
+                && auth.getPrincipal() instanceof SecurityUser securityUser) {
+            return securityUser.getUserId();
+        }
+        return null;
     }
 }
