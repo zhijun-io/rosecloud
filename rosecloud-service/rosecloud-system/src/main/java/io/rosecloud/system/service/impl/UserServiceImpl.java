@@ -153,13 +153,13 @@ public class UserServiceImpl implements UserService, SystemUserApi, Function<Str
     }
 
     @Override
-    public void updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
+    public ApiResponse<Void> updateLastLoginTime(Long userId, LocalDateTime lastLoginTime) {
         userRepository.updateLastLoginTime(userId, lastLoginTime);
+        return ApiResponse.ok();
     }
 
-    @Override
     @Transactional
-    public ApiResponse<Void> updatePassword(Long userId, UserPasswordUpdateRequest request) {
+    public void updatePassword(Long userId, UserPasswordUpdateRequest request) {
         SecurityUser securityUser = currentSecurityUser();
         if (!securityUser.getUserId().equals(userId)) {
             throw new BizException(SecurityErrorCode.UNAUTHORIZED);
@@ -172,7 +172,6 @@ public class UserServiceImpl implements UserService, SystemUserApi, Function<Str
         }
         PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
         userRepository.updatePassword(userId, passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
-        return ApiResponse.ok();
     }
 
 }

@@ -20,8 +20,4 @@ public interface SystemUserFeignApi extends SystemUserApi {
     ApiResponse<Void> updateLastLoginTime(@PathVariable("userId") Long userId,
                                           @RequestBody java.time.LocalDateTime lastLoginTime);
 
-    @Override
-    @PostMapping("/{userId}/password")
-    ApiResponse<Void> updatePassword(@PathVariable("userId") Long userId,
-                                     @RequestBody UserPasswordUpdateRequest request);
 }

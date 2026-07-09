@@ -12,6 +12,4 @@ public interface SystemUserApi {
     ApiResponse<SecurityUser> loadUserByUsername(String username);
 
     ApiResponse<Void> updateLastLoginTime(Long userId, java.time.LocalDateTime lastLoginTime);
-
-    ApiResponse<Void> updatePassword(Long userId, UserPasswordUpdateRequest request);
 }
