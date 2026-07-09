@@ -87,6 +87,19 @@ class SettingKeyServiceImplTest {
     }
 
     @Test
+    void updateUsesPersistentIdOfExistingKey() {
+        when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
+                new SettingKey(88L, "ui.theme", "主题", "desc")));
+        service().update("ui.theme", new SettingKeyUpdateRequest("主题2", "desc2"));
+        ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
+        verify(settingKeyRepository).update(captor.capture());
+        assertEquals(88L, captor.getValue().getId());
+        assertEquals("ui.theme", captor.getValue().getKey());
+        assertEquals("主题2", captor.getValue().getName());
+        assertEquals("desc2", captor.getValue().getRemark());
+    }
+
+    @Test
     void deleteCascadesToSystemAndUserSettings() {
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
                 new SettingKey(1L, "ui.theme", "主题", "desc")));

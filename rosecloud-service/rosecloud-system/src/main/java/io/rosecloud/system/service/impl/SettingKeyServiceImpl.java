@@ -40,15 +40,20 @@ public class SettingKeyServiceImpl implements SettingKeyService {
         if (settingKeyRepository.existsByKey(request.key())) {
             throw new BizException(SystemErrorCode.SETTING_KEY_EXISTS);
         }
-        settingKeyRepository.insert(new SettingKey(null,request.key(), request.name(), request.remark()));
+        Long userId = currentUserId();
+        LocalDateTime now = now();
+        settingKeyRepository.insert(new SettingKey(null, request.key(), request.name(), request.remark(),
+                now, userId, now, userId));
         return request.key();
     }
 
     @AuditLog(action = "setting-key-update", description = "修改配置键")
     @Override
     public void update(String key, SettingKeyUpdateRequest request) {
-        load(key);
-        settingKeyRepository.update(new SettingKey(null,key, request.name(), request.remark()));
+        SettingKey current = load(key);
+        Long userId = currentUserId();
+        settingKeyRepository.update(new SettingKey(current.getId(), key, request.name(), request.remark(),
+                current.getCreateTime(), current.getCreateBy(), now(), userId));
     }
 
     @AuditLog(action = "setting-key-delete", description = "删除配置键")

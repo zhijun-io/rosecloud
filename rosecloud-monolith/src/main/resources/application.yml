@@ -26,8 +26,6 @@ rosecloud:
     enabled: true
     type: in-memory
 
-debug: on
-
 logging:
   level:
     io.rosecloud: debug

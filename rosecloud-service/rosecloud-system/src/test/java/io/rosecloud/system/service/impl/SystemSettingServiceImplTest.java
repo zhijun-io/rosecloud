@@ -77,7 +77,7 @@ class SystemSettingServiceImplTest {
     @Test
     void deleteRejectsMissingSetting() {
         when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey("ui.theme", "主题", null, LocalDateTime.now(), 1L)));
+                new SettingKey(1L, "ui.theme", "主题", null)));
         when(systemSettingRepository.findByKey("ui.theme")).thenReturn(Optional.empty());
         BizException ex = assertThrows(BizException.class, () -> service().delete("ui.theme"));
         assertEquals(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND, ex.getErrorCode());

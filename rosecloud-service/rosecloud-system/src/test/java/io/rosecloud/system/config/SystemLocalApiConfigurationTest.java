@@ -44,7 +44,10 @@ class SystemLocalApiConfigurationTest {
             AuthUserInfo authUserInfo = new AuthUserInfo(9L, "alice", "Alice", "pwd", true, null,
                     List.of("ROLE_USER"));
             when(userRepository.findContacts(1, "tenant-a", "role-a", "alice")).thenReturn(recipients);
-            when(userRepository.loadAuthInfoByUsername("alice")).thenReturn(java.util.Optional.of(authUserInfo));
+            when(userRepository.loadByUsername("alice")).thenReturn(java.util.Optional.of(
+                    new io.rosecloud.common.security.model.SecurityUser(
+                            9L, "alice", "Alice", "pwd", true, null,
+                            List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")))));
 
             ctx.getBean(LoginLogApi.class).record(new LoginLogRequest("alice", true, null, "127.0.0.1", "ua"));
             verify(loginLogService).record(new LoginLogRequest("alice", true, null, "127.0.0.1", "ua"));

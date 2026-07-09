@@ -22,7 +22,8 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
 
     @Override
     public boolean existsByKey(String key) {
-        return mapper.selectById(key) != null;
+        return mapper.selectCount(new LambdaQueryWrapper<SettingKeyEntity>()
+                .eq(SettingKeyEntity::getKey, key)) > 0;
     }
 
     @Override
@@ -32,18 +33,30 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
 
     @Override
     public void update(SettingKey settingKey) {
-        mapper.updateById(toEntity(settingKey));
+        SettingKeyEntity current = mapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
+                .eq(SettingKeyEntity::getKey, settingKey.getKey()));
+        if (current == null) {
+            return;
+        }
+        SettingKeyEntity entity = toEntity(settingKey);
+        entity.setId(current.getId());
+        mapper.updateById(entity);
     }
 
     @Override
     public Optional<SettingKey> findByKey(String key) {
-        return Optional.ofNullable(mapper.selectById(key))
+        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
+                        .eq(SettingKeyEntity::getKey, key)))
                 .map(this::toDomain);
     }
 
     @Override
     public void deleteByKey(String key) {
-        mapper.deleteById(key);
+        SettingKeyEntity current = mapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
+                .eq(SettingKeyEntity::getKey, key));
+        if (current != null) {
+            mapper.deleteById(current.getId());
+        }
     }
 
     @Override
@@ -68,7 +81,8 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
     }
 
     private SettingKey toDomain(SettingKeyEntity po) {
-        return new SettingKey(po.getId(), po.getKey(), po.getName(), po.getRemark());
+        return new SettingKey(po.getId(), po.getKey(), po.getName(), po.getRemark(),
+                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
     }
 
     private SettingKeyEntity toEntity(SettingKey settingKey) {
@@ -77,6 +91,10 @@ public class SettingKeyRepositoryImpl implements SettingKeyRepository {
         po.setKey(settingKey.getKey());
         po.setName(settingKey.getName());
         po.setRemark(settingKey.getRemark());
+        po.setCreateTime(settingKey.getCreateTime());
+        po.setCreateBy(settingKey.getCreateBy());
+        po.setUpdateTime(settingKey.getUpdateTime());
+        po.setUpdateBy(settingKey.getUpdateBy());
         return po;
     }
 }
