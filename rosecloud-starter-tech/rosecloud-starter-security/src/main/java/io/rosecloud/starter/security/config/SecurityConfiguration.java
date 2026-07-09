@@ -149,14 +149,19 @@ import org.springframework.security.web.SecurityFilterChain;
      }
  
      @Bean
-     public JwtTokenAuthenticationProcessingFilter jwtTokenAuthenticationProcessingFilter(
-             RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
-             BearerTokenExtractor bearerTokenExtractor,
-             AuthenticationManager authenticationManager) {
-         List<String> pathsToSkip = List.of(LOGIN_ENTRY_POINT, REFRESH_ENTRY_POINT, LOGOUT_ENTRY_POINT);
-         SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
-         JwtTokenAuthenticationProcessingFilter filter = new JwtTokenAuthenticationProcessingFilter(
-                 matcher, restAwareAuthenticationFailureHandler, bearerTokenExtractor);
+    public JwtTokenAuthenticationProcessingFilter jwtTokenAuthenticationProcessingFilter(
+            RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
+            BearerTokenExtractor bearerTokenExtractor,
+            AuthenticationManager authenticationManager) {
+        List<String> pathsToSkip = List.of(
+                LOGIN_ENTRY_POINT,
+                REFRESH_ENTRY_POINT,
+                LOGOUT_ENTRY_POINT,
+                "/api/noauth/**",
+                "/api/public/**");
+        SkipPathRequestMatcher matcher = new SkipPathRequestMatcher(pathsToSkip, TOKEN_BASED_AUTH_ENTRY_POINT);
+        JwtTokenAuthenticationProcessingFilter filter = new JwtTokenAuthenticationProcessingFilter(
+                matcher, restAwareAuthenticationFailureHandler, bearerTokenExtractor);
          filter.setAuthenticationManager(authenticationManager);
          return filter;
      }

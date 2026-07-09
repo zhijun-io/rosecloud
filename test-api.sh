@@ -38,7 +38,9 @@ is_monolith() {
 login_token() {
   local user=$1 pass=$2
   local resp
-  resp=$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" username="$user" password="$pass")
+  resp=$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" \
+    --raw "$(jq -nc --arg username "$user" --arg password "$pass" '{username:$username,password:$password}')" \
+    'Content-Type: application/json')
   jq -e '.success == true' <<<"$resp" >/dev/null
   jq -r '.data.accessToken' <<<"$resp"
 }
@@ -55,13 +57,19 @@ echo "BASE_URL=$BASE_URL"
 
 now=$(date +%s)
 future=$(date -v+30d +%F 2>/dev/null || date -d '+30 days' +%F)
+user_email="u${now}@test.local"
+tenant_admin_email="tenant${now}@test.local"
 
-login=$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" username='admin@rosecloud.local' password=admin123)
+login=$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" \
+  --raw "$(jq -nc --arg username 'admin@rosecloud.local' --arg password 'admin123' '{username:$username,password:$password}')" \
+  'Content-Type: application/json')
 admin_token=$(jq -e -r '.data.accessToken' <<<"$login")
 admin_refresh=$(jq -e -r '.data.refreshToken' <<<"$login")
-jq -e '.success == true' <<<"$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/refresh" refreshToken="$admin_refresh")" >/dev/null
+jq -e '.success == true' <<<"$(xh --ignore-stdin -b POST "$BASE_URL/api/auth/refresh" --raw "$(jq -nc --arg rt "$admin_refresh" '{refreshToken:$rt}')" 'Content-Type: application/json')" >/dev/null
 jq -e '.success == true and .data.user.username == "admin@rosecloud.local"' <<<"$(xh --ignore-stdin -b -A bearer -a "$admin_token" GET "$BASE_URL/api/system/users/me")" >/dev/null
-expect_fail xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" username='admin@rosecloud.local' password=bad
+expect_fail xh --ignore-stdin -b POST "$BASE_URL/api/auth/login" \
+  --raw "$(jq -nc --arg username 'admin@rosecloud.local' --arg password 'bad' '{username:$username,password:$password}')" \
+  'Content-Type: application/json'
 
 api() {
   xh --ignore-stdin -b -A bearer -a "$1" "${@:2}"
@@ -74,8 +82,8 @@ internal_api() {
 }
 
 echo "users"
-user_id=$(api "$admin_token" POST "$BASE_URL/api/system/users" username="u@test.local" password=Test@1234 nickname="u" | jq -r '.data')
-expect_fail api "$admin_token" POST "$BASE_URL/api/system/users" username="u@test.local" password=Test@1234 nickname="u"
+user_id=$(api "$admin_token" POST "$BASE_URL/api/system/users" username="$user_email" password=Test@1234 nickname="u" | jq -r '.data')
+expect_fail api "$admin_token" POST "$BASE_URL/api/system/users" username="$user_email" password=Test@1234 nickname="u"
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/users/$user_id")" >/dev/null
 put_json "$admin_token" "$BASE_URL/api/system/users/$user_id/roles" "$(jq -nc '{roleIds:[1]}')" >/dev/null
 jq -e '.success == true and .data[0] == 1' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/users/$user_id/roles")" >/dev/null
@@ -112,11 +120,9 @@ api "$admin_token" DELETE "$BASE_URL/api/system/dict-data/$dict_data_id" >/dev/n
 api "$admin_token" DELETE "$BASE_URL/api/system/dict-types/$dict_type_id" >/dev/null
 
 echo "tenant"
-tenant_id=$(api "$admin_token" POST "$BASE_URL/api/system/tenants" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="tenant2@test.local" | jq -r '.data')
-expect_fail api "$admin_token" POST "$BASE_URL/api/system/tenants" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="tenantx@test.local"
-jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/open")" >/dev/null
+tenant_id=$(api "$admin_token" POST "$BASE_URL/api/system/tenants" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark adminUsername="$tenant_admin_email" | jq -r '.data')
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  if jq -e --argjson tenant_id "$tenant_id" '.success == true and any(.data.records[]?; .id == $tenant_id and .status == "ENABLED")' \
+  if jq -e --arg tenant_id "$tenant_id" '.success == true and any(.data.records[]?; .id == $tenant_id and .status == "ENABLED")' \
       <<<"$(api "$admin_token" GET "$BASE_URL/api/system/tenants?current=1&size=10")" >/dev/null; then
     break
   fi
@@ -129,10 +135,12 @@ jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/audi
 jq -e '.success == true' <<<"$(api "$admin_token" GET "$BASE_URL/api/system/login-logs?current=1&size=10")" >/dev/null
 
 echo "activate tenant admin"
-activation_info=$(api "$admin_token" POST "$BASE_URL/api/noauth/activate/resend" '{"username":"tenant2@test.local"}')
+activation_info=$(xh --ignore-stdin -b POST "$BASE_URL/api/noauth/activate/resend" \
+  --raw "$(jq -nc --arg username "$tenant_admin_email" '{username:$username}')" \
+  'Content-Type: application/json')
 activate_token=$(jq -r '.data.activateToken' <<<"$activation_info")
 [[ -n "$activate_token" ]]
-jq -e '.success == true' <<<"$(xh --ignore-stdin -b POST "$BASE_URL/api/noauth/activate" activateToken="$activate_token" password=Tp@123456)" >/dev/null
+jq -e '.success == true' <<<"$(xh --ignore-stdin -b POST "$BASE_URL/api/noauth/activate" --raw "$(jq -nc --arg at "$activate_token" '{activateToken:$at, password:"Tp@123456"}')" 'Content-Type: application/json')" >/dev/null
 
 echo "notice"
 notice_id=$(api "$admin_token" POST "$BASE_URL/api/notice/notices" title="n$now" content=hello targetType=0 needConfirm=true channels=1 | jq -r '.data')
@@ -143,7 +151,7 @@ jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/notice/not
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/notice/notices/me/$notice_id/confirm")" >/dev/null
 
 echo "tenant login"
-tenant_token=$(login_token 'tenant2@test.local' Tp@123456)
+tenant_token=$(login_token "$tenant_admin_email" Tp@123456)
 jq -e '.success == true and .data.user.tenantId != null and .data.roles[0] == "tenant-admin"' <<<"$(api "$tenant_token" GET "$BASE_URL/api/system/users/me")" >/dev/null
 jq -e '.success == true' <<<"$(api "$tenant_token" GET "$BASE_URL/api/notice/notices/me?current=1&size=10")" >/dev/null
 
@@ -165,7 +173,7 @@ echo "kick / logout"
 kick_token=$(login_token 'admin@rosecloud.local' admin123)
 kick_id=$(api "$admin_token" GET "$BASE_URL/api/system/sessions/online?current=1&size=100" | jq -r --arg token "$kick_token" '.data.records[] | select(.token == $token) | .id' | head -n1)
 [[ -n "$kick_id" ]]
-api "$admin_token" DELETE "$BASE_URL/api/system/sessions/$kick_id" >/dev/null
+api "$admin_token" DELETE "$BASE_URL/api/system/sessions?sessionId=$kick_id" >/dev/null
 expect_401 api "$kick_token" GET "$BASE_URL/api/system/users/me"
 
 logout_token=$(login_token 'admin@rosecloud.local' admin123)

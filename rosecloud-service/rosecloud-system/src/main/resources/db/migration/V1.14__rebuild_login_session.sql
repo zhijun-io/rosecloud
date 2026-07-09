@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS sys_login_session;
 
 CREATE TABLE IF NOT EXISTS sys_login_session (
     id   VARCHAR(64)   NOT NULL COMMENT 'Session identifier (UUID, primary key)',
-    token        VARCHAR(1024) NOT NULL COMMENT 'Access token (opaque string, can be shared across sessions)',
+    token        VARCHAR(768) NOT NULL COMMENT 'Access token (opaque string, can be shared across sessions)',
     user_id      BIGINT        NOT NULL COMMENT 'User ID',
     username     VARCHAR(64)   NOT NULL COMMENT 'Username at login time',
     nickname     VARCHAR(128)  DEFAULT NULL COMMENT 'Display name at login time',

@@ -5,6 +5,8 @@ import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +20,8 @@ import java.io.IOException;
 
 public class RestAwareAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(RestAwareAuthenticationFailureHandler.class);
+
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
@@ -30,6 +34,8 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException e) throws IOException {
+        log.warn("Authentication failure: {}", e.getMessage());
+
         String username = (String) request.getAttribute("ATTEMPTED_USERNAME");
         String ip = request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");

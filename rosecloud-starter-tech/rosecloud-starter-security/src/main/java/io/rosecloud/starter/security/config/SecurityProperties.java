@@ -8,7 +8,7 @@ public class SecurityProperties {
     private Jwt jwt = new Jwt();
     private long accessTokenExpirationSeconds = 3600;
     private long refreshTokenExpirationSeconds = 86400;
-    private String[] publicPaths = {"/api/auth/**", "/api/public/**", "/actuator/**", "/error"};
+    private String[] publicPaths = {"/api/auth/**", "/api/noauth/**", "/api/public/**", "/actuator/**", "/error"};
 
     public Jwt getJwt() { return jwt; }
     public void setJwt(Jwt jwt) { this.jwt = jwt; }

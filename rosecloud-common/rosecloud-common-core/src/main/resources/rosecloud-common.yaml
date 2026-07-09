@@ -8,6 +8,8 @@ spring:
     password: ${MYSQL_PASSWORD:rosecloud123}
   flyway:
     enabled: true
+    locations:
+      - classpath:db/migration
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}

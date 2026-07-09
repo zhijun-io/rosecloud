@@ -20,20 +20,15 @@
 # ============================================================
 
 x-app-env: &app-env
-  # 服务在 Docker 网络内连接基础设施（容器名），覆盖 Nacos 共享配置里的 127.0.0.1 默认值
   MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
   MYSQL_USER: ${MYSQL_USER:-rosecloud}
   MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
   REDIS_HOST: redis
   REDIS_PASSWORD: ${REDIS_PASSWORD:-rosecloud123}
   NACOS_SERVER_ADDR: nacos:8848
-  # Nacos 客户端凭证（服务端已开启鉴权）。默认使用 Nacos 内置 nacos 用户，
-  # 生产必须覆盖 NACOS_USERNAME/NACOS_PASSWORD 为独立强凭证（见 .env.example）。
   NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
   NACOS_PASSWORD: ${NACOS_PASSWORD:-nacos}
-  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-ZkcGu91x8eCDlNawneUGPrMPbfZhzvc7cyJByMqNqeO/1kyEIQRRnAVFd7vRVLJRuVXw7QiLuYXoCbknO4C2iw==}
-  # 本地开发显式允许仓库内置的 dev 默认密钥；生产部署必须覆盖 ROSECLOUD_SECURITY_JWT_SECRET 并删除此行
-  # 服务间 /internal/** 调用共享密钥；生产必须覆盖 ROSECLOUD_SECURITY_INTERNAL_API_KEY 并删除此默认值
+  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
   ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}
 
 services:
@@ -104,8 +99,6 @@ services:
     profiles: [microservice]  # 仅微服务模式需要Nacos
     environment:
       MODE: standalone
-      # 鉴权默认开启（本地旧值 false 已弃用）。token / identity 为弱默认值；
-      # 生产必须覆盖 NACOS_AUTH_TOKEN / NACOS_AUTH_IDENTITY_KEY / NACOS_AUTH_IDENTITY_VALUE。
       NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-true}
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-cm9zZWNsb3VkLWRldi1uYWNvcy1hdXRoLXRva2VuLTAxMjM0NTY3ODkwMTIzNDU2Nzg5}
       NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-rosecloud-dev-identity-key}
@@ -174,7 +167,7 @@ services:
       MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       MYSQL_USER: ${MYSQL_USER:-rosecloud}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
-      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-ZkcGu91x8eCDlNawneUGPrMPbfZhzvc7cyJByMqNqeO/1kyEIQRRnAVFd7vRVLJRuVXw7QiLuYXoCbknO4C2iw==}
+      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
       ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
     depends_on: [mysql]
     # 与 gateway 同用宿主 8080；二者 profile（monolith / microservice）互斥，不会同时运行
