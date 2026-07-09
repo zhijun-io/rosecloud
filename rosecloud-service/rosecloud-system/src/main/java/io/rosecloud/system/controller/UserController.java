@@ -92,6 +92,6 @@ public class UserController {
 
     @GetMapping("/auth/{username}")
     public ApiResponse<AuthUserInfo> getAuthInfo(@PathVariable String username) {
-        return ApiResponse.ok(AuthUserInfo.from(userService.loadByUsername(username)));
+        return ApiResponse.ok(userService.loadAuthInfoByUsername(username).orElse(null));
     }
 }

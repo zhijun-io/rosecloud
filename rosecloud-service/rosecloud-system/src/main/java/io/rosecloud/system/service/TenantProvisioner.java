@@ -2,11 +2,13 @@ package io.rosecloud.system.service;
 
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.api.notice.NoticePublishApi;
+import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.domain.RoleRepository;
 import io.rosecloud.system.domain.TenantRepository;
+import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.service.UserActivationService;
@@ -32,15 +34,18 @@ public class TenantProvisioner {
     private final RoleRepository roleRepository;
     private final UserService userService;
     private final UserActivationService userActivationService;
+    private final UserRepository userRepository;
     private final NoticePublishApi noticePublishApi;
 
     public TenantProvisioner(TenantRepository tenantRepository, RoleRepository roleRepository,
                              UserService userService, UserActivationService userActivationService,
+                             UserRepository userRepository,
                              NoticePublishApi noticePublishApi) {
         this.tenantRepository = tenantRepository;
         this.roleRepository = roleRepository;
         this.userService = userService;
         this.userActivationService = userActivationService;
+        this.userRepository = userRepository;
         this.noticePublishApi = noticePublishApi;
     }
 
@@ -64,8 +69,10 @@ public class TenantProvisioner {
 
     private void publishTenantNotice(String tenantId, String title, String content) {
         try {
+            List<NoticeRecipient> recipients = userRepository.findContacts(
+                    NoticeTargetType.TENANT.code(), tenantId, null, null);
             noticePublishApi.publish(new NoticePublishRequest(title, content, NoticeTargetType.TENANT.code(),
-                    tenantId, null, null, null, LocalDateTime.now(), null, null, false, null));
+                    tenantId, null, null, null, LocalDateTime.now(), null, null, false, null, recipients));
         } catch (Exception ignored) {
             // Best-effort: provisioning must not fail because notice delivery is unavailable.
         }

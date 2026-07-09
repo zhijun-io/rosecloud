@@ -1,7 +1,7 @@
-package io.rosecloud.system.service.impl;
+package io.rosecloud.auth.service.impl;
 
+import io.rosecloud.auth.service.LoginSessionService;
 import io.rosecloud.common.security.model.LoginSession;
-import io.rosecloud.system.service.LoginSessionService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * Redis-backed {@link LoginSessionService}. Uses the same key layout as the
- * security starter so auth and system can share the same session state.
+ * security starter so auth can share the same session state.
  */
 @Service
 public class LoginSessionServiceImpl implements LoginSessionService {

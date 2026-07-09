@@ -1,0 +1,641 @@
+{
+  "info": {
+    "_postman_id": "c4df2b1f-2cc7-4c75-9a3c-7d26b7d9d1f0",
+    "name": "RoseCloud Auth and User Flows",
+    "description": "Login, logout, current user, user query, and token revocation flows for RoseCloud. Run the requests top to bottom the first time so token/session variables can be populated.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "认证",
+      "item": [
+        {
+          "name": "登录成功 - 会话A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('tokens are returned', function () {",
+                  "  pm.expect(json.data.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.data.refreshToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.environment.set('accessTokenA', json.data.accessToken);",
+                  "pm.environment.set('refreshTokenA', json.data.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "登录失败 - 密码错误",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"{{wrongPassword}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});",
+                  "pm.test('message mentions bad credentials', function () {",
+                  "  pm.expect(json.message).to.include('Bad credentials');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "登录失败 - 缺少密码",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});",
+                  "pm.test('message mentions missing username or password', function () {",
+                  "  pm.expect(json.message).to.include('Username or Password not provided');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "登录成功 - 会话B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.environment.set('accessTokenB', json.data.accessToken);",
+                  "pm.environment.set('refreshTokenB', json.data.refreshToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "用户",
+      "item": [
+        {
+          "name": "获取当前登录用户成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/me"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('user payload exists', function () {",
+                  "  pm.expect(json.data.user).to.be.an('object');",
+                  "  pm.expect(json.data.roles).to.be.an('array');",
+                  "});",
+                  "pm.environment.set('currentUserId', String(json.data.user.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取当前登录用户失败 - 未携带 token",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/me"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});",
+                  "pm.test('message is present', function () {",
+                  "  pm.expect(json.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询用户列表成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users?page=1&size=10"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('page payload exists', function () {",
+                  "  pm.expect(json.data.records).to.be.an('array');",
+                  "  pm.expect(json.data.total).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询用户列表失败 - 未携带 token",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users?page=1&size=10"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询用户详情成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/{{currentUserId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('user detail payload exists', function () {",
+                  "  pm.expect(json.data.id).to.be.ok;",
+                  "  pm.expect(json.data.username).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "查询用户详情失败 - 用户不存在",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/999999999999"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('system.user_not_found');",
+                  "});",
+                  "pm.test('message mentions user not found', function () {",
+                  "  pm.expect(json.message).to.include('用户不存在');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "会话",
+      "item": [
+        {
+          "name": "查询在线会话成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sessions/online"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('records exist', function () {",
+                  "  pm.expect(json.data.records).to.be.an('array');",
+                  "  pm.expect(json.data.records.length).to.be.greaterThan(0);",
+                  "});",
+                  "const token = pm.environment.get('accessTokenA');",
+                  "const records = json.data.records || [];",
+                  "const currentSession = records.find(function (item) { return item.token === token; }) || records[0];",
+                  "pm.environment.set('sessionIdA', String(currentSession.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "撤销 token 成功",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sessions?sessionId={{sessionIdA}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "撤销 token 后再次访问失败",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/me"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "撤销 token 失败 - 缺少 sessionId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sessions"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 500', function () {",
+                  "  pm.response.to.have.status(500);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('common.internal_error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "退出登录成功",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "退出登录后再次访问失败",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/me"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin123"
+    },
+    {
+      "key": "wrongPassword",
+      "value": "wrong-password"
+    },
+    {
+      "key": "accessTokenA",
+      "value": ""
+    },
+    {
+      "key": "refreshTokenA",
+      "value": ""
+    },
+    {
+      "key": "accessTokenB",
+      "value": ""
+    },
+    {
+      "key": "refreshTokenB",
+      "value": ""
+    },
+    {
+      "key": "currentUserId",
+      "value": ""
+    },
+    {
+      "key": "sessionIdA",
+      "value": ""
+    }
+  ]
+}

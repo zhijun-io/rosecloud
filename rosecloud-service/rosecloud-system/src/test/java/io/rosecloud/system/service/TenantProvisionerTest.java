@@ -10,6 +10,7 @@ import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.domain.RoleRepository;
 import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.domain.TenantStatus;
+import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,11 +39,13 @@ class TenantProvisionerTest {
     @Mock
     UserActivationService userActivationService;
     @Mock
+    UserRepository userRepository;
+    @Mock
     NoticePublishApi noticePublishApi;
 
     private TenantProvisioner service() {
         return new TenantProvisioner(tenantRepository, roleRepository, userService, userActivationService,
-                noticePublishApi);
+                userRepository, noticePublishApi);
     }
 
     @Test

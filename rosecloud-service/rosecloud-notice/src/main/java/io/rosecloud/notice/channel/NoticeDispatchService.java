@@ -1,8 +1,5 @@
 package io.rosecloud.notice.channel;
 
-import io.rosecloud.api.notice.NoticeRecipient;
-import io.rosecloud.api.notice.NoticeRecipientApi;
-import io.rosecloud.api.notice.NoticeRecipientRequest;
 import io.rosecloud.notice.domain.NoticeChannel;
 import io.rosecloud.notice.domain.Notice;
 import org.slf4j.Logger;
@@ -19,23 +16,21 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Resolves recipients for a notice's push channels (email/sms) and dispatches
- * using an immutable {@link NoticeDispatchContext}. Station is pull-based and
- * needs no dispatch. Runs asynchronously so publishing is not blocked by
- * outbound delivery; per-recipient failures are logged, never propagated.
+ * Dispatches a notice's push channels (email/sms) using the recipient snapshot
+ * carried with the notice. Station is pull-based and needs no dispatch. Runs
+ * asynchronously so publishing is not blocked by outbound delivery; per-recipient
+ * failures are logged, never propagated.
  */
 @Component
 public class NoticeDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(NoticeDispatchService.class);
 
-    private final NoticeRecipientApi recipientApi;
     private final Map<NoticeChannel, NoticeChannelSender> senders;
     private final Executor executor;
 
-    public NoticeDispatchService(NoticeRecipientApi recipientApi, List<NoticeChannelSender> senders,
-            @Qualifier("noticeDispatchExecutor") Executor executor) {
-        this.recipientApi = recipientApi;
+    public NoticeDispatchService(List<NoticeChannelSender> senders,
+                                 @Qualifier("noticeDispatchExecutor") Executor executor) {
         this.senders = senders.stream().collect(toMap(NoticeChannelSender::channel, identity()));
         this.executor = executor;
     }
@@ -55,10 +50,7 @@ public class NoticeDispatchService {
 
     void doDispatch(Notice notice, int mask) {
         try {
-            List<NoticeRecipient> recipients = recipientApi.list(new NoticeRecipientRequest(
-                    notice.getTargetType(), notice.getTargetTenantId(), notice.getTargetRoleCode(),
-                    notice.getTargetUsername())).data();
-            if (recipients == null || recipients.isEmpty()) {
+            if (notice.getRecipients() == null || notice.getRecipients().isEmpty()) {
                 return;
             }
             for (NoticeChannel channel : new NoticeChannel[]{NoticeChannel.EMAIL, NoticeChannel.SMS}) {
@@ -67,7 +59,7 @@ public class NoticeDispatchService {
                 }
                 NoticeChannelSender sender = senders.get(channel);
                 if (sender != null) {
-                    sender.send(new NoticeDispatchContext(notice, channel, recipients));
+                    sender.send(new NoticeDispatchContext(notice, channel, notice.getRecipients()));
                 } else {
                     log.warn("no sender registered for channel {} on notice {}", channel, notice.getId());
                 }

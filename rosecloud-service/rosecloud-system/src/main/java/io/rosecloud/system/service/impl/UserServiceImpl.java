@@ -4,6 +4,7 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.system.domain.User;
@@ -101,6 +102,11 @@ public class UserServiceImpl implements UserService, Function<String, Optional<S
     @Override
     public SecurityUser loadByUsername(String username) {
         return userRepository.loadByUsername(username).orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
+    }
+
+    @Override
+    public Optional<AuthUserInfo> loadAuthInfoByUsername(String username) {
+        return userRepository.loadAuthInfoByUsername(username);
     }
 
     @Override

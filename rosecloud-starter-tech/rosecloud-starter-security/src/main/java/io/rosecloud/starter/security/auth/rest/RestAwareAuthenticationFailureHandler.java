@@ -3,12 +3,12 @@ package io.rosecloud.starter.security.auth.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.event.LoginFailedEvent;
+import io.rosecloud.common.security.exception.SecurityErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -42,14 +42,28 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
 
         eventPublisher.publishEvent(new LoginFailedEvent(username, null, e.getMessage(), ip, userAgent));
 
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        SecurityErrorCode errorCode = errorCode(e);
+        response.setStatus(errorCode.httpStatus());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        String message = switch (e) {
-            case BadCredentialsException ignored -> "Bad credentials";
+        objectMapper.writeValue(response.getWriter(),
+                ApiResponse.failure(errorCode.code(), message(e, errorCode)));
+    }
+
+    private SecurityErrorCode errorCode(AuthenticationException e) {
+        return switch (e) {
+            case BadCredentialsException ignored -> SecurityErrorCode.BAD_CREDENTIALS;
+            case DisabledException ignored -> SecurityErrorCode.UNAUTHORIZED;
+            case LockedException ignored -> SecurityErrorCode.UNAUTHORIZED;
+            default -> SecurityErrorCode.UNAUTHORIZED;
+        };
+    }
+
+    private String message(AuthenticationException e, SecurityErrorCode errorCode) {
+        return switch (e) {
+            case BadCredentialsException ignored -> errorCode.message();
             case DisabledException ignored -> "User is disabled";
             case LockedException ignored -> "Account is locked";
-            default -> "Authentication failed";
+            default -> errorCode.message();
         };
-        objectMapper.writeValue(response.getWriter(), ApiResponse.failure("UNAUTHORIZED", message));
     }
 }

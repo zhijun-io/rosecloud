@@ -40,9 +40,7 @@ public class SystemLocalApiConfiguration {
         return new SystemUserApi() {
             @Override
             public ApiResponse<AuthUserInfo> loadUserByUsername(String username) {
-                return ApiResponse.ok(userRepository.loadByUsername(username)
-                        .map(AuthUserInfo::from)
-                        .orElse(null));
+                return ApiResponse.ok(userRepository.loadAuthInfoByUsername(username).orElse(null));
             }
         };
     }

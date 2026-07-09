@@ -24,6 +24,7 @@ public class NoticeEntity extends BaseEntity {
     private Long senderId;
     private String tenantId;
     private Integer channels;
+    private String recipientSnapshot;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -55,4 +56,6 @@ public class NoticeEntity extends BaseEntity {
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public Integer getChannels() { return channels; }
     public void setChannels(Integer channels) { this.channels = channels; }
+    public String getRecipientSnapshot() { return recipientSnapshot; }
+    public void setRecipientSnapshot(String recipientSnapshot) { this.recipientSnapshot = recipientSnapshot; }
 }

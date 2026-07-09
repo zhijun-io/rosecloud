@@ -1,10 +1,13 @@
 package io.rosecloud.notice.config;
 
 import io.rosecloud.api.notice.NoticePublishApi;
+import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.notice.service.NoticeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -24,13 +27,13 @@ class NoticeLocalApiConfigurationTest {
 
             NoticeService noticeService = ctx.getBean(NoticeService.class);
             NoticePublishApi noticePublishApi = ctx.getBean(NoticePublishApi.class);
-            NoticePublishRequest request = new NoticePublishRequest("title", "content", 1,
-                    "tenant-a", "role-a", "alice", 1, null, null, null, false, 1);
+            NoticePublishRequest requestWithRecipients = new NoticePublishRequest("title", "content", 1,
+                    "tenant-a", "role-a", "alice", 1, null, null, null, false, 1, List.<NoticeRecipient>of());
 
-            when(noticeService.publish(request)).thenReturn(42L);
+            when(noticeService.publish(requestWithRecipients)).thenReturn(42L);
 
-            assertThat(noticePublishApi.publish(request).data()).isEqualTo(42L);
-            verify(noticeService).publish(request);
+            assertThat(noticePublishApi.publish(requestWithRecipients).data()).isEqualTo(42L);
+            verify(noticeService).publish(requestWithRecipients);
         });
     }
 }

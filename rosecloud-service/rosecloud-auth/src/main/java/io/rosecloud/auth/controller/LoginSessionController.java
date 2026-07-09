@@ -1,17 +1,21 @@
-package io.rosecloud.system.controller;
+package io.rosecloud.auth.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.LoginSession;
-import io.rosecloud.system.service.LoginSessionService;
+import io.rosecloud.auth.service.LoginSessionService;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/sessions")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/auth/sessions")
 public class LoginSessionController {
 
     private final LoginSessionService sessionStoreService;

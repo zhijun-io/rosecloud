@@ -12,7 +12,7 @@ import java.util.List;
  * only to move the password hash from the system service to the auth service
  * without tripping security-specific Jackson mixins.
  */
-public record AuthUserInfo(Long userId, String username, String nickname, String password,
+public record AuthUserInfo(Long userId, String username, String nickname, String encodedPassword,
                            boolean enabled, UserPrincipal userPrincipal, List<String> authorities) {
 
     public static AuthUserInfo from(SecurityUser user) {

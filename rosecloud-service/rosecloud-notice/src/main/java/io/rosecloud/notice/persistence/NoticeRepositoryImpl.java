@@ -4,13 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.api.notice.NoticeRecipient;
+import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticePublishType;
 import io.rosecloud.notice.domain.NoticeRecord;
 import io.rosecloud.notice.domain.NoticeRepository;
 import io.rosecloud.notice.domain.NoticeStatus;
-import io.rosecloud.api.notice.NoticeTargetType;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -21,12 +25,16 @@ import java.util.Optional;
 @Repository
 public class NoticeRepositoryImpl implements NoticeRepository {
 
+    private static final TypeReference<List<NoticeRecipient>> NOTICE_RECIPIENTS = new TypeReference<>() {};
+
     private final NoticeMapper noticeMapper;
     private final NoticeRecordMapper recordMapper;
+    private final ObjectMapper objectMapper;
 
-    public NoticeRepositoryImpl(NoticeMapper noticeMapper, NoticeRecordMapper recordMapper) {
+    public NoticeRepositoryImpl(NoticeMapper noticeMapper, NoticeRecordMapper recordMapper, ObjectMapper objectMapper) {
         this.noticeMapper = noticeMapper;
         this.recordMapper = recordMapper;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -159,7 +167,7 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         return new Notice(entity.getId(), entity.getTitle(), entity.getContent(), entity.getTargetType(),
                 entity.getTargetTenantId(), entity.getTargetRoleCode(), entity.getTargetUsername(), entity.getPublishType(), entity.getPublishTime(),
                 entity.getEffectiveTime(), entity.getExpireTime(), entity.getStatus(), entity.getNeedConfirm(),
-                entity.getSenderId(), entity.getTenantId(), entity.getChannels());
+                entity.getSenderId(), entity.getTenantId(), entity.getChannels(), readRecipients(entity.getRecipientSnapshot()));
     }
 
     private NoticeRecord toRecordDomain(NoticeRecordEntity entity) {
@@ -185,6 +193,29 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         entity.setSenderId(n.getSenderId());
         entity.setTenantId(n.getTenantId());
         entity.setChannels(n.getChannels());
+        entity.setRecipientSnapshot(writeRecipients(n.getRecipients()));
         return entity;
+    }
+
+    private List<NoticeRecipient> readRecipients(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, NOTICE_RECIPIENTS);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("failed to parse notice recipients", e);
+        }
+    }
+
+    private String writeRecipients(List<NoticeRecipient> recipients) {
+        if (recipients == null || recipients.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(recipients);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("failed to serialize notice recipients", e);
+        }
     }
 }

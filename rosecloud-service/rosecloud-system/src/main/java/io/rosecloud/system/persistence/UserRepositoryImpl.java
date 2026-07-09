@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import org.springframework.security.core.GrantedAuthority;
@@ -72,6 +73,31 @@ public class UserRepositoryImpl implements UserRepository {
                 po.getId(), loginName(po), loginName(po), password,
                 po.getStatus() != null && po.getStatus() == 1,
                 principal, authorities));
+    }
+
+    @Override
+    public Optional<AuthUserInfo> loadAuthInfoByUsername(String username) {
+        UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
+                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                        .or()
+                        .eq(UserEntity::getPhone, username)));
+        if (po == null) {
+            return Optional.empty();
+        }
+        UserCredentialEntity credential = credentialByUserId(po.getId());
+        String password = credential == null ? null : credential.getPassword();
+
+        List<String> authorities = new ArrayList<>();
+        for (String role : loadRoleCodes(po.getId())) {
+            authorities.add("ROLE_" + role);
+        }
+        authorities.addAll(loadPerms(po.getId()));
+
+        return Optional.of(new AuthUserInfo(
+                po.getId(), loginName(po), loginName(po), password,
+                po.getStatus() != null && po.getStatus() == 1,
+                new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po)),
+                authorities.stream().distinct().toList()));
     }
 
     @Override

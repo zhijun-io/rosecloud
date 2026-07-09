@@ -171,9 +171,9 @@ fi
 
 echo "kick / logout"
 kick_token=$(login_token 'admin@rosecloud.local' admin123)
-kick_id=$(api "$admin_token" GET "$BASE_URL/api/system/sessions/online?current=1&size=100" | jq -r --arg token "$kick_token" '.data.records[] | select(.token == $token) | .id' | head -n1)
+kick_id=$(api "$admin_token" GET "$BASE_URL/api/auth/sessions/online?current=1&size=100" | jq -r --arg token "$kick_token" '.data.records[] | select(.token == $token) | .id' | head -n1)
 [[ -n "$kick_id" ]]
-api "$admin_token" DELETE "$BASE_URL/api/system/sessions?sessionId=$kick_id" >/dev/null
+api "$admin_token" DELETE "$BASE_URL/api/auth/sessions?sessionId=$kick_id" >/dev/null
 expect_401 api "$kick_token" GET "$BASE_URL/api/system/users/me"
 
 logout_token=$(login_token 'admin@rosecloud.local' admin123)

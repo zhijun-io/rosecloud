@@ -1,15 +1,13 @@
-package io.rosecloud.system.service;
+package io.rosecloud.auth.service;
 
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.session.SessionStore;
-import io.rosecloud.system.service.impl.LoginSessionServiceImpl;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Extended {@link SessionStore} with admin query methods.
- * Implemented by {@link LoginSessionServiceImpl}.
  */
 public interface LoginSessionService extends SessionStore {
 

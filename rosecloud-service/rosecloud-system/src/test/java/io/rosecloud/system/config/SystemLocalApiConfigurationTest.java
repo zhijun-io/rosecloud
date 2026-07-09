@@ -5,14 +5,13 @@ import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeRecipientApi;
 import io.rosecloud.api.notice.NoticeRecipientRequest;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.api.user.SystemUserFeignApi;
-import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.service.LoginLogService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
 
@@ -42,16 +41,16 @@ class SystemLocalApiConfigurationTest {
 
             NoticeRecipientRequest recipientRequest = new NoticeRecipientRequest(1, "tenant-a", "role-a", "alice");
             List<NoticeRecipient> recipients = List.of(new NoticeRecipient(7L, "alice@example.com", "13800000000"));
-            SecurityUser securityUser = new SecurityUser(9L, "alice", "Alice", "pwd", true, null,
-                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+            AuthUserInfo authUserInfo = new AuthUserInfo(9L, "alice", "Alice", "pwd", true, null,
+                    List.of("ROLE_USER"));
             when(userRepository.findContacts(1, "tenant-a", "role-a", "alice")).thenReturn(recipients);
-            when(userRepository.loadByUsername("alice")).thenReturn(java.util.Optional.of(securityUser));
+            when(userRepository.loadAuthInfoByUsername("alice")).thenReturn(java.util.Optional.of(authUserInfo));
 
             ctx.getBean(LoginLogApi.class).record(new LoginLogRequest("alice", true, null, "127.0.0.1", "ua"));
             verify(loginLogService).record(new LoginLogRequest("alice", true, null, "127.0.0.1", "ua"));
 
             assertThat(noticeRecipientApi.list(recipientRequest).data()).containsExactlyElementsOf(recipients);
-            assertThat(ctx.getBean(SystemUserApi.class).loadUserByUsername("alice").data()).isEqualTo(securityUser);
+            assertThat(ctx.getBean(SystemUserApi.class).loadUserByUsername("alice").data()).isEqualTo(authUserInfo);
         });
     }
 }

@@ -1,10 +1,7 @@
 package io.rosecloud.notice.channel;
 
 import io.rosecloud.api.notice.NoticeRecipient;
-import io.rosecloud.api.notice.NoticeRecipientApi;
-import io.rosecloud.api.notice.NoticeRecipientRequest;
 import io.rosecloud.api.notice.NoticeTargetType;
-import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.domain.NoticeChannel;
 import io.rosecloud.notice.domain.NoticePublishType;
@@ -29,12 +26,11 @@ class NoticeDispatchServiceTest {
                 new NoticeRecipient(2L, "b@x.com", null));
         AtomicInteger emailCount = new AtomicInteger();
         AtomicInteger smsCount = new AtomicInteger();
-        NoticeRecipientApi api = req -> ApiResponse.ok(recipients);
-        NoticeDispatchService service = new NoticeDispatchService(api,
+        NoticeDispatchService service = new NoticeDispatchService(
                 List.of(capturingSender(NoticeChannel.EMAIL, emailCount),
                         capturingSender(NoticeChannel.SMS, smsCount)), SYNC);
 
-        Notice notice = notice(NoticeChannel.EMAIL.code());
+        Notice notice = notice(NoticeChannel.EMAIL.code(), recipients);
         service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
         assertThat(emailCount.get()).isEqualTo(2);
@@ -42,23 +38,15 @@ class NoticeDispatchServiceTest {
     }
 
     @Test
-    void passesTargetToRecipientResolver() {
-        NoticeRecipientRequest[] captured = new NoticeRecipientRequest[1];
-        NoticeRecipientApi api = req -> {
-            captured[0] = req;
-            return ApiResponse.ok(List.of());
-        };
-        NoticeDispatchService service = new NoticeDispatchService(api,
-                List.of(capturingSender(NoticeChannel.EMAIL, new AtomicInteger())), SYNC);
-        Notice notice = new Notice(7L, "t", "c", NoticeTargetType.TENANT.code(), "tenant-99", "admin",
-                null, NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
-                null, null, NoticeChannel.EMAIL.code());
+    void skipsDispatchWhenNoRecipientsWerePersisted() {
+        AtomicInteger emailCount = new AtomicInteger();
+        NoticeDispatchService service = new NoticeDispatchService(
+                List.of(capturingSender(NoticeChannel.EMAIL, emailCount)), SYNC);
+        Notice notice = notice(NoticeChannel.EMAIL.code(), List.of());
 
         service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
-        assertThat(captured[0].targetType()).isEqualTo(NoticeTargetType.TENANT.code());
-        assertThat(captured[0].targetTenantId()).isEqualTo("tenant-99");
-        assertThat(captured[0].targetRoleCode()).isEqualTo("admin");
+        assertThat(emailCount.get()).isEqualTo(0);
     }
 
     private static NoticeChannelSender capturingSender(NoticeChannel channel, AtomicInteger counter) {
@@ -75,9 +63,9 @@ class NoticeDispatchServiceTest {
         };
     }
 
-    private static Notice notice(int channels) {
+    private static Notice notice(int channels, List<NoticeRecipient> recipients) {
         return new Notice(1L, "t", "c", NoticeTargetType.GLOBAL.code(), null, null,
                 null, NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
-                null, null, channels);
+                null, null, channels, recipients);
     }
 }

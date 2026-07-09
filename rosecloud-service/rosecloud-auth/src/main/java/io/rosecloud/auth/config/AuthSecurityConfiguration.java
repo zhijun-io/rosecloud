@@ -60,7 +60,7 @@ public class AuthSecurityConfiguration {
                 authUserInfo.userId(),
                 authUserInfo.username(),
                 authUserInfo.nickname(),
-                authUserInfo.password(),
+                authUserInfo.encodedPassword(),
                 authUserInfo.enabled(),
                 authUserInfo.userPrincipal(),
                 authUserInfo.authorities().stream()

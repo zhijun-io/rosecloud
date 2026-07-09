@@ -64,7 +64,7 @@ public class NoticeServiceImpl implements NoticeService {
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), request.targetUsername(), publishType, publishTime,
                 request.effectiveTime(), request.expireTime(), status,
-                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels);
+                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels, request.recipients());
         Long id = noticeRepository.insert(notice);
         if (status == NoticeStatus.PUBLISHED.code()) {
             dispatchService.dispatch(notice.withId(id));

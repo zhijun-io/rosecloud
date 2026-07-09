@@ -1,6 +1,7 @@
 package io.rosecloud.system.service;
 
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
+import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.core.model.PageResult;
 
@@ -32,6 +33,8 @@ public interface UserService {
     void delete(Long id);
 
     SecurityUser loadByUsername(String username);
+
+    Optional<AuthUserInfo> loadAuthInfoByUsername(String username);
 
     void changePassword(ChangePasswordRequest request);
 

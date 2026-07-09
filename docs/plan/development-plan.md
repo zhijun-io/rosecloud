@@ -158,7 +158,7 @@
 #### 模块边界
 
 - `auth` 负责登录、登出、令牌签发、租户上下文与会话登记；JWT 仅保存 `username`，其他上下文登录后由服务端补全。
-- `system` 负责会话查询、强制下线、在线会话管理。
+- `auth` 负责会话查询、强制下线、在线会话管理。
 - `notice` 不参与认证语义，只消费用户上下文。
 
 #### 状态机
@@ -176,8 +176,8 @@
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
-- `GET /api/system/sessions/online`
-- `DELETE /api/system/sessions/{id}`
+- `GET /api/auth/sessions/online`
+- `DELETE /api/auth/sessions?sessionId={id}`
 
 #### 验收
 
