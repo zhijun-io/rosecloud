@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public class RoleRepositoryImpl implements RoleRepository {
@@ -88,6 +89,7 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     private Role toDomain(RoleEntity po) {
-        return new Role(po.getId(), po.getCode(), po.getName());
+        return new Role(po.getId(), po.getCode(), po.getName(), po.getCreateTime(), po.getCreateBy(),
+                po.getUpdateTime(), po.getUpdateBy());
     }
 }

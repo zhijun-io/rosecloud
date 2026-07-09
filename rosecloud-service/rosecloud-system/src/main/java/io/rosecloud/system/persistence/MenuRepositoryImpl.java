@@ -74,7 +74,8 @@ public class MenuRepositoryImpl implements MenuRepository {
 
     private Menu toDomain(MenuEntity po) {
         return new Menu(po.getId(), po.getParentId(), po.getName(), po.getType(), po.getPath(),
-                po.getComponent(), po.getPerms(), po.getIcon(), po.getSort(), po.getStatus(), po.getVisible());
+                po.getComponent(), po.getPerms(), po.getIcon(), po.getSort(), po.getStatus(), po.getVisible(),
+                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
     }
 
     private MenuEntity toEntity(Menu m) {
@@ -90,6 +91,10 @@ public class MenuRepositoryImpl implements MenuRepository {
         po.setSort(m.getSort());
         po.setStatus(m.getStatus());
         po.setVisible(m.getVisible());
+        po.setCreateTime(m.getCreateTime());
+        po.setCreateBy(m.getCreateBy());
+        po.setUpdateTime(m.getUpdateTime());
+        po.setUpdateBy(m.getUpdateBy());
         return po;
     }
 }

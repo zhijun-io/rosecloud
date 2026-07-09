@@ -1,12 +1,11 @@
 package io.rosecloud.system.service.impl;
 
+import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
-import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
-import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.api.user.UserPasswordUpdateRequest;
+import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -23,8 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 @Service
 public class UserServiceImpl implements UserService {

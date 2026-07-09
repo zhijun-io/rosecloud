@@ -34,12 +34,27 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     private final String tenantId;
     private final Integer channels;
     private final List<NoticeRecipient> recipients;
+    private final LocalDateTime createTime;
+    private final Long createBy;
+    private final LocalDateTime updateTime;
+    private final Long updateBy;
 
     public Notice(Long id, String title, String content, Integer targetType, String targetTenantId,
                   String targetRoleCode, String targetUsername, Integer publishType, LocalDateTime publishTime,
                   LocalDateTime effectiveTime, LocalDateTime expireTime, Integer status,
                   Boolean needConfirm, Long senderId, String tenantId, Integer channels,
                   List<NoticeRecipient> recipients) {
+        this(id, title, content, targetType, targetTenantId, targetRoleCode, targetUsername, publishType, publishTime,
+                effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels, recipients,
+                null, null, null, null);
+    }
+
+    public Notice(Long id, String title, String content, Integer targetType, String targetTenantId,
+                  String targetRoleCode, String targetUsername, Integer publishType, LocalDateTime publishTime,
+                  LocalDateTime effectiveTime, LocalDateTime expireTime, Integer status,
+                  Boolean needConfirm, Long senderId, String tenantId, Integer channels,
+                  List<NoticeRecipient> recipients, LocalDateTime createTime, Long createBy,
+                  LocalDateTime updateTime, Long updateBy) {
         this.id = id;
         this.title = title;
         this.content = content;
@@ -57,6 +72,10 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
         this.tenantId = tenantId;
         this.channels = channels;
         this.recipients = recipients == null ? List.of() : List.copyOf(recipients);
+        this.createTime = createTime;
+        this.createBy = createBy;
+        this.updateTime = updateTime;
+        this.updateBy = updateBy;
     }
 
     public Long getId() { return id; }
@@ -76,11 +95,16 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
     public String getTenantId() { return tenantId; }
     public Integer getChannels() { return channels; }
     public List<NoticeRecipient> getRecipients() { return recipients; }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public Long getCreateBy() { return createBy; }
+    public LocalDateTime getUpdateTime() { return updateTime; }
+    public Long getUpdateBy() { return updateBy; }
 
     /** Copy with the persisted id set (for dispatch after insert). */
     public Notice withId(Long id) {
         return new Notice(id, title, content, targetType, targetTenantId, targetRoleCode, targetUsername, publishType,
-                publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels, recipients);
+                publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId, channels, recipients,
+                createTime, createBy, updateTime, updateBy);
     }
 
     @Override
@@ -101,14 +125,18 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
                 && Objects.equals(senderId, notice.senderId)
                 && Objects.equals(tenantId, notice.tenantId)
                 && Objects.equals(channels, notice.channels)
-                && Objects.equals(recipients, notice.recipients);
+                && Objects.equals(recipients, notice.recipients)
+                && Objects.equals(createTime, notice.createTime)
+                && Objects.equals(createBy, notice.createBy)
+                && Objects.equals(updateTime, notice.updateTime)
+                && Objects.equals(updateBy, notice.updateBy);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, title, content, targetType, targetTenantId, targetRoleCode, publishType,
                 targetUsername, publishTime, effectiveTime, expireTime, status, needConfirm, senderId, tenantId,
-                channels, recipients);
+                channels, recipients, createTime, createBy, updateTime, updateBy);
     }
 
     @Override
@@ -131,6 +159,10 @@ public final class Notice implements HasId, HasStatus<Integer>, HasTenantId {
                 ", tenantId=" + tenantId +
                 ", channels=" + channels +
                 ", recipients=" + recipients +
+                ", createTime=" + createTime +
+                ", createBy=" + createBy +
+                ", updateTime=" + updateTime +
+                ", updateBy=" + updateBy +
                 ']';
     }
 }

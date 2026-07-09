@@ -167,12 +167,14 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         return new Notice(entity.getId(), entity.getTitle(), entity.getContent(), entity.getTargetType(),
                 entity.getTargetTenantId(), entity.getTargetRoleCode(), entity.getTargetUsername(), entity.getPublishType(), entity.getPublishTime(),
                 entity.getEffectiveTime(), entity.getExpireTime(), entity.getStatus(), entity.getNeedConfirm(),
-                entity.getSenderId(), entity.getTenantId(), entity.getChannels(), readRecipients(entity.getRecipientSnapshot()));
+                entity.getSenderId(), entity.getTenantId(), entity.getChannels(), readRecipients(entity.getRecipientSnapshot()),
+                entity.getCreateTime(), entity.getCreateBy(), entity.getUpdateTime(), entity.getUpdateBy());
     }
 
     private NoticeRecord toRecordDomain(NoticeRecordEntity entity) {
         return new NoticeRecord(entity.getId(), entity.getNoticeId(), entity.getUserId(), entity.getTenantId(),
-                entity.getReadTime(), entity.getConfirmTime());
+                entity.getReadTime(), entity.getConfirmTime(), entity.getCreateTime(), entity.getCreateBy(),
+                entity.getUpdateTime(), entity.getUpdateBy());
     }
 
     private NoticeEntity toEntity(Notice n) {
@@ -194,6 +196,10 @@ public class NoticeRepositoryImpl implements NoticeRepository {
         entity.setTenantId(n.getTenantId());
         entity.setChannels(n.getChannels());
         entity.setRecipientSnapshot(writeRecipients(n.getRecipients()));
+        entity.setCreateTime(n.getCreateTime());
+        entity.setCreateBy(n.getCreateBy());
+        entity.setUpdateTime(n.getUpdateTime());
+        entity.setUpdateBy(n.getUpdateBy());
         return entity;
     }
 

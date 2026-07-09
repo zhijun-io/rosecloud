@@ -1,10 +1,9 @@
 package io.rosecloud.system.domain;
 
-import io.rosecloud.api.user.AuthUserInfo;
-import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 
 import java.time.LocalDateTime;
 import java.util.Collection;

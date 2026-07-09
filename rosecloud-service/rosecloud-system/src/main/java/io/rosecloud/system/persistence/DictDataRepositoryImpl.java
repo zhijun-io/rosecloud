@@ -78,7 +78,8 @@ public class DictDataRepositoryImpl implements DictDataRepository {
 
     private DictData toDomain(DictDataEntity po) {
         return new DictData(po.getId(), po.getDictCode(), po.getLabel(), po.getValue(),
-                po.getSort(), po.getStatus(), po.getRemark());
+                po.getSort(), po.getStatus(), po.getRemark(), po.getCreateTime(), po.getCreateBy(),
+                po.getUpdateTime(), po.getUpdateBy());
     }
 
     private DictDataEntity toEntity(DictData d) {
@@ -90,6 +91,10 @@ public class DictDataRepositoryImpl implements DictDataRepository {
         po.setSort(d.getSort());
         po.setStatus(d.getStatus());
         po.setRemark(d.getRemark());
+        po.setCreateTime(d.getCreateTime());
+        po.setCreateBy(d.getCreateBy());
+        po.setUpdateTime(d.getUpdateTime());
+        po.setUpdateBy(d.getUpdateBy());
         return po;
     }
 }

@@ -1,22 +1,21 @@
 package io.rosecloud.system.persistence;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.rosecloud.api.user.AuthUserInfo;
-import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.model.UserPrincipal;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import io.rosecloud.system.service.dto.UserActivationInfo;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
+import io.rosecloud.system.service.dto.UserActivationInfo;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -341,7 +340,8 @@ public class UserRepositoryImpl implements UserRepository {
 
     private User toDomain(UserEntity po) {
         return new User(po.getId(), loginName(po), po.getNickname(), po.getStatus(), po.getTenantId(),
-                readJson(po.getAdditionalInfo()));
+                readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(),
+                po.getUpdateBy());
     }
 
     private JsonNode readJson(String value) {

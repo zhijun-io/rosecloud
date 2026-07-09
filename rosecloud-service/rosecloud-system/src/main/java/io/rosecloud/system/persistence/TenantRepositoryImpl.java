@@ -94,7 +94,8 @@ public class TenantRepositoryImpl implements TenantRepository {
     private Tenant toDomain(TenantEntity po) {
         return new Tenant(po.getId(), po.getName(),
                 resolveStatus(po.getStatus(), po.getExpireTime()), po.getContactUser(), po.getContactPhone(),
-                po.getExpireTime(), po.getRemark(), po.getTenantProfileId(), readJson(po.getExtra()));
+                po.getExpireTime(), po.getRemark(), po.getTenantProfileId(), readJson(po.getExtra()),
+                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
     }
 
     private TenantStatus resolveStatus(Integer status, java.time.LocalDate expireTime) {
@@ -118,6 +119,10 @@ public class TenantRepositoryImpl implements TenantRepository {
         po.setRemark(t.getRemark());
         po.setTenantProfileId(t.getTenantProfileId());
         po.setExtra(writeJson(t.getAdditionalInfo()));
+        po.setCreateTime(t.getCreateTime());
+        po.setCreateBy(t.getCreateBy());
+        po.setUpdateTime(t.getUpdateTime());
+        po.setUpdateBy(t.getUpdateBy());
         return po;
     }
 

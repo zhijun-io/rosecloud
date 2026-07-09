@@ -68,7 +68,8 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
     }
 
     private DictType toDomain(DictTypeEntity po) {
-        return new DictType(po.getId(), po.getCode(), po.getName(), po.getStatus(), po.getRemark());
+        return new DictType(po.getId(), po.getCode(), po.getName(), po.getStatus(), po.getRemark(),
+                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
     }
 
     private DictTypeEntity toEntity(DictType d) {
@@ -78,6 +79,10 @@ public class DictTypeRepositoryImpl implements DictTypeRepository {
         po.setName(d.getName());
         po.setStatus(d.getStatus());
         po.setRemark(d.getRemark());
+        po.setCreateTime(d.getCreateTime());
+        po.setCreateBy(d.getCreateBy());
+        po.setUpdateTime(d.getUpdateTime());
+        po.setUpdateBy(d.getUpdateBy());
         return po;
     }
 }

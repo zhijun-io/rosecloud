@@ -1,22 +1,14 @@
 package io.rosecloud.system.service;
 
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
-import io.rosecloud.api.user.AuthUserInfo;
-import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.core.model.PageResult;
-
-import java.time.LocalDateTime;
-
+import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
-
-import java.util.Optional;
 
 public interface UserService {
 

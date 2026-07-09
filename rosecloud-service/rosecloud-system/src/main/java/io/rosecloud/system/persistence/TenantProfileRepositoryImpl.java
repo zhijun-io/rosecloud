@@ -85,8 +85,8 @@ public class TenantProfileRepositoryImpl implements TenantProfileRepository {
     }
 
     private TenantProfile toDomain(TenantProfileEntity po) {
-        return new TenantProfile(po.getId(), po.getName(), po.getDescription(), po.getIsDefault() != null
-                && po.getIsDefault() == 1, readJson(po.getAdditionalInfo()));
+        return new TenantProfile(po.getId(), po.getName(), po.getDescription(), po.getIsDefault(), readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(),
+                po.getUpdateTime(), po.getUpdateBy());
     }
 
     private TenantProfileEntity toEntity(TenantProfile profile) {
@@ -95,7 +95,11 @@ public class TenantProfileRepositoryImpl implements TenantProfileRepository {
         po.setName(profile.getName());
         po.setDescription(profile.getDescription());
         po.setAdditionalInfo(writeJson(profile.getAdditionalInfo()));
-        po.setIsDefault(profile.isDefault() ? 1 : 0);
+        po.setIsDefault(profile.isDefault());
+        po.setCreateTime(profile.getCreateTime());
+        po.setCreateBy(profile.getCreateBy());
+        po.setUpdateTime(profile.getUpdateTime());
+        po.setUpdateBy(profile.getUpdateBy());
         return po;
     }
 

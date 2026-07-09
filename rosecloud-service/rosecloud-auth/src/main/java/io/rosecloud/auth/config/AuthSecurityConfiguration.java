@@ -2,18 +2,14 @@ package io.rosecloud.auth.config;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
-import io.rosecloud.api.user.AuthUserInfo;
 import io.rosecloud.api.user.SystemUserApi;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
-import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.security.session.RedisSessionStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.function.Consumer;
@@ -53,20 +49,5 @@ public class AuthSecurityConfiguration {
         return username -> {
             return systemUserApi.loadUserByUsername(username).data();
         };
-    }
-
-    private static SecurityUser toSecurityUser(AuthUserInfo authUserInfo) {
-        return new SecurityUser(
-                authUserInfo.userId(),
-                authUserInfo.username(),
-                authUserInfo.nickname(),
-                authUserInfo.encodedPassword(),
-                authUserInfo.enabled(),
-                authUserInfo.userPrincipal(),
-                authUserInfo.authorities().stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .map(authority -> (GrantedAuthority) authority)
-                        .toList()
-        );
     }
 }

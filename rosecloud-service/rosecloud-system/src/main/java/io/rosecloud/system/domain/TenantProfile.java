@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.BaseData;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -17,7 +18,11 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
     private final String id;
     private final String name;
     private final String description;
-    private final boolean defaultProfile;
+    private final boolean isDefault;
+    private final LocalDateTime createTime;
+    private final Long createBy;
+    private final LocalDateTime updateTime;
+    private final Long updateBy;
     private transient TenantProfileData profileData;
 
     public TenantProfile(String id, String name, String description, TenantProfileData profileData) {
@@ -29,12 +34,21 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
         this(id, name, description, false, additionalInfo);
     }
 
-    public TenantProfile(String id, String name, String description, boolean defaultProfile, JsonNode additionalInfo) {
+    public TenantProfile(String id, String name, String description, boolean isDefault, JsonNode additionalInfo) {
+        this(id, name, description, isDefault, additionalInfo, null, null, null, null);
+    }
+
+    public TenantProfile(String id, String name, String description, boolean isDefault, JsonNode additionalInfo,
+                         LocalDateTime createTime, Long createBy, LocalDateTime updateTime, Long updateBy) {
         super(additionalInfo == null ? BaseData.mapper.valueToTree(TenantProfileData.defaults()) : additionalInfo);
         this.id = id;
         this.name = name;
         this.description = description;
-        this.defaultProfile = defaultProfile;
+        this.isDefault = isDefault;
+        this.createTime = createTime;
+        this.createBy = createBy;
+        this.updateTime = updateTime;
+        this.updateBy = updateBy;
     }
 
     public String getId() {
@@ -50,7 +64,23 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
     }
 
     public boolean isDefault() {
-        return defaultProfile;
+        return isDefault;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public Long getCreateBy() {
+        return createBy;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public Long getUpdateBy() {
+        return updateBy;
     }
 
     public TenantProfileData getProfileData() {
@@ -84,14 +114,19 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
         return Objects.equals(id, that.id)
                 && Objects.equals(name, that.name)
                 && Objects.equals(description, that.description)
-                && defaultProfile == that.defaultProfile
+                && isDefault == that.isDefault
                 && Objects.equals(getProfileData(), that.getProfileData())
-                && Objects.equals(getAdditionalInfo(), that.getAdditionalInfo());
+                && Objects.equals(getAdditionalInfo(), that.getAdditionalInfo())
+                && Objects.equals(createTime, that.createTime)
+                && Objects.equals(createBy, that.createBy)
+                && Objects.equals(updateTime, that.updateTime)
+                && Objects.equals(updateBy, that.updateBy);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, defaultProfile, getProfileData(), getAdditionalInfo());
+        return Objects.hash(id, name, description, isDefault, getProfileData(), getAdditionalInfo(), createTime,
+                createBy, updateTime, updateBy);
     }
 
     @Override
@@ -100,9 +135,13 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
                 "id=" + id +
                 ", name=" + name +
                 ", description=" + description +
-                ", defaultProfile=" + defaultProfile +
+                ", isDefault=" + isDefault +
                 ", profileData=" + getProfileData() +
                 ", additionalInfo=" + getAdditionalInfo() +
+                ", createTime=" + createTime +
+                ", createBy=" + createBy +
+                ", updateTime=" + updateTime +
+                ", updateBy=" + updateBy +
                 ']';
     }
 }

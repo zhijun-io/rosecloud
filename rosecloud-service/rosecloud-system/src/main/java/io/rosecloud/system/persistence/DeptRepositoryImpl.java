@@ -54,7 +54,8 @@ public class DeptRepositoryImpl implements DeptRepository {
 
     private Dept toDomain(DeptEntity po) {
         return new Dept(po.getId(), po.getParentId(), po.getName(), po.getSort(),
-                po.getStatus(), po.getLeader(), po.getPhone());
+                po.getStatus(), po.getLeader(), po.getPhone(), po.getCreateTime(), po.getCreateBy(),
+                po.getUpdateTime(), po.getUpdateBy());
     }
 
     private DeptEntity toEntity(Dept d) {
@@ -66,6 +67,10 @@ public class DeptRepositoryImpl implements DeptRepository {
         po.setStatus(d.getStatus());
         po.setLeader(d.getLeader());
         po.setPhone(d.getPhone());
+        po.setCreateTime(d.getCreateTime());
+        po.setCreateBy(d.getCreateBy());
+        po.setUpdateTime(d.getUpdateTime());
+        po.setUpdateBy(d.getUpdateBy());
         return po;
     }
 }

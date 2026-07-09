@@ -31,7 +31,7 @@ class TenantProfileRepositoryImplTest {
         po.setDescription("Default tier");
         po.setAdditionalInfo("{\"packageCode\":\"basic\",\"maxUsers\":10,\"maxRoles\":5,"
                 + "\"maxNoticesPerDay\":100,\"maxRequestsPerMinute\":60,\"enabledCapabilities\":[]}");
-        po.setIsDefault(1);
+        po.setIsDefault(true);
 
         when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(po));
 
@@ -53,7 +53,7 @@ class TenantProfileRepositoryImplTest {
         po.setDescription("Default tier");
         po.setAdditionalInfo("{\"packageCode\":\"basic\",\"maxUsers\":10,\"maxRoles\":5,"
                 + "\"maxNoticesPerDay\":100,\"maxRequestsPerMinute\":60,\"enabledCapabilities\":[]}");
-        po.setIsDefault(1);
+        po.setIsDefault(true);
 
         when(mapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(po);
 

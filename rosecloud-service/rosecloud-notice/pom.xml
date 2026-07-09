@@ -16,31 +16,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-starter-web</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-api</artifactId>
             <version>${project.version}</version>
@@ -60,11 +35,11 @@
             <artifactId>rosecloud-starter-security</artifactId>
             <version>${project.version}</version>
         </dependency>
-         <dependency>
-             <groupId>io.rosecloud</groupId>
-             <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
-             <version>${project.version}</version>
-         </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-data-mybatisplus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-starter-tenant</artifactId>
@@ -80,6 +55,33 @@
             <artifactId>rosecloud-starter-trace</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.rosecloud</groupId>
+            <artifactId>rosecloud-starter-web</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+
         <!-- 可选：邮件通道；引入但不激活，无 mail 配置时邮件通道跳过 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -91,7 +93,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
