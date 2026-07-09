@@ -1,33 +1,20 @@
 package io.rosecloud.starter.audit;
 
 import io.rosecloud.api.audit.AuditLogApi;
-import io.rosecloud.api.audit.AuditLogRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-/**
- * Auto-configuration for audit logging.
- *
- * <p>Activated by {@code rosecloud.audit.enabled=true}. Publishes {@link AuditLogRequest}s
- * via {@link AuditLogAspect}; consumers persist them:
- * <ul>
- *   <li><b>Monolith / co-deploy:</b> {@code AuditLogPersistenceListener} (rosecloud-system)
- *       receives events in the same Spring context and writes to the DB.</li>
- *   <li><b>Microservices (notice):</b> the same listener (or a remote counterpart) calls
- *       {@code AuditLogRemoteSaver} (Feign) to forward events to the system service.</li>
- * </ul>
- */
+@EnableAsync
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "rosecloud.audit", name = "enabled", havingValue = "true")
 @ConditionalOnClass(name = "org.aspectj.lang.ProceedingJoinPoint")
 public class AuditAutoConfiguration {
-    private static final Logger log = LoggerFactory.getLogger(AuditAutoConfiguration.class);
 
     @Bean
     public AuditLogAspect auditLogAspect(ApplicationEventPublisher publisher) {
@@ -35,10 +22,22 @@ public class AuditAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "auditLogExecutor")
+    public ThreadPoolTaskExecutor auditLogExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(256);
+        executor.setThreadNamePrefix("audit-log-");
+        executor.setBeanName("auditLogExecutor");
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean
     @ConditionalOnMissingBean
     public AuditLogListener sysLogListener(AuditLogApi auditLogApi) {
         return new AuditLogListener(auditLogRequest -> {
-            log.info("auditLogRequest: {}", auditLogRequest);
             auditLogApi.save(auditLogRequest);
         });
     }

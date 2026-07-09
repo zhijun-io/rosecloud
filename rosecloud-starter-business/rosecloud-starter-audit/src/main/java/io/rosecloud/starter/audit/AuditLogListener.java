@@ -4,7 +4,6 @@ import io.rosecloud.api.audit.AuditLogRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Async;
 
 import java.util.function.Consumer;
@@ -18,8 +17,7 @@ public class AuditLogListener {
         this.consumer = consumer;
     }
 
-    @Async
-    @Order
+    @Async("auditLogExecutor")
     @EventListener(AuditLogRequest.class)
     public void saveLog(AuditLogRequest event) {
         try {
