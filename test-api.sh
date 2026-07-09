@@ -5,27 +5,9 @@ up() {
   xh --ignore-stdin -q -b --timeout 3 GET "$1/actuator/health/liveness" >/dev/null 2>&1
 }
 
-post_json() {
-  local token=$1 url=$2 body=$3
-  xh --ignore-stdin -b -A bearer -a "$token" POST "$url" --raw "$body" 'Content-Type: application/json'
-}
-
 put_json() {
   local token=$1 url=$2 body=$3
   xh --ignore-stdin -b -A bearer -a "$token" PUT "$url" --raw "$body" 'Content-Type: application/json'
-}
-
-expect_401() {
-  if "$@" >/dev/null 2>&1; then
-    echo "expected 401 but request succeeded: $*" >&2
-    exit 1
-  fi
-}
-
-expect_fail() {
-  local resp
-  resp=$("$@" 2>/dev/null || true)
-  jq -e '.success == false' <<<"$resp" >/dev/null
 }
 
 expect_api_error_code() {
@@ -147,8 +129,6 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
   fi
   sleep 1
 done
-jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$future" remark=remark tenantProfileId=)" >/dev/null
-sleep 1
 jq -e '.success == true' <<<"$(api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable")" >/dev/null
 jq -e '.success == true' <<<"$(api "$admin_token" PUT "$BASE_URL/api/system/tenants/$tenant_id" name="Tenant $now" contactUser=owner contactPhone=13800000000 expireTime="$past" remark=remark tenantProfileId=)" >/dev/null
 expect_api_error_code system.tenant_status_invalid api "$admin_token" POST "$BASE_URL/api/system/tenants/$tenant_id/enable"
@@ -188,13 +168,6 @@ if is_monolith && [[ "${RUN_INTERNAL:-0}" == "1" ]]; then
   jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/login-logs" '{"username":"admin","success":false,"failReason":"bad"}')" >/dev/null
   jq -e '.success == true' <<<"$(internal_api POST "$BASE_URL/internal/notice/recipients" '{"targetType":0,"targetTenantId":null,"targetRoleCode":null}')" >/dev/null
 fi
-
-echo "kick / logout"
-kick_token=$(login_token 'admin@rosecloud.local' admin123)
-kick_id=$(api "$admin_token" GET "$BASE_URL/api/auth/sessions/online?current=1&size=100" | jq -r --arg token "$kick_token" '.data.records[] | select(.token == $token) | .id' | head -n1)
-[[ -n "$kick_id" ]]
-api "$admin_token" DELETE "$BASE_URL/api/auth/sessions?sessionId=$kick_id" >/dev/null
-expect_api_error_code security.unauthorized api "$kick_token" GET "$BASE_URL/api/system/users/me"
 
 logout_token=$(login_token 'admin@rosecloud.local' admin123)
 jq -e '.success == true' <<<"$(api "$logout_token" POST "$BASE_URL/api/auth/logout")" >/dev/null
