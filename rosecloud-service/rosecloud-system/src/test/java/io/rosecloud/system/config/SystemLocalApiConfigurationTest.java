@@ -25,12 +25,11 @@ class SystemLocalApiConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(SystemLocalApiConfiguration.class)
-            .withPropertyValues("spring.profiles.active=monolith")
             .withBean(LoginLogService.class, () -> mock(LoginLogService.class))
             .withBean(UserRepository.class, () -> mock(UserRepository.class));
 
     @Test
-    void registersLocalAdaptersInMonolithProfile() {
+    void registersLocalAdaptersWhenFeignBeansAreMissing() {
         contextRunner.run(ctx -> {
             assertThat(ctx).hasSingleBean(LoginLogApi.class);
             assertThat(ctx).hasSingleBean(NoticeRecipientApi.class);

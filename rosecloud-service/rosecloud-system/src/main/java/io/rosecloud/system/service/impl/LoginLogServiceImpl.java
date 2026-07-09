@@ -1,6 +1,8 @@
 package io.rosecloud.system.service.impl;
 
+import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
+import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.system.domain.LoginLog;
 import io.rosecloud.system.domain.LoginLogRepository;
@@ -10,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class LoginLogServiceImpl implements LoginLogService {
+public class LoginLogServiceImpl implements LoginLogService, LoginLogApi {
 
     private final LoginLogRepository loginLogRepository;
 
@@ -19,9 +21,10 @@ public class LoginLogServiceImpl implements LoginLogService {
     }
 
     @Override
-    public void record(LoginLogRequest request) {
+    public ApiResponse<Void> record(LoginLogRequest request) {
         loginLogRepository.insert(new LoginLog(null, request.username(), request.success(),
                 request.failReason(), request.ip(), request.userAgent(), LocalDateTime.now()));
+        return ApiResponse.ok();
     }
 
     @Override

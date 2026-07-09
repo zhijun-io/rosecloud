@@ -29,7 +29,7 @@ public class NoticeController {
     @PreAuthorize("hasAuthority('system:notice:publish')")
     @PostMapping
     public ApiResponse<Long> publish(@RequestBody NoticePublishRequest request) {
-        return ApiResponse.ok(noticeService.publish(request));
+        return noticeService.publish(request);
     }
 
     @PreAuthorize("hasAuthority('system:notice:list')")

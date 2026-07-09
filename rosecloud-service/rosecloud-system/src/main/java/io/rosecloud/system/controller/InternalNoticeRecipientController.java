@@ -1,9 +1,9 @@
 package io.rosecloud.system.controller;
 
 import io.rosecloud.api.notice.NoticeRecipient;
+import io.rosecloud.api.notice.NoticeRecipientApi;
 import io.rosecloud.api.notice.NoticeRecipientRequest;
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.system.domain.UserRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,15 +16,14 @@ import java.util.List;
 @RequestMapping("/internal/notice/recipients")
 public class InternalNoticeRecipientController {
 
-    private final UserRepository userRepository;
+    private final NoticeRecipientApi noticeRecipientApi;
 
-    public InternalNoticeRecipientController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public InternalNoticeRecipientController(NoticeRecipientApi noticeRecipientApi) {
+        this.noticeRecipientApi = noticeRecipientApi;
     }
 
     @PostMapping
     public ApiResponse<List<NoticeRecipient>> list(@RequestBody NoticeRecipientRequest request) {
-        return ApiResponse.ok(userRepository.findContacts(
-                request.targetType(), request.targetTenantId(), request.targetRoleCode(), request.targetUsername()));
+        return noticeRecipientApi.list(request);
     }
 }
