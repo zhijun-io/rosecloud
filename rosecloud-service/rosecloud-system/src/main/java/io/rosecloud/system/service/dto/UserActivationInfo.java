@@ -1,8 +1,10 @@
 package io.rosecloud.system.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
-public record UserActivationInfo(Long userId, String username, String tenantId, String activateToken,
+public record UserActivationInfo(Long userId, String username, String tenantId,
+                                 @JsonIgnore String activateToken,
                                  LocalDateTime expireTime, LocalDateTime usedTime, LocalDateTime sendTime,
                                  Long version) {
 

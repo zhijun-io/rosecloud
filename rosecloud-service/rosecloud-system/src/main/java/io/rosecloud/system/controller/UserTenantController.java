@@ -33,7 +33,7 @@ public class UserTenantController {
 
     @GetMapping("/{userId}/tenants")
     public ApiResponse<List<String>> listTenantIds(@PathVariable Long userId) {
-        if (isPlatformAdmin(userId)) {
+        if (isSystemTenantAdmin(userId)) {
             // Platform admins can switch into any tenant.
             return ApiResponse.ok(tenantService.findAllIds());
         }
@@ -42,10 +42,10 @@ public class UserTenantController {
 
     @GetMapping("/{userId}/platform-admin")
     public ApiResponse<Boolean> isPlatformAdmin(@PathVariable Long userId) {
-        return ApiResponse.ok(isPlatformAdmin(userId));
+        return ApiResponse.ok(isSystemTenantAdmin(userId));
     }
 
-    private boolean isPlatformAdmin(Long userId) {
+    private boolean isSystemTenantAdmin(Long userId) {
         return userRepository.findById(userId)
                 .map(user -> TenantContextHolder.SYSTEM_TENANT_ID.equals(user.getTenantId()))
                 .orElse(false);

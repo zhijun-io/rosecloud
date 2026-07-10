@@ -5,6 +5,8 @@ import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
 
+import java.util.List;
+
 public interface TenantService {
 
     String create(TenantCreateRequest request);

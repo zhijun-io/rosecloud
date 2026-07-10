@@ -18,16 +18,14 @@ rosecloud
 ├── rosecloud-bom                 # 版本 BOM，外部消费者 import 对齐版本
 ├── rosecloud-common
 │   ├── rosecloud-common-core
-│   ├── rosecloud-common-security
-│   └── rosecloud-common-web
+│   └── rosecloud-common-security
 ├── rosecloud-api
 ├── rosecloud-starter        # 技术型 starter 父模块
 │   ├── rosecloud-starter-web
 │   ├── rosecloud-starter-security
 │   ├── rosecloud-starter-trace
 │   ├── rosecloud-starter-data-mybatisplus
-│   ├── rosecloud-starter-cache
-│   └── rosecloud-starter-trace
+│   └── rosecloud-starter-cache
 ├── rosecloud-starter-business    # 业务型 starter 父模块
 │   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）
 │   └── rosecloud-starter-audit   # 审计（rosecloud.audit.enabled）
@@ -132,12 +130,10 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 
 ## 密钥与安全
 
-> 安全加固基线见 `docs/audit-2026-07-07.md`（M2 登录防爆破 / M3 端口收敛 / Nacos 鉴权 + 弱密码治理）。
-
-`docker-compose.yml` 内所有密钥（MySQL / Redis / RabbitMQ / Nacos / xxl-job / JWT）**已替换为生成的非默认强值**，仅用于本地快速起站，**不是生产密钥**。
+本地编排的密钥与账号是**本地起站默认值**，不是生产密钥。`docker-compose.yml` 里保留了便于本地开发的默认口令、JWT secret 和内部调用密钥，生产环境必须通过 `.env` 或外部配置覆盖。
 
 - **生产部署**：必须把这些密钥通过 `.env`（已被 `.gitignore` 忽略）覆盖；变量清单与取值建议见仓库根 `.env.example`。
-- **Nacos 鉴权已开启**（`NACOS_AUTH_ENABLE=true`）。客户端凭证由 `NACOS_USERNAME` / `NACOS_PASSWORD` 注入（默认 `nacos` / `nacos`）。**生产必须把默认 `nacos` 用户改为独立强凭证**：
+- **Nacos 本地默认关闭鉴权**（`NACOS_AUTH_ENABLE=false`）。如果要验证鉴权链路，请在 `.env` 中显式设置 `NACOS_AUTH_ENABLE=true`，再用 `NACOS_USERNAME` / `NACOS_PASSWORD` 提供独立强凭证：
 
   ```bash
   # 1) 用默认账号登录拿到 token
@@ -149,8 +145,8 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
   # 3) 在 .env 中设置 NACOS_USERNAME=nacos / NACOS_PASSWORD=<你的强密码> 后重建服务
   ```
 
-- **已有本地数据卷注意**：本次把 MySQL / Redis / RabbitMQ 的默认密码从 `rosecloud123` 改成了新的强值。若你本地已有用旧密码初始化的数据卷，启动后会连接失败。两种处理：
-  1. 在 `.env` 里显式写回旧密码（`MYSQL_PASSWORD=rosecloud123` 等），保留现有数据；
+- **已有本地数据卷注意**：如果你本地已经用旧密码初始化过数据卷，而当前 `docker-compose.yml` 的默认值又和你的现有卷不一致，启动后会连接失败。两种处理：
+  1. 在 `.env` 里显式写回与你本地卷一致的密码，保留现有数据；
   2. 或 `docker compose down -v` 销毁卷后重新初始化（清空本地数据）。
 
 ## 开发环境

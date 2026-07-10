@@ -74,18 +74,18 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     @Override
     @Transactional
-    public UserActivationInfo resend(String username) {
+    public void resend(String username) {
         UserActivationInfo info = userRepository.findActivationByUsername(username).orElse(null);
         if (info == null || info.used()) {
             // Generic success — never reveal whether the account exists or is already activated,
             // which would otherwise let an attacker enumerate valid usernames.
-            return null;
+            return;
         }
         Instant now = Instant.now();
         Instant last = lastResendAt.get(username);
         if (last != null && Duration.between(last, now).toSeconds() < resendCooldownSeconds) {
             // Within the cooldown window: ignore the request without re-sending, mitigating email bombing.
-            return info;
+            return;
         }
         lastResendAt.put(username, now);
         LocalDateTime sendTime = LocalDateTime.now();
@@ -97,7 +97,6 @@ public class UserActivationServiceImpl implements UserActivationService {
         if (updated != null) {
             publishActivationNotice(updated);
         }
-        return updated;
     }
 
     private String generateToken() {

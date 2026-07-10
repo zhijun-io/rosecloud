@@ -8,5 +8,5 @@ public interface UserActivationService {
 
     UserActivationInfo confirm(String activateToken, String password);
 
-    UserActivationInfo resend(String username);
+    void resend(String username);
 }

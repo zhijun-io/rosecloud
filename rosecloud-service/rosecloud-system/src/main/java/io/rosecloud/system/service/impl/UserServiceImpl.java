@@ -118,6 +118,9 @@ public class UserServiceImpl implements UserService, UserApi {
         PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
         userRepository.updatePassword(securityUser.getUserId(),
                 passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
+        // The password is embedded in the JWT; revoke existing sessions so a previously
+        // valid token (e.g. one held by an attacker before the change) cannot be reused.
+        sessionStore.revokeByUserId(securityUser.getUserId());
     }
 
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
@@ -160,6 +163,7 @@ public class UserServiceImpl implements UserService, UserApi {
         }
         PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
         userRepository.updatePassword(userId, passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
+        sessionStore.revokeByUserId(userId);
     }
 
     @Override

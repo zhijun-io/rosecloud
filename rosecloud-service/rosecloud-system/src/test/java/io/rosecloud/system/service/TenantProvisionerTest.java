@@ -21,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,8 +63,7 @@ class TenantProvisionerTest {
         when(roleRepository.findByCode("tenant-admin")).thenReturn(Optional.of(new Role(7L, "tenant-admin",
                 "Tenant admin")));
         when(userService.createWithoutPassword("admin", "admin", "tenant-2")).thenReturn(88L);
-        when(userActivationService.resend("admin")).thenReturn(new UserActivationInfo(88L, "admin", "tenant-2",
-                "token", java.time.LocalDateTime.now().plusHours(24), null, java.time.LocalDateTime.now(), 1L));
+        doNothing().when(userActivationService).resend("admin");
         when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
         service().provision("tenant-2");

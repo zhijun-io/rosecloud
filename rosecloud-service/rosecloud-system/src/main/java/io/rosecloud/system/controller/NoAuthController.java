@@ -86,8 +86,9 @@ public class NoAuthController {
     }
 
     @PostMapping("/activate/resend")
-    public ApiResponse<UserActivationInfo> resend(@RequestBody ActivationResendRequest request) {
-        return ApiResponse.ok(userActivationService.resend(request.username()));
+    public ApiResponse<Void> resend(@RequestBody ActivationResendRequest request) {
+        userActivationService.resend(request.username());
+        return ApiResponse.ok();
     }
 
     private static String resolveIp(HttpServletRequest request) {

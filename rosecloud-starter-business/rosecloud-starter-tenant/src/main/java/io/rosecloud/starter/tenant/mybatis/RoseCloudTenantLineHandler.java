@@ -1,6 +1,7 @@
 package io.rosecloud.starter.tenant.mybatis;
 
 import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
+import io.rosecloud.starter.tenant.core.MultiTenantType;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.starter.tenant.core.TenantProperties;
 import net.sf.jsqlparser.expression.Expression;
@@ -23,6 +24,10 @@ public class RoseCloudTenantLineHandler implements TenantLineHandler {
 
     @Override
     public Expression getTenantId() {
+        if (properties.getType() == MultiTenantType.NONE) {
+            // Multi-tenancy disabled: no tenant_id predicate is appended.
+            return null;
+        }
         // The system tenant (platform admins) is a platform-wide view: no tenant_id
         // predicate is appended, so all tenants' rows are visible.
         if (TenantContextHolder.isSystemTenant()) {
@@ -34,6 +39,10 @@ public class RoseCloudTenantLineHandler implements TenantLineHandler {
 
     @Override
     public boolean ignoreTable(String tableName) {
+        if (properties.getType() == MultiTenantType.NONE) {
+            // Multi-tenancy disabled: bypass row-level isolation entirely.
+            return true;
+        }
         if (TenantContextHolder.isSystemTenant()) {
             // Platform perspective: bypass row-level isolation entirely.
             return true;
