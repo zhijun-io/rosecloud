@@ -7,6 +7,7 @@ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.core.model.ApiResponse;
+import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,17 +27,20 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
     private final SessionStore sessionStore;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final LoginTenantResolver loginTenantResolver;
     private final long refreshTokenExpirationSeconds;
 
     public RestAwareAuthenticationSuccessHandler(JwtTokenFactory tokenFactory,
                                                   SessionStore sessionStore,
                                                   ApplicationEventPublisher eventPublisher,
                                                   ObjectMapper objectMapper,
+                                                  LoginTenantResolver loginTenantResolver,
                                                   long refreshTokenExpirationSeconds) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
+        this.loginTenantResolver = loginTenantResolver;
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
     }
 
@@ -44,7 +48,10 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
-        JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
+        String activeTenantId = loginTenantResolver == null
+                ? securityUser.getTenantId()
+                : loginTenantResolver.resolveInitialTenant(securityUser);
+        JwtPair tokenPair = tokenFactory.createTokenPair(securityUser, activeTenantId);
 
         String sessionId = UUID.randomUUID().toString();
         String token = tokenPair.accessToken();

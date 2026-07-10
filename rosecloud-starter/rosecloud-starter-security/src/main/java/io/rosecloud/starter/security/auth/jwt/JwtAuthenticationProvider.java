@@ -2,13 +2,13 @@ package io.rosecloud.starter.security.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.common.security.exception.JwtExpiredTokenException;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import io.rosecloud.common.security.session.SessionStore;
-import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -21,12 +21,14 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
     private final UserDetailsService userDetailsService;
+    private final TenantLookupApi tenantLookupApi;
 
     public JwtAuthenticationProvider(JwtTokenFactory tokenFactory, SessionStore sessionStore,
-                                     UserDetailsService userDetailsService) {
+                                     UserDetailsService userDetailsService, TenantLookupApi tenantLookupApi) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.userDetailsService = userDetailsService;
+        this.tenantLookupApi = tenantLookupApi;
     }
 
     @Override
@@ -49,10 +51,11 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         // system tenant. Trusted because the token is signature-verified.
         String tokenTenant = claims.get("tenant", String.class);
         if (tokenTenant == null || tokenTenant.isBlank()) {
-            tokenTenant = normalizeTenantId(securityUser.getTenantId());
+            tokenTenant = JwtAuthSupport.normalizeTenantId(securityUser.getTenantId());
         } else {
             tokenTenant = tokenTenant.trim().toUpperCase(Locale.ROOT);
         }
+        TenantStatusChecks.requireEnabled(tokenTenant, tenantLookupApi);
         SecurityUser effectiveUser = securityUser.withTenantId(tokenTenant);
         return new JwtAuthenticationToken(effectiveUser);
     }
@@ -60,11 +63,5 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean supports(Class<?> authentication) {
         return JwtAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    private static String normalizeTenantId(String tenantId) {
-        return (tenantId == null || tenantId.isBlank())
-                ? TenantContextHolder.SYSTEM_TENANT_ID
-                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 }

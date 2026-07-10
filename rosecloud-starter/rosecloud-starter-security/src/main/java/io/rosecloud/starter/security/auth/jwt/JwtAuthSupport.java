@@ -2,9 +2,12 @@ package io.rosecloud.starter.security.auth.jwt;
 
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.Locale;
 
 /**
  * Shared validation steps for the JWT and refresh-token authentication providers,
@@ -35,5 +38,11 @@ final class JwtAuthSupport {
                     "Unsupported UserDetails type: " + userDetails.getClass().getName());
         }
         return securityUser;
+    }
+
+    static String normalizeTenantId(String tenantId) {
+        return (tenantId == null || tenantId.isBlank())
+                ? TenantContextHolder.SYSTEM_TENANT_ID
+                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 }

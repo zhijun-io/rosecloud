@@ -1,12 +1,14 @@
 # Postman 脚本
 
 这里提供 RoseCloud 当前登录、退出、获取当前登录用户、查询用户和撤销 token 的 Postman collection。
+租户选择与切换属于 `auth` 侧能力，活动租户由 token 的 `tenant` 声明承载。
 
 租户相关请求约定：
 
 - `tenantId` 统一使用字母开头、仅含字母和数字、长度不超过 10 的大写编码
 - 系统租户固定为 `ROOT`
 - 平台管理员的活动租户会在 token 里体现为 `ROOT`
+- 切换租户后，新旧 token 的活动租户应保持一致，旧 token 失效
 
 ## 文件
 

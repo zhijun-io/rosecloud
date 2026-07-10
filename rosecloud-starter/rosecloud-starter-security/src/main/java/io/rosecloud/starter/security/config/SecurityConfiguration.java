@@ -1,9 +1,10 @@
 package io.rosecloud.starter.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.session.SessionStore;
-import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.web.InternalApiAuthenticationFilter;
 import io.rosecloud.starter.security.auth.jwt.*;
@@ -142,9 +143,10 @@ public class SecurityConfiguration {
 
     @Bean
     public RestAwareAuthenticationSuccessHandler restAwareAuthenticationSuccessHandler(
-            JwtTokenFactory jwtTokenFactory, SessionStore sessionStore, ApplicationEventPublisher eventPublisher) {
+            JwtTokenFactory jwtTokenFactory, SessionStore sessionStore, ApplicationEventPublisher eventPublisher,
+            ObjectProvider<LoginTenantResolver> loginTenantResolver) {
         return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, sessionStore, eventPublisher,
-                objectMapper, properties.getRefreshTokenExpirationSeconds());
+                objectMapper, loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds());
     }
 
     @Bean
@@ -172,16 +174,20 @@ public class SecurityConfiguration {
     public JwtAuthenticationProvider jwtAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory,
             SessionStore sessionStore,
-            UserDetailsService userDetailsService) {
-        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService);
+            UserDetailsService userDetailsService,
+            ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
+        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService,
+                tenantLookupApiProvider.getIfAvailable());
     }
 
     @Bean
     public RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory,
             SessionStore sessionStore,
-            UserDetailsService userDetailsService) {
-        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService);
+            UserDetailsService userDetailsService,
+            ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
+        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService,
+                tenantLookupApiProvider.getIfAvailable());
     }
 
     @Bean

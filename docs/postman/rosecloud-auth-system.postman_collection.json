@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c4df2b1f-2cc7-4c75-9a3c-7d26b7d9d1f0",
     "name": "RoseCloud Auth and User Flows",
-    "description": "Login, logout, current user, user query, and token revocation flows for RoseCloud. Run the requests top to bottom the first time so token/session variables can be populated.",
+    "description": "Login, logout, current user, user query, tenant switching, and token revocation flows for RoseCloud. Run the requests top to bottom the first time so token/session variables can be populated. The 租户 (tenant) folder logs in with 会话A, lists switchable tenants, switches to one of them, and verifies the new token's tenant claim actually changed.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -24,7 +24,15 @@
               "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login"
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "event": [
@@ -68,7 +76,15 @@
               "raw": "{\"username\":\"{{username}}\",\"password\":\"{{wrongPassword}}\"}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login"
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "event": [
@@ -108,7 +124,15 @@
               "raw": "{\"username\":\"{{username}}\"}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login"
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "event": [
@@ -148,7 +172,15 @@
               "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login"
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "event": [
@@ -175,6 +207,264 @@
       ]
     },
     {
+      "name": "租户",
+      "item": [
+        {
+          "name": "获取可切换租户列表成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "tenants"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('selection payload exists', function () {",
+                  "  pm.expect(json.data.currentTenantId).to.be.a('string');",
+                  "  pm.expect(json.data.switchableTenants).to.be.an('array');",
+                  "});",
+                  "pm.environment.set('currentTenantId', json.data.currentTenantId);",
+                  "const switchable = json.data.switchableTenants || [];",
+                  "const other = switchable.find(function (t) { return t.tenantId !== json.data.currentTenantId; }) || switchable[0];",
+                  "pm.environment.set('targetTenantId', other ? other.tenantId : '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取可切换租户列表失败 - 未携带 token",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "tenants"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "切换租户成功",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/tenants/{{targetTenantId}}/switch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "tenants",
+                "{{targetTenantId}}",
+                "switch"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const target = pm.environment.get('targetTenantId');",
+                  "pm.test('a switchable tenant was found', function () {",
+                  "  pm.expect(target, 'no switchable tenant available for this user').to.be.a('string').and.not.empty;",
+                  "});",
+                  "if (!target) { return; }",
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});",
+                  "pm.test('new tokens returned', function () {",
+                  "  pm.expect(json.data.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.data.refreshToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "const decode = function (t) {",
+                  "  const p = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "  return JSON.parse(decodeURIComponent(escape(atob(p))));",
+                  "};",
+                  "const before = decode(pm.environment.get('accessTokenA'));",
+                  "const after = decode(json.data.accessToken);",
+                  "pm.test('token tenant matches target', function () {",
+                  "  pm.expect(after.tenant.toUpperCase()).to.equal(target.toUpperCase());",
+                  "});",
+                  "pm.test('token was reissued', function () {",
+                  "  pm.expect(json.data.accessToken).to.not.equal(pm.environment.get('accessTokenA'));",
+                  "});",
+                  "pm.environment.set('switchedAccessToken', json.data.accessToken);",
+                  "pm.environment.set('switchedRefreshToken', json.data.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "切换租户失败 - 非法租户",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/tenants/NONEXISTENT-TENANT/switch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "tenants",
+                "NONEXISTENT-TENANT",
+                "switch"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is failure', function () {",
+                  "  pm.expect(json.success).to.equal(false);",
+                  "  pm.expect(json.code).to.equal('security.forbidden');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "切换后用新 token 访问成功",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{switchedAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/system/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('switchedAccessToken');",
+                  "if (!token) { return; }",
+                  "pm.test('status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('response is success', function () {",
+                  "  pm.expect(json.success).to.equal(true);",
+                  "  pm.expect(json.code).to.equal('OK');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "用户",
       "item": [
         {
@@ -188,7 +478,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me"
+              "raw": "{{baseUrl}}/api/system/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "me"
+              ]
             }
           },
           "event": [
@@ -220,7 +519,16 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me"
+              "raw": "{{baseUrl}}/api/system/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "me"
+              ]
             }
           },
           "event": [
@@ -256,7 +564,25 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users?page=1&size=10"
+              "raw": "{{baseUrl}}/api/system/users?page=1&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
             }
           },
           "event": [
@@ -287,7 +613,25 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/system/users?page=1&size=10"
+              "raw": "{{baseUrl}}/api/system/users?page=1&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
             }
           },
           "event": [
@@ -320,7 +664,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/{{currentUserId}}"
+              "raw": "{{baseUrl}}/api/system/users/{{currentUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "{{currentUserId}}"
+              ]
             }
           },
           "event": [
@@ -357,7 +710,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/999999999999"
+              "raw": "{{baseUrl}}/api/system/users/999999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "999999999999"
+              ]
             }
           },
           "event": [
@@ -398,7 +760,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/sessions/online"
+              "raw": "{{baseUrl}}/api/auth/sessions/online",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sessions",
+                "online"
+              ]
             }
           },
           "event": [
@@ -439,7 +810,21 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/sessions?sessionId={{sessionIdA}}"
+              "raw": "{{baseUrl}}/api/auth/sessions?sessionId={{sessionIdA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "sessionId",
+                  "value": "{{sessionIdA}}"
+                }
+              ]
             }
           },
           "event": [
@@ -472,7 +857,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me"
+              "raw": "{{baseUrl}}/api/system/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "me"
+              ]
             }
           },
           "event": [
@@ -505,7 +899,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/sessions"
+              "raw": "{{baseUrl}}/api/auth/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sessions"
+              ]
             }
           },
           "event": [
@@ -538,7 +940,15 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/logout"
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
             }
           },
           "event": [
@@ -571,7 +981,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me"
+              "raw": "{{baseUrl}}/api/system/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "users",
+                "me"
+              ]
             }
           },
           "event": [
@@ -603,7 +1022,7 @@
     },
     {
       "key": "username",
-      "value": "admin"
+      "value": "admin@rosecloud.local"
     },
     {
       "key": "password",
@@ -635,6 +1054,22 @@
     },
     {
       "key": "sessionIdA",
+      "value": ""
+    },
+    {
+      "key": "currentTenantId",
+      "value": ""
+    },
+    {
+      "key": "targetTenantId",
+      "value": ""
+    },
+    {
+      "key": "switchedAccessToken",
+      "value": ""
+    },
+    {
+      "key": "switchedRefreshToken",
       "value": ""
     }
   ]

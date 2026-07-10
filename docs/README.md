@@ -5,7 +5,7 @@
 1. [product-requirements.md](/Users/zhijunio/github/rosecloud/docs/prd/product-requirements.md)
    合并后的需求说明，包含产品定位、需求基线、平台边界、角色、业务场景和核心用户用例。
 2. [technical-requirements.md](/Users/zhijunio/github/rosecloud/docs/prd/technical-requirements.md)
-   技术要求说明，包含技术栈基线、非功能、运行、交付、运维和工程约束。
+   技术栈基线说明，包含运行时、框架、通信、安全、数据、消息和交付基线。
 3. [development-plan.md](/Users/zhijunio/github/rosecloud/docs/plan/development-plan.md)
    当前开发计划，包含后端闭环的阶段划分、验收点和推荐执行顺序。
 4. [configuration-model-decision.md](/Users/zhijunio/github/rosecloud/docs/adr/configuration-model-decision.md)

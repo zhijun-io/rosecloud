@@ -2,12 +2,12 @@ package io.rosecloud.starter.security.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
-import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -21,13 +21,16 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
     private final UserDetailsService userDetailsService;
+    private final TenantLookupApi tenantLookupApi;
 
     public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
                                               SessionStore sessionStore,
-                                              UserDetailsService userDetailsService) {
+                                              UserDetailsService userDetailsService,
+                                              TenantLookupApi tenantLookupApi) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.userDetailsService = userDetailsService;
+        this.tenantLookupApi = tenantLookupApi;
     }
 
     @Override
@@ -54,20 +57,16 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         // Preserve the active tenant carried by the refresh token so the refreshed access
         // token keeps the same tenant scope (no implicit switch on refresh).
         String tokenTenant = claims.get("tenant", String.class);
-        SecurityUser effectiveUser = securityUser.withTenantId((tokenTenant == null || tokenTenant.isBlank())
-                ? normalizeTenantId(securityUser.getTenantId())
-                : tokenTenant.trim().toUpperCase(Locale.ROOT));
+        String effectiveTenant = (tokenTenant == null || tokenTenant.isBlank())
+                ? JwtAuthSupport.normalizeTenantId(securityUser.getTenantId())
+                : tokenTenant.trim().toUpperCase(Locale.ROOT);
+        TenantStatusChecks.requireEnabled(effectiveTenant, tenantLookupApi);
+        SecurityUser effectiveUser = securityUser.withTenantId(effectiveTenant);
         return new RefreshAuthenticationToken(effectiveUser);
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
         return RefreshAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    private static String normalizeTenantId(String tenantId) {
-        return (tenantId == null || tenantId.isBlank())
-                ? TenantContextHolder.SYSTEM_TENANT_ID
-                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 }

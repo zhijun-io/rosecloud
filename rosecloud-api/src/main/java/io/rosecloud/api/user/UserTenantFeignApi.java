@@ -15,6 +15,10 @@ public interface UserTenantFeignApi extends UserTenantApi {
     ApiResponse<List<String>> listTenantIds(@PathVariable("userId") Long userId);
 
     @Override
+    @GetMapping("/{userId}/tenants/candidates")
+    ApiResponse<List<TenantAccessCandidate>> listTenantCandidates(@PathVariable("userId") Long userId);
+
+    @Override
     @GetMapping("/{userId}/platform-admin")
     ApiResponse<Boolean> isPlatformAdmin(@PathVariable("userId") Long userId);
 }
