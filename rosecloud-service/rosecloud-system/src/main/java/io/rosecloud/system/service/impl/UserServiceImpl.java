@@ -17,6 +17,7 @@ import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.support.PasswordPolicyValidator;
 import io.rosecloud.system.support.TenantIdSupport;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,13 +57,27 @@ public class UserServiceImpl implements UserService, UserApi {
     @Transactional
     @Override
     public Long create(UserCreateRequest request) {
+        SecurityUser securityUser = currentSecurityUser();
+        String targetTenant = resolveCreateTenant(securityUser, request.tenantId());
         if (userRepository.existsByUsername(request.username())) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
         PasswordPolicyValidator.validate(request.password());
-        User user = new User(null, request.username(), request.nickname(), 1,
-                TenantIdSupport.requireValid(request.tenantId()), null);
+        User user = new User(null, request.username(), request.nickname(), 1, targetTenant, null);
         return userRepository.insert(user, passwordEncoder.encode(request.password()));
+    }
+
+    /**
+     * Confines user creation to the caller's own tenant. The {@code TenantLineInnerInterceptor}
+     * does not scope INSERTs, so a tenant admin supplying an arbitrary {@code tenantId} in the
+     * request body would otherwise be able to provision users under any tenant. Only the
+     * platform admin (system tenant) may place a user under an explicit tenant.
+     */
+    private static String resolveCreateTenant(SecurityUser securityUser, String requestedTenantId) {
+        if (TenantContextHolder.SYSTEM_TENANT_ID.equals(securityUser.getTenantId())) {
+            return TenantIdSupport.requireValid(requestedTenantId);
+        }
+        return TenantIdSupport.normalize(securityUser.getTenantId());
     }
 
     @Override

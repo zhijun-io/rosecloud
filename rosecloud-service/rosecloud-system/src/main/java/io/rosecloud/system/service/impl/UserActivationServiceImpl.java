@@ -36,11 +36,20 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final long resendCooldownSeconds;
     private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
 
+    // Global (per-instance) resend ceiling as a first line of defence against email bombing
+    // and username enumeration. In a multi-instance deployment pair this with a shared
+    // counter (e.g. Redis) so the limit is enforced cluster-wide.
+    private static final int GLOBAL_MAX_RESENDS = 30;
+    private static final long GLOBAL_WINDOW_SECONDS = 60;
+    private final Object globalLock = new Object();
+    private Instant globalWindowStart = Instant.EPOCH;
+    private int globalResendCount = 0;
+
     public UserActivationServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                                      NoticePublishApi noticePublishApi,
-                                      @Value("${rosecloud.user.activation-ttl-hours:24}") long activationTtlHours,
-                                      @Value("${rosecloud.user.activation-link-base-url:}") String activationLinkBaseUrl,
-                                      @Value("${rosecloud.user.activation-resend-cooldown-seconds:60}") long resendCooldownSeconds) {
+                                       NoticePublishApi noticePublishApi,
+                                       @Value("${rosecloud.user.activation-ttl-hours:24}") long activationTtlHours,
+                                       @Value("${rosecloud.user.activation-link-base-url:}") String activationLinkBaseUrl,
+                                       @Value("${rosecloud.user.activation-resend-cooldown-seconds:60}") long resendCooldownSeconds) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.noticePublishApi = noticePublishApi;
@@ -75,6 +84,10 @@ public class UserActivationServiceImpl implements UserActivationService {
     @Override
     @Transactional
     public void resend(String username) {
+        if (!acquireGlobalResendQuota()) {
+            // Global ceiling reached: drop the request silently to avoid signalling the limit.
+            return;
+        }
         UserActivationInfo info = userRepository.findActivationByUsername(username).orElse(null);
         if (info == null || info.used()) {
             // Generic success — never reveal whether the account exists or is already activated,
@@ -101,6 +114,21 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     private String generateToken() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private boolean acquireGlobalResendQuota() {
+        Instant now = Instant.now();
+        synchronized (globalLock) {
+            if (Duration.between(globalWindowStart, now).toSeconds() >= GLOBAL_WINDOW_SECONDS) {
+                globalWindowStart = now;
+                globalResendCount = 0;
+            }
+            if (globalResendCount >= GLOBAL_MAX_RESENDS) {
+                return false;
+            }
+            globalResendCount++;
+            return true;
+        }
     }
 
     private void publishActivationNotice(UserActivationInfo info) {

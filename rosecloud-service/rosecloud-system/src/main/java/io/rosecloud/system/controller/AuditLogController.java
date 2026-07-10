@@ -4,6 +4,7 @@ import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.starter.security.annotation.InternalApi;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.service.AuditLogService;
@@ -32,7 +33,7 @@ public class AuditLogController {
                                                   @RequestParam(defaultValue = "10") long size,
                                                   @RequestParam(required = false) String action,
                                                   @RequestParam(required = false) String username) {
-        return ApiResponse.ok(auditLogService.page(current, size, action, username));
+        return ApiResponse.ok(auditLogService.page(PageSupport.current(current), PageSupport.size(size), action, username));
     }
 
     @InternalApi

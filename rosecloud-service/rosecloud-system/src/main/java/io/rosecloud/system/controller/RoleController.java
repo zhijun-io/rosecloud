@@ -7,6 +7,7 @@ import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.service.RoleService;
 import io.rosecloud.system.service.dto.RoleCreateRequest;
 import io.rosecloud.system.service.dto.RoleMenuAssignRequest;
+import io.rosecloud.system.support.PageSupport;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,6 +59,6 @@ public class RoleController {
     public ApiResponse<PageResult<Role>> page(@RequestParam(defaultValue = "1") long current,
                                               @RequestParam(defaultValue = "10") long size,
                                               @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(roleService.page(current, size, keyword));
+        return ApiResponse.ok(roleService.page(PageSupport.current(current), PageSupport.size(size), keyword));
     }
 }

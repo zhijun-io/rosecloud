@@ -3,6 +3,7 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.service.SettingKeyService;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
@@ -59,6 +60,6 @@ public class SettingKeyController {
     public ApiResponse<PageResult<SettingKey>> page(@RequestParam(defaultValue = "1") long current,
                                                     @RequestParam(defaultValue = "10") long size,
                                                     @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(settingKeyService.page(current, size, keyword));
+        return ApiResponse.ok(settingKeyService.page(PageSupport.current(current), PageSupport.size(size), keyword));
     }
 }

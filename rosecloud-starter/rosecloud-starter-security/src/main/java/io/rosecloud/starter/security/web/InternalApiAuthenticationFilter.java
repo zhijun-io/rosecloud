@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,10 +85,8 @@ public class InternalApiAuthenticationFilter extends OncePerRequestFilter {
     private static boolean constantTimeEquals(String a, String b) {
         byte[] ab = a.getBytes(StandardCharsets.UTF_8);
         byte[] bb = b.getBytes(StandardCharsets.UTF_8);
-        int result = ab.length ^ bb.length;
-        for (int i = 0; i < Math.min(ab.length, bb.length); i++) {
-            result |= ab[i] ^ bb[i];
-        }
-        return result == 0;
+        // MessageDigest.isEqual performs a length-independent constant-time comparison,
+        // avoiding the previous early length-leak that revealed the expected token length.
+        return MessageDigest.isEqual(ab, bb);
     }
 }

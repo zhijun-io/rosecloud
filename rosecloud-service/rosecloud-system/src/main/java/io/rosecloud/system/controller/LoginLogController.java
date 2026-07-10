@@ -3,6 +3,7 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.starter.security.annotation.InternalApi;
 import io.rosecloud.system.domain.LoginLog;
@@ -34,7 +35,7 @@ public class LoginLogController {
                                                   @RequestParam(defaultValue = "10") long size,
                                                   @RequestParam(required = false) String username,
                                                   @RequestParam(required = false) Boolean success) {
-        return ApiResponse.ok(loginLogService.page(current, size, username, success));
+        return ApiResponse.ok(loginLogService.page(PageSupport.current(current), PageSupport.size(size), username, success));
     }
 
     @InternalApi

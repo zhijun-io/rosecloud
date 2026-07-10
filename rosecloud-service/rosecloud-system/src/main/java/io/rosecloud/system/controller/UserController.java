@@ -11,6 +11,7 @@ import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.service.dto.UserRoleAssignRequest;
+import io.rosecloud.system.support.PageSupport;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +42,7 @@ public class UserController {
     public ApiResponse<PageResult<User>> page(@RequestParam(defaultValue = "1") long current,
                                               @RequestParam(defaultValue = "10") long size,
                                               @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(userService.page(current, size, keyword));
+        return ApiResponse.ok(userService.page(PageSupport.current(current), PageSupport.size(size), keyword));
     }
 
     @PreAuthorize("isAuthenticated()")

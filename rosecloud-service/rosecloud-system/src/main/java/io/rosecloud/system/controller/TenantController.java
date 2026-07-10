@@ -3,6 +3,7 @@ package io.rosecloud.system.controller;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
+import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
@@ -75,6 +76,6 @@ public class TenantController {
     public ApiResponse<PageResult<Tenant>> page(@RequestParam(defaultValue = "1") long current,
                                                  @RequestParam(defaultValue = "10") long size,
                                                  @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(tenantService.page(current, size, keyword));
+        return ApiResponse.ok(tenantService.page(PageSupport.current(current), PageSupport.size(size), keyword));
     }
 }

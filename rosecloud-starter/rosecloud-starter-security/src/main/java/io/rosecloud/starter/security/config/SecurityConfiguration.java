@@ -2,6 +2,7 @@ package io.rosecloud.starter.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.user.TenantLookupApi;
+import io.rosecloud.starter.security.web.TenantWriteGuardFilter;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
@@ -58,10 +59,13 @@ public class SecurityConfiguration {
 
     private final SecurityProperties properties;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<TenantLookupApi> tenantLookupApiProvider;
 
-    public SecurityConfiguration(SecurityProperties properties, ObjectMapper objectMapper) {
+    public SecurityConfiguration(SecurityProperties properties, ObjectMapper objectMapper,
+                                 ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.tenantLookupApiProvider = tenantLookupApiProvider;
     }
 
     @Bean
@@ -97,7 +101,8 @@ public class SecurityConfiguration {
                 .addFilterBefore(refreshTokenProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtTokenAuthenticationProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(logoutProcessingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new InternalApiAuthenticationFilter(properties), JwtTokenAuthenticationProcessingFilter.class);
+                .addFilterBefore(new InternalApiAuthenticationFilter(properties), JwtTokenAuthenticationProcessingFilter.class)
+                .addFilterAfter(new TenantWriteGuardFilter(tenantLookupApiProvider), JwtTokenAuthenticationProcessingFilter.class);
 
         return http.build();
     }
