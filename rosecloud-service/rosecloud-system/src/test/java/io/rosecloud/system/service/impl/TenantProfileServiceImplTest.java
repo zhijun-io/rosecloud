@@ -5,10 +5,15 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.domain.TenantProfileData;
 import io.rosecloud.system.error.SystemErrorCode;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import io.rosecloud.system.persistence.RoleEntity;
 import io.rosecloud.system.persistence.TenantEntity;
 import io.rosecloud.system.persistence.TenantMapper;
 import io.rosecloud.system.persistence.TenantProfileEntity;
 import io.rosecloud.system.persistence.TenantProfileMapper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import io.rosecloud.system.service.dto.TenantProfileCreateRequest;
 import io.rosecloud.system.service.dto.TenantProfileUpdateRequest;
 import org.junit.jupiter.api.Test;
@@ -27,6 +32,15 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TenantProfileServiceImplTest {
+
+    @BeforeAll
+    static void initTableInfo() {
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
+        TableInfoHelper.initTableInfo(assistant, TenantEntity.class);
+        TableInfoHelper.initTableInfo(assistant, TenantProfileEntity.class);
+        TableInfoHelper.initTableInfo(assistant, RoleEntity.class);
+    }
 
     @Mock
     TenantProfileMapper tenantProfileMapper;

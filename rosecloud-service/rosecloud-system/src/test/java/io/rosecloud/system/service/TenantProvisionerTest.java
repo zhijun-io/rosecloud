@@ -37,6 +37,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TenantProvisionerTest {
 
+    @BeforeAll
+    static void initTableInfo() {
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
+        TableInfoHelper.initTableInfo(assistant, TenantEntity.class);
+        TableInfoHelper.initTableInfo(assistant, TenantProfileEntity.class);
+        TableInfoHelper.initTableInfo(assistant, RoleEntity.class);
+    }
+
     @Mock
     TenantMapper tenantMapper;
     @Mock
