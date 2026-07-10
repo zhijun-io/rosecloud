@@ -2,9 +2,9 @@ package io.rosecloud.starter.security.session;
 
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.common.security.token.JwtClaimsExtractor;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -12,21 +12,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * In-memory {@link SessionStore}. Sessions are held in a
- * {@link ConcurrentHashMap} keyed by {@code sessionId}.
- * Non-persistent; all data is lost on restart.
+ * In-memory {@link SessionStore}.
  *
- * <p>Expired sessions are lazily purged on each read/revocation operation so
- * that the map does not grow unboundedly.
+ * <p>Token validity is decoupled from session presence: a token is revoked only
+ * when its {@code jti} is in the revocation set (see {@link JwtClaimsExtractor}),
+ * so a valid token that was never saved here is still accepted. {@link #save(LoginSession)}
+ * exists only for administrative visibility and for cascading a single token's
+ * revocation to its paired token (access+refresh of one session).
  *
- * <p>{@link #isRevoked(String)} iterates the session map to locate
- * the token, so it scales linearly with the number of active sessions.
- * For production with many concurrent sessions prefer
- * {@link io.rosecloud.starter.security.session.RedisSessionStore}.
+ * <p>Non-persistent; all data — including the revocation set — is lost on restart,
+ * so revocation does NOT propagate across services. Prefer
+ * {@link io.rosecloud.starter.security.session.RedisSessionStore} in any deployment
+ * with more than one instance or service.
+ *
+ * <p>Expired entries are lazily purged on each operation so the maps stay bounded.
  */
 public class InMemorySessionStore implements SessionStore {
 
     private final ConcurrentMap<String, LoginSession> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Instant> revokedJti = new ConcurrentHashMap<>();
 
     @Override
     public void save(LoginSession session) {
@@ -36,21 +40,27 @@ public class InMemorySessionStore implements SessionStore {
     @Override
     public void revoke(String token) {
         evictExpired();
-        Set<String> toRemove = new HashSet<>();
-        for (Map.Entry<String, LoginSession> entry : sessions.entrySet()) {
-            LoginSession session = entry.getValue();
-            if (session.token().equals(token)
-                    || (session.refreshToken() != null && session.refreshToken().equals(token))) {
-                toRemove.add(entry.getKey());
+        JwtClaimsExtractor.extract(token).ifPresent(target -> {
+            if (target.expiresAt() != null) {
+                revokedJti.put(target.jti(), target.expiresAt());
+            }
+        });
+        // Cascade to the paired token so logout/rotation invalidates the whole session.
+        for (LoginSession session : sessions.values()) {
+            if (tokenEquals(session, token)) {
+                revokeSessionTokens(session);
+                sessions.remove(session.id());
             }
         }
-        toRemove.forEach(sessions::remove);
     }
 
     @Override
     public void revokeBySessionId(String sessionId) {
         evictExpired();
-        sessions.remove(sessionId);
+        LoginSession removed = sessions.remove(sessionId);
+        if (removed != null) {
+            revokeSessionTokens(removed);
+        }
     }
 
     @Override
@@ -58,7 +68,8 @@ public class InMemorySessionStore implements SessionStore {
         evictExpired();
         Set<String> toRemove = new HashSet<>();
         for (Map.Entry<String, LoginSession> entry : sessions.entrySet()) {
-            if (entry.getValue().userId().equals(userId)) {
+            if (userId.equals(entry.getValue().userId())) {
+                revokeSessionTokens(entry.getValue());
                 toRemove.add(entry.getKey());
             }
         }
@@ -68,18 +79,35 @@ public class InMemorySessionStore implements SessionStore {
     @Override
     public boolean isRevoked(String token) {
         evictExpired();
-        return sessions.values().stream().noneMatch(s ->
-                s.token().equals(token)
-                        || (s.refreshToken() != null && s.refreshToken().equals(token)));
+        return JwtClaimsExtractor.extract(token)
+                .map(target -> revokedJti.containsKey(target.jti()))
+                .orElse(false);
     }
 
-    /**
-     * Removes all sessions whose {@code expireAt} is in the past.
-     * Called at the start of every revocation / query operation so that
-     * the map stays bounded without a background thread.
-     */
+    private void revokeSessionTokens(LoginSession session) {
+        addRevocation(session.token());
+        addRevocation(session.refreshToken());
+    }
+
+    private void addRevocation(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        JwtClaimsExtractor.extract(token).ifPresent(target -> {
+            if (target.expiresAt() != null) {
+                revokedJti.put(target.jti(), target.expiresAt());
+            }
+        });
+    }
+
+    private static boolean tokenEquals(LoginSession session, String token) {
+        return token != null && (token.equals(session.token())
+                || (session.refreshToken() != null && token.equals(session.refreshToken())));
+    }
+
     private void evictExpired() {
         Instant now = Instant.now();
+        revokedJti.values().removeIf(exp -> exp.isBefore(now));
         sessions.values().removeIf(s -> s.expireAt() != null && now.isAfter(s.expireAt()));
     }
 }

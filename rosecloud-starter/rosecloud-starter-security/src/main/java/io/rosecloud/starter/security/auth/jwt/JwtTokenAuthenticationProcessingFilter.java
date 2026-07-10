@@ -3,11 +3,13 @@ package io.rosecloud.starter.security.auth.jwt;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.auth.AbstractJwtAuthenticationToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
+import io.rosecloud.starter.security.util.DeviceFingerprint;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
@@ -46,10 +48,18 @@ public class JwtTokenAuthenticationProcessingFilter extends AbstractAuthenticati
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult)
             throws IOException, ServletException {
+        // M3: a token minted with device binding carries an `fp` claim; if it does, the claim
+        // must match this request's fingerprint or the (stolen) token is rejected.
+        Object raw = request.getAttribute(RAW_TOKEN_ATTR);
+        if (raw instanceof String rawToken && !DeviceFingerprint.verify(request, rawToken)) {
+            SecurityContextHolder.clearContext();
+            failureHandler.onAuthenticationFailure(request, response,
+                    new BadCredentialsException("设备指纹校验失败"));
+            return;
+        }
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authResult);
         SecurityContextHolder.setContext(context);
-        Object raw = request.getAttribute(RAW_TOKEN_ATTR);
         if (raw instanceof String s && authResult instanceof AbstractJwtAuthenticationToken token) {
             token.setDetails(s);
         }

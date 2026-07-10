@@ -37,7 +37,7 @@ public class NoticeDispatchService {
 
     public void dispatch(Notice notice) {
         int mask = NoticeChannel.maskOf(notice.getChannels());
-        if (!NoticeChannel.EMAIL.in(mask) && !NoticeChannel.SMS.in(mask)) {
+        if (!NoticeChannel.EMAIL.in(mask)) {
             return;
         }
         CompletableFuture.runAsync(() -> doDispatch(notice, mask), executor)
@@ -54,13 +54,15 @@ public class NoticeDispatchService {
                 // No recipient snapshot: only explicit-recipient (USER) notices carry contacts
                 // today. ROLE/TENANT/GLOBAL targets require recipient resolution at dispatch
                 // time (not yet wired), so push channels have nobody to deliver to.
-                if (NoticeChannel.EMAIL.in(mask) || NoticeChannel.SMS.in(mask)) {
-                    log.warn("notice {} has email/sms channels but no resolved recipients; "
+                if (NoticeChannel.EMAIL.in(mask)) {
+                    log.warn("notice {} has email channel but no resolved recipients; "
                             + "push delivery skipped (recipient resolution not implemented)", notice.getId());
                 }
                 return;
             }
-            for (NoticeChannel channel : new NoticeChannel[]{NoticeChannel.EMAIL, NoticeChannel.SMS}) {
+            // SMS has no sender yet (the SmsNoticeSender stub was removed); email is the only
+            // wired push channel. Iterate EMAIL only — re-add SMS here once a real provider lands.
+            for (NoticeChannel channel : new NoticeChannel[]{NoticeChannel.EMAIL}) {
                 if (!channel.in(mask)) {
                     continue;
                 }

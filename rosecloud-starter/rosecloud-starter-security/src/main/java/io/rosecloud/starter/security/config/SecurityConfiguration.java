@@ -6,6 +6,7 @@ import io.rosecloud.starter.security.web.TenantWriteGuardFilter;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
+import io.rosecloud.starter.security.auth.BruteForceProtection;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.web.InternalApiAuthenticationFilter;
 import io.rosecloud.starter.security.auth.jwt.*;
@@ -102,7 +103,8 @@ public class SecurityConfiguration {
                 .addFilterBefore(jwtTokenAuthenticationProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(logoutProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new InternalApiAuthenticationFilter(properties), JwtTokenAuthenticationProcessingFilter.class)
-                .addFilterAfter(new TenantWriteGuardFilter(tenantLookupApiProvider), JwtTokenAuthenticationProcessingFilter.class);
+                .addFilterAfter(new TenantWriteGuardFilter(tenantLookupApiProvider,
+                        properties.getTenantWriteGuard().isFailClosed()), JwtTokenAuthenticationProcessingFilter.class);
 
         return http.build();
     }
@@ -120,17 +122,30 @@ public class SecurityConfiguration {
     @Configuration(proxyBeanMethods = false)
     static class SessionStoreConfiguration {
 
+        private static final org.slf4j.Logger log =
+                org.slf4j.LoggerFactory.getLogger(SessionStoreConfiguration.class);
+
         @Bean
         @ConditionalOnMissingBean(SessionStore.class)
         @ConditionalOnClass(StringRedisTemplate.class)
         public SessionStore redisAwareSessionStore(ObjectProvider<StringRedisTemplate> redisTemplate) {
             StringRedisTemplate template = redisTemplate.getIfAvailable();
-            return template != null ? new RedisSessionStore(template) : new InMemorySessionStore();
+            if (template == null) {
+                log.warn("No StringRedisTemplate bean available — falling back to InMemorySessionStore. "
+                        + "Token VALIDITY no longer depends on a session record (so requests still authenticate), "
+                        + "but revocation (logout / refresh rotation / user-disable) will NOT propagate across "
+                        + "services and is lost on restart. Use a shared Redis in any multi-instance or "
+                        + "multi-service deployment.");
+                return new InMemorySessionStore();
+            }
+            return new RedisSessionStore(template);
         }
 
         @Bean
         @ConditionalOnMissingBean(SessionStore.class)
         public SessionStore inMemorySessionStore() {
+            log.warn("No Redis on the classpath — using InMemorySessionStore. Revocation is local-only and "
+                    + "lost on restart; do not use in multi-service deployments.");
             return new InMemorySessionStore();
         }
     }
@@ -151,7 +166,8 @@ public class SecurityConfiguration {
             JwtTokenFactory jwtTokenFactory, SessionStore sessionStore, ApplicationEventPublisher eventPublisher,
             ObjectProvider<LoginTenantResolver> loginTenantResolver) {
         return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, sessionStore, eventPublisher,
-                objectMapper, loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds());
+                objectMapper, loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds(),
+                properties.getTokenBinding().isEnabled());
     }
 
     @Bean
@@ -170,9 +186,15 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    public BruteForceProtection bruteForceProtection(ObjectProvider<StringRedisTemplate> redisTemplate) {
+        return new BruteForceProtection(properties.getBruteForce(), redisTemplate.getIfAvailable());
+    }
+
+    @Bean
     public RestAuthenticationProvider restAuthenticationProvider(
-            UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-        return new RestAuthenticationProvider(userDetailsService, passwordEncoder);
+            UserDetailsService userDetailsService, PasswordEncoder passwordEncoder,
+            BruteForceProtection bruteForceProtection) {
+        return new RestAuthenticationProvider(userDetailsService, passwordEncoder, bruteForceProtection);
     }
 
     @Bean
@@ -190,9 +212,10 @@ public class SecurityConfiguration {
             JwtTokenFactory jwtTokenFactory,
             SessionStore sessionStore,
             UserDetailsService userDetailsService,
-            ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
+            ObjectProvider<TenantLookupApi> tenantLookupApiProvider,
+            BruteForceProtection bruteForceProtection) {
         return new RefreshTokenAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService,
-                tenantLookupApiProvider.getIfAvailable());
+                tenantLookupApiProvider.getIfAvailable(), bruteForceProtection);
     }
 
     @Bean

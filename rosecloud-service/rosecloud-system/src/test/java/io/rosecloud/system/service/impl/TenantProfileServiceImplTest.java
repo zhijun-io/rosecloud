@@ -1,11 +1,14 @@
 package io.rosecloud.system.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.domain.TenantProfileData;
-import io.rosecloud.system.domain.TenantProfileRepository;
-import io.rosecloud.system.domain.TenantRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.TenantEntity;
+import io.rosecloud.system.persistence.TenantMapper;
+import io.rosecloud.system.persistence.TenantProfileEntity;
+import io.rosecloud.system.persistence.TenantProfileMapper;
 import io.rosecloud.system.service.dto.TenantProfileCreateRequest;
 import io.rosecloud.system.service.dto.TenantProfileUpdateRequest;
 import org.junit.jupiter.api.Test;
@@ -14,29 +17,31 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TenantProfileServiceImplTest {
 
     @Mock
-    TenantProfileRepository tenantProfileRepository;
+    TenantProfileMapper tenantProfileMapper;
     @Mock
-    TenantRepository tenantRepository;
+    TenantMapper tenantMapper;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private TenantProfileServiceImpl service() {
-        return new TenantProfileServiceImpl(tenantProfileRepository, tenantRepository);
+        return new TenantProfileServiceImpl(tenantProfileMapper, tenantMapper, objectMapper);
     }
 
     @Test
     void createRejectsDuplicateId() {
-        when(tenantProfileRepository.existsById("basic")).thenReturn(true);
+        when(tenantProfileMapper.selectById("basic")).thenReturn(profileEntity("basic", false));
 
         BizException ex = assertThrows(BizException.class, () -> service().create(
                 new TenantProfileCreateRequest("basic", "Basic", "Default tier", TenantProfileData.defaults())));
@@ -50,24 +55,23 @@ class TenantProfileServiceImplTest {
                 new TenantProfileCreateRequest(" ", "Basic", "Default tier", TenantProfileData.defaults())));
 
         assertEquals(SystemErrorCode.TENANT_PROFILE_ID_REQUIRED, ex.getErrorCode());
-        verifyNoInteractions(tenantProfileRepository, tenantRepository);
+        verifyNoInteractions(tenantProfileMapper, tenantMapper);
     }
 
     @Test
     void createStoresProfile() {
-        when(tenantProfileRepository.existsById("pro")).thenReturn(false);
+        when(tenantProfileMapper.selectById("pro")).thenReturn(null);
 
         String id = service().create(new TenantProfileCreateRequest("pro", "Pro", "Production tier",
                 new TenantProfileData("pro", 50, 20, 500, 120, List.of("mfa"))));
 
         assertEquals("pro", id);
-        verify(tenantProfileRepository).insert(new TenantProfile("pro", "Pro", "Production tier",
-                new TenantProfileData("pro", 50, 20, 500, 120, List.of("mfa"))));
+        verify(tenantProfileMapper).insert(any(TenantProfileEntity.class));
     }
 
     @Test
     void updateRejectsMissingProfile() {
-        when(tenantProfileRepository.findById("missing")).thenReturn(Optional.empty());
+        when(tenantProfileMapper.selectById("missing")).thenReturn(null);
 
         BizException ex = assertThrows(BizException.class, () -> service().update("missing",
                 new TenantProfileUpdateRequest("Basic", "Default tier", TenantProfileData.defaults())));
@@ -77,9 +81,7 @@ class TenantProfileServiceImplTest {
 
     @Test
     void deleteRejectsDefaultProfile() {
-        TenantProfile profile = new TenantProfile("default", "Basic", "Default tier", true,
-                (com.fasterxml.jackson.databind.JsonNode) null);
-        when(tenantProfileRepository.findById("default")).thenReturn(Optional.of(profile));
+        when(tenantProfileMapper.selectById("default")).thenReturn(profileEntity("default", true));
 
         BizException ex = assertThrows(BizException.class, () -> service().delete("default"));
 
@@ -88,10 +90,8 @@ class TenantProfileServiceImplTest {
 
     @Test
     void deleteRejectsProfileInUse() {
-        TenantProfile profile = new TenantProfile("pro", "Pro", "Production tier",
-                TenantProfileData.defaults());
-        when(tenantProfileRepository.findById("pro")).thenReturn(Optional.of(profile));
-        when(tenantRepository.countByTenantProfileId("pro")).thenReturn(2L);
+        when(tenantProfileMapper.selectById("pro")).thenReturn(profileEntity("pro", false));
+        when(tenantMapper.selectCount(any())).thenReturn(2L);
 
         BizException ex = assertThrows(BizException.class, () -> service().delete("pro"));
 
@@ -100,42 +100,59 @@ class TenantProfileServiceImplTest {
 
     @Test
     void deleteDeletesUnusedProfile() {
-        TenantProfile profile = new TenantProfile("pro", "Pro", "Production tier",
-                TenantProfileData.defaults());
-        when(tenantProfileRepository.findById("pro")).thenReturn(Optional.of(profile));
-        when(tenantRepository.countByTenantProfileId("pro")).thenReturn(0L);
+        when(tenantProfileMapper.selectById("pro")).thenReturn(profileEntity("pro", false));
+        when(tenantMapper.selectCount(any())).thenReturn(0L);
 
         service().delete("pro");
 
-        verify(tenantProfileRepository).deleteById("pro");
+        verify(tenantProfileMapper).deleteById("pro");
     }
 
     @Test
-    void makeDefaultDelegatesToRepository() {
-        TenantProfile profile = new TenantProfile("pro", "Pro", "Production tier",
-                TenantProfileData.defaults());
-        when(tenantProfileRepository.findById("pro")).thenReturn(Optional.of(profile));
+    void makeDefaultDelegatesToMapper() {
+        when(tenantProfileMapper.selectById("pro")).thenReturn(profileEntity("pro", false));
 
         service().makeDefault("pro");
 
-        verify(tenantProfileRepository).makeDefault("pro");
+        verify(tenantProfileMapper).update(any(), any());
     }
 
     @Test
     void getDefaultReturnsDefaultProfile() {
+        TenantProfileEntity e = new TenantProfileEntity();
+        e.setId("default");
+        e.setName("Basic");
+        e.setDescription("Default tier");
+        e.setIsDefault(true);
+        when(tenantProfileMapper.selectOne(any())).thenReturn(e);
+
         TenantProfile profile = new TenantProfile("default", "Basic", "Default tier", true,
-                new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(TenantProfileData.defaults()));
-        when(tenantProfileRepository.findDefault()).thenReturn(Optional.of(profile));
+                new ObjectMapper().valueToTree(TenantProfileData.defaults()));
 
         assertEquals(profile, service().getDefault());
     }
 
     @Test
-    void listDelegatesToRepository() {
+    void listDelegatesToMapper() {
+        TenantProfileEntity e = new TenantProfileEntity();
+        e.setId("default");
+        e.setName("Basic");
+        e.setDescription("Default tier");
+        e.setIsDefault(true);
+        when(tenantProfileMapper.selectList(any())).thenReturn(List.of(e));
+
         TenantProfile profile = new TenantProfile("default", "Basic", "Default tier", true,
-                new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(TenantProfileData.defaults()));
-        when(tenantProfileRepository.findAll()).thenReturn(List.of(profile));
+                new ObjectMapper().valueToTree(TenantProfileData.defaults()));
 
         assertEquals(List.of(profile), service().list());
+    }
+
+    private static TenantProfileEntity profileEntity(String id, boolean isDefault) {
+        TenantProfileEntity e = new TenantProfileEntity();
+        e.setId(id);
+        e.setName("Pro");
+        e.setDescription("tier");
+        e.setIsDefault(isDefault);
+        return e;
     }
 }

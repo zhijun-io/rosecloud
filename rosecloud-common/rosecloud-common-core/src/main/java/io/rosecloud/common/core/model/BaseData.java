@@ -1,7 +1,5 @@
 package io.rosecloud.common.core.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -9,8 +7,6 @@ import java.util.Objects;
  * Base data container with common creation metadata.
  */
 public abstract class BaseData {
-
-    public static final ObjectMapper mapper = new ObjectMapper();
 
     private LocalDateTime createdTime;
 

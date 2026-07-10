@@ -24,8 +24,7 @@ rosecloud
 │   ├── rosecloud-starter-web
 │   ├── rosecloud-starter-security
 │   ├── rosecloud-starter-trace
-│   ├── rosecloud-starter-data-mybatisplus
-│   └── rosecloud-starter-cache
+│   └── rosecloud-starter-data-mybatisplus
 ├── rosecloud-starter-business    # 业务型 starter 父模块
 │   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）
 │   └── rosecloud-starter-audit   # 审计（rosecloud.audit.enabled）

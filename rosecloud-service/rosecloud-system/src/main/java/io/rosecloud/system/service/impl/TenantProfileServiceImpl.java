@@ -1,11 +1,18 @@
 package io.rosecloud.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.domain.TenantProfileData;
-import io.rosecloud.system.domain.TenantRepository;
-import io.rosecloud.system.domain.TenantProfileRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.TenantEntity;
+import io.rosecloud.system.persistence.TenantMapper;
+import io.rosecloud.system.persistence.TenantProfileEntity;
+import io.rosecloud.system.persistence.TenantProfileMapper;
 import io.rosecloud.system.service.TenantProfileService;
 import io.rosecloud.system.service.dto.TenantProfileCreateRequest;
 import io.rosecloud.system.service.dto.TenantProfileUpdateRequest;
@@ -13,27 +20,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TenantProfileServiceImpl implements TenantProfileService {
 
-    private final TenantProfileRepository tenantProfileRepository;
-    private final TenantRepository tenantRepository;
+    private final TenantProfileMapper tenantProfileMapper;
+    private final TenantMapper tenantMapper;
+    private final ObjectMapper objectMapper;
 
-    public TenantProfileServiceImpl(TenantProfileRepository tenantProfileRepository, TenantRepository tenantRepository) {
-        this.tenantProfileRepository = tenantProfileRepository;
-        this.tenantRepository = tenantRepository;
+    public TenantProfileServiceImpl(TenantProfileMapper tenantProfileMapper, TenantMapper tenantMapper,
+                                    ObjectMapper objectMapper) {
+        this.tenantProfileMapper = tenantProfileMapper;
+        this.tenantMapper = tenantMapper;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
     @Override
     public String create(TenantProfileCreateRequest request) {
         String id = requireId(request.id());
-        if (tenantProfileRepository.existsById(id)) {
+        if (tenantProfileMapper.selectById(id) != null) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_EXISTS);
         }
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileRepository.insert(profile);
+        tenantProfileMapper.insert(toEntity(profile));
         return id;
     }
 
@@ -42,7 +53,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
     public void update(String id, TenantProfileUpdateRequest request) {
         load(id);
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileRepository.update(profile);
+        tenantProfileMapper.updateById(toEntity(profile));
     }
 
     @Transactional
@@ -52,17 +63,19 @@ public class TenantProfileServiceImpl implements TenantProfileService {
         if (profile.isDefault()) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_DEFAULT_DELETE_FORBIDDEN);
         }
-        if (tenantRepository.countByTenantProfileId(id) > 0) {
+        if (tenantMapper.selectCount(new LambdaQueryWrapper<TenantEntity>()
+                .eq(TenantEntity::getTenantProfileId, id)) > 0) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_IN_USE);
         }
-        tenantProfileRepository.deleteById(id);
+        tenantProfileMapper.deleteById(id);
     }
 
     @Transactional
     @Override
     public void makeDefault(String id) {
         load(id);
-        tenantProfileRepository.makeDefault(id);
+        tenantProfileMapper.update(null, new LambdaUpdateWrapper<TenantProfileEntity>()
+                .setSql("is_default = CASE WHEN id = {0} THEN 1 ELSE 0 END", id));
     }
 
     @Override
@@ -72,18 +85,68 @@ public class TenantProfileServiceImpl implements TenantProfileService {
 
     @Override
     public TenantProfile getDefault() {
-        return tenantProfileRepository.findDefault()
+        return findDefault()
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
     }
 
     @Override
     public List<TenantProfile> list() {
-        return tenantProfileRepository.findAll();
+        return tenantProfileMapper.selectList(new LambdaQueryWrapper<TenantProfileEntity>()
+                        .orderByDesc(TenantProfileEntity::getIsDefault)
+                        .orderByAsc(TenantProfileEntity::getId))
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private TenantProfile load(String id) {
-        return tenantProfileRepository.findById(id)
+        return findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
+    }
+
+    private Optional<TenantProfile> findById(String id) {
+        return Optional.ofNullable(tenantProfileMapper.selectById(id)).map(this::toDomain);
+    }
+
+    private Optional<TenantProfile> findDefault() {
+        TenantProfileEntity po = tenantProfileMapper.selectOne(new LambdaQueryWrapper<TenantProfileEntity>()
+                .eq(TenantProfileEntity::getIsDefault, 1));
+        return Optional.ofNullable(po).map(this::toDomain);
+    }
+
+    private TenantProfile toDomain(TenantProfileEntity po) {
+        return new TenantProfile(po.getId(), po.getName(), po.getDescription(), po.getIsDefault(),
+                readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(),
+                po.getUpdateTime(), po.getUpdateBy());
+    }
+
+    private TenantProfileEntity toEntity(TenantProfile profile) {
+        TenantProfileEntity po = new TenantProfileEntity();
+        po.setId(profile.getId());
+        po.setName(profile.getName());
+        po.setDescription(profile.getDescription());
+        po.setAdditionalInfo(writeJson(profile.getAdditionalInfo()));
+        po.setIsDefault(profile.isDefault());
+        po.setCreateTime(profile.getCreateTime());
+        po.setCreateBy(profile.getCreateBy());
+        po.setUpdateTime(profile.getUpdateTime());
+        po.setUpdateBy(profile.getUpdateBy());
+        return po;
+    }
+
+    private JsonNode readJson(String value) {
+        if (value == null || value.isBlank()) {
+            return objectMapper.valueToTree(TenantProfileData.defaults());
+        }
+        try {
+            return objectMapper.readTree(value);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Invalid tenant profile JSON", ex);
+        }
+    }
+
+    private String writeJson(JsonNode value) {
+        return value == null || value.isNull() ? null : value.toString();
     }
 
     private static String requireId(String id) {

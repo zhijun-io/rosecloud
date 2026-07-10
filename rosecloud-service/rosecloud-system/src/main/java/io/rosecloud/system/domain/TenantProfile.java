@@ -1,7 +1,7 @@
 package io.rosecloud.system.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.rosecloud.common.core.model.BaseData;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
 
@@ -14,6 +14,8 @@ import java.util.Objects;
  * while {@link #profileData} is the typed view used by callers.
  */
 public final class TenantProfile extends BaseDataWithAdditionalInfo implements HasAdditionalInfo {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String id;
     private final String name;
@@ -40,7 +42,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
 
     public TenantProfile(String id, String name, String description, boolean isDefault, JsonNode additionalInfo,
                          LocalDateTime createTime, Long createBy, LocalDateTime updateTime, Long updateBy) {
-        super(additionalInfo == null ? BaseData.mapper.valueToTree(TenantProfileData.defaults()) : additionalInfo);
+        super(additionalInfo == null ? MAPPER.valueToTree(TenantProfileData.defaults()) : additionalInfo);
         this.id = id;
         this.name = name;
         this.description = description;
@@ -90,7 +92,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
         }
         JsonNode additionalInfo = getAdditionalInfo();
         if (additionalInfo != null) {
-            data = mapper.convertValue(additionalInfo, TenantProfileData.class);
+            data = MAPPER.convertValue(additionalInfo, TenantProfileData.class);
             profileData = data;
             return data;
         }
@@ -100,7 +102,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
     public void setProfileData(TenantProfileData profileData) {
         TenantProfileData value = profileData == null ? TenantProfileData.defaults() : profileData;
         this.profileData = value;
-        setAdditionalInfo(mapper.valueToTree(value));
+        setAdditionalInfo(MAPPER.valueToTree(value));
     }
 
     @Override

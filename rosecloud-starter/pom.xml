@@ -14,13 +14,12 @@
     <artifactId>rosecloud-starter</artifactId>
     <packaging>pom</packaging>
     <name>RoseCloud Tech Starters</name>
-    <description>Aggregator for technical starters such as web, security, persistence, cache, and trace.</description>
+    <description>Aggregator for technical starters such as web, security, persistence, and trace.</description>
 
     <modules>
         <module>rosecloud-starter-web</module>
         <module>rosecloud-starter-trace</module>
         <module>rosecloud-starter-data-mybatisplus</module>
-        <module>rosecloud-starter-cache</module>
         <module>rosecloud-starter-security</module>
     </modules>
 </project>

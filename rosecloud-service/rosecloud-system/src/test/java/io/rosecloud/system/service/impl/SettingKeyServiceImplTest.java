@@ -1,14 +1,19 @@
 package io.rosecloud.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.system.domain.SettingKey;
-import io.rosecloud.system.domain.SettingKeyRepository;
-import io.rosecloud.system.domain.SystemSettingRepository;
-import io.rosecloud.system.domain.UserSettingRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.SettingKeyEntity;
+import io.rosecloud.system.persistence.SettingKeyMapper;
+import io.rosecloud.system.persistence.SystemSettingEntity;
+import io.rosecloud.system.persistence.SystemSettingMapper;
+import io.rosecloud.system.persistence.UserSettingEntity;
+import io.rosecloud.system.persistence.UserSettingMapper;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
 import io.rosecloud.system.service.dto.SettingKeyUpdateRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -20,14 +25,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,11 +40,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SettingKeyServiceImplTest {
     @Mock
-    SettingKeyRepository settingKeyRepository;
+    SettingKeyMapper settingKeyMapper;
     @Mock
-    SystemSettingRepository systemSettingRepository;
+    SystemSettingMapper systemSettingMapper;
     @Mock
-    UserSettingRepository userSettingRepository;
+    UserSettingMapper userSettingMapper;
 
     @AfterEach
     void tearDown() {
@@ -47,7 +52,7 @@ class SettingKeyServiceImplTest {
     }
 
     private SettingKeyServiceImpl service() {
-        return new SettingKeyServiceImpl(settingKeyRepository, systemSettingRepository, userSettingRepository);
+        return new SettingKeyServiceImpl(settingKeyMapper, systemSettingMapper, userSettingMapper);
     }
 
     private static void setCurrentUser(Long userId, String username) {
@@ -59,20 +64,20 @@ class SettingKeyServiceImplTest {
 
     @Test
     void createRejectsDuplicateKey() {
-        when(settingKeyRepository.existsByKey("ui.theme")).thenReturn(true);
+        when(settingKeyMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
         BizException ex = assertThrows(BizException.class,
                 () -> service().create(new SettingKeyCreateRequest("ui.theme", "主题", "desc")));
         assertEquals(SystemErrorCode.SETTING_KEY_EXISTS, ex.getErrorCode());
-        verify(settingKeyRepository, never()).insert(any());
+        verify(settingKeyMapper, never()).insert(any(SettingKeyEntity.class));
     }
 
     @Test
     void createStoresMetadataFromCurrentUser() {
         setCurrentUser(7L, "alice");
-        when(settingKeyRepository.existsByKey("ui.theme")).thenReturn(false);
+        when(settingKeyMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
         service().create(new SettingKeyCreateRequest("ui.theme", "主题", "desc"));
-        ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
-        verify(settingKeyRepository).insert(captor.capture());
+        ArgumentCaptor<SettingKeyEntity> captor = ArgumentCaptor.forClass(SettingKeyEntity.class);
+        verify(settingKeyMapper).insert(captor.capture());
         assertEquals("ui.theme", captor.getValue().getKey());
         assertEquals("主题", captor.getValue().getName());
         assertEquals("desc", captor.getValue().getRemark());
@@ -80,7 +85,7 @@ class SettingKeyServiceImplTest {
 
     @Test
     void updateRejectsMissingKey() {
-        when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.empty());
+        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
         BizException ex = assertThrows(BizException.class,
                 () -> service().update("ui.theme", new SettingKeyUpdateRequest("主题", "desc")));
         assertEquals(SystemErrorCode.SETTING_KEY_NOT_FOUND, ex.getErrorCode());
@@ -88,11 +93,15 @@ class SettingKeyServiceImplTest {
 
     @Test
     void updateUsesPersistentIdOfExistingKey() {
-        when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey(88L, "ui.theme", "主题", "desc")));
+        SettingKeyEntity existing = new SettingKeyEntity();
+        existing.setId(88L);
+        existing.setKey("ui.theme");
+        existing.setName("主题");
+        existing.setRemark("desc");
+        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
         service().update("ui.theme", new SettingKeyUpdateRequest("主题2", "desc2"));
-        ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
-        verify(settingKeyRepository).update(captor.capture());
+        ArgumentCaptor<SettingKeyEntity> captor = ArgumentCaptor.forClass(SettingKeyEntity.class);
+        verify(settingKeyMapper).updateById(captor.capture());
         assertEquals(88L, captor.getValue().getId());
         assertEquals("ui.theme", captor.getValue().getKey());
         assertEquals("主题2", captor.getValue().getName());
@@ -101,19 +110,33 @@ class SettingKeyServiceImplTest {
 
     @Test
     void deleteCascadesToSystemAndUserSettings() {
-        when(settingKeyRepository.findByKey("ui.theme")).thenReturn(Optional.of(
-                new SettingKey(1L, "ui.theme", "主题", "desc")));
+        SettingKeyEntity existing = new SettingKeyEntity();
+        existing.setId(1L);
+        existing.setKey("ui.theme");
+        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
         service().delete("ui.theme");
-        verify(systemSettingRepository).deleteByKey("ui.theme");
-        verify(userSettingRepository).deleteByKey("ui.theme");
-        verify(settingKeyRepository).deleteByKey("ui.theme");
+        verify(systemSettingMapper).deleteById("ui.theme");
+        verify(userSettingMapper).delete(any(LambdaQueryWrapper.class));
+        verify(settingKeyMapper).deleteById(1L);
     }
 
     @Test
-    void pageDelegatesToRepository() {
-        PageResult<SettingKey> result = PageResult.of(List.of(), 0, 1, 10);
-        when(settingKeyRepository.page(1, 10, "ui")).thenReturn(result);
-        assertEquals(result, service().page(1, 10, "ui"));
-        verify(settingKeyRepository).page(eq(1L), eq(10L), eq("ui"));
+    void pageDelegatesToMapper() {
+        IPage<SettingKeyEntity> page = mock(IPage.class);
+        SettingKeyEntity e = new SettingKeyEntity();
+        e.setId(1L);
+        e.setKey("ui.theme");
+        e.setName("主题");
+        e.setRemark("desc");
+        when(page.getRecords()).thenReturn(List.of(e));
+        when(page.getTotal()).thenReturn(5L);
+        when(page.getCurrent()).thenReturn(1L);
+        when(page.getSize()).thenReturn(10L);
+        when(settingKeyMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(page);
+
+        PageResult<SettingKey> result = service().page(1, 10, "ui");
+        assertEquals(5L, result.total());
+        assertEquals(1, result.records().size());
+        assertEquals("ui.theme", result.records().get(0).getKey());
     }
 }

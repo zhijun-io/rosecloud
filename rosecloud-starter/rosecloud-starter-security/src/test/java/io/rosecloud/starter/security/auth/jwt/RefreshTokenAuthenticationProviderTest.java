@@ -10,6 +10,7 @@ import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
+import io.rosecloud.starter.security.auth.BruteForceProtection;
 import io.rosecloud.starter.security.config.SecurityProperties;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "DISABLED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi);
+                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
 
         assertThrows(BizException.class,
                 () -> provider.authenticate(new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken()))));
@@ -59,7 +60,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "ENABLED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi);
+                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));
@@ -82,7 +83,7 @@ class RefreshTokenAuthenticationProviderTest {
                     .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", status)));
 
             RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                    tokenFactory, sessionStore, userDetailsService, tenantLookupApi);
+                    tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
 
             assertThrows(BizException.class,
                     () -> provider.authenticate(new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken()))));
@@ -103,7 +104,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "EXPIRED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi);
+                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));
@@ -122,7 +123,7 @@ class RefreshTokenAuthenticationProviderTest {
         when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, null);
+                tokenFactory, sessionStore, userDetailsService, null, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));
@@ -135,6 +136,11 @@ class RefreshTokenAuthenticationProviderTest {
         properties.getJwt().setIssuer("rosecloud");
         properties.getJwt().setSecret(Base64.getEncoder().encodeToString(new byte[64]));
         return new JwtTokenFactory(properties);
+    }
+
+    private static BruteForceProtection newBruteForce() {
+        // No-op protection for unit tests: no Redis means throttling is disabled.
+        return new BruteForceProtection(new SecurityProperties.BruteForce(), null);
     }
 
     private static SecurityUser user(String tenantId) {

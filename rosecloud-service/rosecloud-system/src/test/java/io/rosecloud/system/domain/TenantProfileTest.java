@@ -1,6 +1,6 @@
 package io.rosecloud.system.domain;
 
-import io.rosecloud.common.core.model.BaseData;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,14 +17,14 @@ class TenantProfileTest {
         assertThat(profile.getDescription()).isEqualTo("Production tier");
         assertThat(profile.getProfileData()).isEqualTo(
                 new TenantProfileData("pro", 50, 20, 500, 120, java.util.List.of("mfa", "audit")));
-        assertThat(profile.getAdditionalInfo()).isEqualTo(BaseData.mapper.valueToTree(
+        assertThat(profile.getAdditionalInfo()).isEqualTo(new ObjectMapper().valueToTree(
                 new TenantProfileData("pro", 50, 20, 500, 120, java.util.List.of("mfa", "audit"))));
     }
 
     @Test
     void readsTypedProfileFromJsonBytes() throws Exception {
         TenantProfile profile = new TenantProfile("profile-2", "Enterprise", "High-capacity tier",
-                BaseData.mapper.readTree("""
+                new ObjectMapper().readTree("""
                         {"packageCode":"enterprise","maxUsers":200,"maxRoles":50,"maxNoticesPerDay":2000,"maxRequestsPerMinute":240,"enabledCapabilities":["mfa"]}
                         """));
 
@@ -37,6 +37,6 @@ class TenantProfileTest {
         TenantProfile profile = new TenantProfile("profile-3", "Basic", "Default tier", (com.fasterxml.jackson.databind.JsonNode) null);
 
         assertThat(profile.getProfileData()).isEqualTo(TenantProfileData.defaults());
-        assertThat(profile.getAdditionalInfo()).isEqualTo(BaseData.mapper.valueToTree(TenantProfileData.defaults()));
+        assertThat(profile.getAdditionalInfo()).isEqualTo(new ObjectMapper().valueToTree(TenantProfileData.defaults()));
     }
 }

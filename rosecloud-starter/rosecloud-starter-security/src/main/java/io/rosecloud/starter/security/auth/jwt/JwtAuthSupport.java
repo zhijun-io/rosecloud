@@ -26,12 +26,13 @@ final class JwtAuthSupport {
     }
 
     static SecurityUser loadAndValidateUser(String username, UserDetailsService userDetailsService) {
+        // Uniform failure: a missing user and a disabled account surface the same
+        // exception so callers cannot distinguish them (avoids user enumeration via
+        // the JWT path). The principal is always a username we issued, but the guard
+        // is still worthwhile hygiene.
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        if (userDetails == null) {
-            throw new BadCredentialsException("User not found");
-        }
-        if (!userDetails.isEnabled()) {
-            throw new BadCredentialsException("User is disabled");
+        if (userDetails == null || !userDetails.isEnabled()) {
+            throw new BadCredentialsException("认证失败");
         }
         if (!(userDetails instanceof SecurityUser securityUser)) {
             throw new BadCredentialsException(

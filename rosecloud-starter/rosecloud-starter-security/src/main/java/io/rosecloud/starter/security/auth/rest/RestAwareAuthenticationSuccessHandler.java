@@ -9,6 +9,7 @@ import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
+import io.rosecloud.starter.security.util.DeviceFingerprint;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,19 +30,22 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
     private final ObjectMapper objectMapper;
     private final LoginTenantResolver loginTenantResolver;
     private final long refreshTokenExpirationSeconds;
+    private final boolean tokenBindingEnabled;
 
     public RestAwareAuthenticationSuccessHandler(JwtTokenFactory tokenFactory,
                                                   SessionStore sessionStore,
                                                   ApplicationEventPublisher eventPublisher,
                                                   ObjectMapper objectMapper,
                                                   LoginTenantResolver loginTenantResolver,
-                                                  long refreshTokenExpirationSeconds) {
+                                                  long refreshTokenExpirationSeconds,
+                                                  boolean tokenBindingEnabled) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.loginTenantResolver = loginTenantResolver;
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
+        this.tokenBindingEnabled = tokenBindingEnabled;
     }
 
     @Override
@@ -51,7 +55,10 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
         String activeTenantId = loginTenantResolver == null
                 ? securityUser.getTenantId()
                 : loginTenantResolver.resolveInitialTenant(securityUser);
-        JwtPair tokenPair = tokenFactory.createTokenPair(securityUser, activeTenantId);
+        // M3: when device binding is enabled, embed a fingerprint of the client IP + UA so a
+        // stolen token cannot be replayed from a different device.
+        String deviceFingerprint = tokenBindingEnabled ? DeviceFingerprint.compute(request) : null;
+        JwtPair tokenPair = tokenFactory.createTokenPair(securityUser, activeTenantId, deviceFingerprint);
 
         String sessionId = UUID.randomUUID().toString();
         String token = tokenPair.accessToken();

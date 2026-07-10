@@ -1,12 +1,17 @@
 package io.rosecloud.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.Menu;
-import io.rosecloud.system.domain.MenuRepository;
 import io.rosecloud.system.domain.MenuType;
-import io.rosecloud.system.domain.UserRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.MenuEntity;
+import io.rosecloud.system.persistence.MenuMapper;
+import io.rosecloud.system.persistence.RoleMenuEntity;
+import io.rosecloud.system.persistence.RoleMenuMapper;
+import io.rosecloud.system.persistence.UserRoleEntity;
+import io.rosecloud.system.persistence.UserRoleMapper;
 import io.rosecloud.system.service.MenuService;
 import io.rosecloud.system.service.dto.MenuRequest;
 import io.rosecloud.system.service.dto.MenuTreeNode;
@@ -16,52 +21,62 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class MenuServiceImpl implements MenuService {
 
-    private final MenuRepository menuRepository;
-    private final UserRepository userRepository;
+    private final MenuMapper menuMapper;
+    private final RoleMenuMapper roleMenuMapper;
+    private final UserRoleMapper userRoleMapper;
 
-    public MenuServiceImpl(MenuRepository menuRepository, UserRepository userRepository) {
-        this.menuRepository = menuRepository;
-        this.userRepository = userRepository;
+    public MenuServiceImpl(MenuMapper menuMapper, RoleMenuMapper roleMenuMapper, UserRoleMapper userRoleMapper) {
+        this.menuMapper = menuMapper;
+        this.roleMenuMapper = roleMenuMapper;
+        this.userRoleMapper = userRoleMapper;
     }
 
     @AuditLog(action = "menu-create", description = "创建菜单")
     @Override
     public Long create(MenuRequest request) {
-        return menuRepository.insert(toMenu(null, request));
+        MenuEntity po = toEntity(toMenu(null, request));
+        po.setId(null);
+        menuMapper.insert(po);
+        return po.getId();
     }
 
     @AuditLog(action = "menu-update", description = "修改菜单")
     @Override
     public void update(Long id, MenuRequest request) {
-        menuRepository.findById(id).orElseThrow(() -> new BizException(SystemErrorCode.MENU_NOT_FOUND));
-        menuRepository.update(toMenu(id, request));
+        findById(id).orElseThrow(() -> new BizException(SystemErrorCode.MENU_NOT_FOUND));
+        menuMapper.updateById(toEntity(toMenu(id, request)));
     }
 
     @AuditLog(action = "menu-delete", description = "删除菜单")
     @Override
     @Transactional
     public void delete(Long id) {
-        if (menuRepository.existsByParentId(id)) {
+        if (menuMapper.exists(new LambdaQueryWrapper<MenuEntity>().eq(MenuEntity::getParentId, id))) {
             throw new BizException(SystemErrorCode.MENU_HAS_CHILDREN);
         }
-        menuRepository.deleteById(id);
+        roleMenuMapper.delete(new LambdaQueryWrapper<RoleMenuEntity>().eq(RoleMenuEntity::getMenuId, id));
+        menuMapper.deleteById(id);
     }
 
     @Override
     public List<Menu> list() {
-        return menuRepository.findAll();
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                        .orderByAsc(MenuEntity::getSort))
+                .stream().map(this::toDomain).toList();
     }
 
     @Override
     public List<MenuTreeNode> tree() {
-        return buildTree(menuRepository.findAll());
+        return buildTree(list());
     }
 
     @Override
@@ -70,11 +85,13 @@ public class MenuServiceImpl implements MenuService {
         if (auth == null || !(auth.getPrincipal() instanceof io.rosecloud.common.security.model.SecurityUser su) || su.getUserId() == null) {
             return UserMenuResult.empty();
         }
-        List<Long> roleIds = userRepository.findRoleIdsByUserId(su.getUserId());
+        List<Long> roleIds = userRoleMapper.selectList(
+                new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getUserId, su.getUserId()))
+                .stream().map(UserRoleEntity::getRoleId).toList();
         if (roleIds.isEmpty()) {
             return UserMenuResult.empty();
         }
-        List<Menu> menus = menuRepository.findByRoleIds(roleIds);
+        List<Menu> menus = findByRoleIds(roleIds);
         List<String> permissions = menus.stream()
                 .map(Menu::getPerms)
                 .filter(p -> p != null && !p.isBlank())
@@ -88,6 +105,26 @@ public class MenuServiceImpl implements MenuService {
         return new UserMenuResult(buildTree(navigation), permissions);
     }
 
+    private Optional<Menu> findById(Long id) {
+        return Optional.ofNullable(menuMapper.selectById(id)).map(this::toDomain);
+    }
+
+    private List<Menu> findByRoleIds(Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return List.of();
+        }
+        List<RoleMenuEntity> links = roleMenuMapper.selectList(
+                new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds));
+        if (links.isEmpty()) {
+            return List.of();
+        }
+        List<Long> menuIds = links.stream().map(RoleMenuEntity::getMenuId).distinct().toList();
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                        .in(MenuEntity::getId, menuIds)
+                        .orderByAsc(MenuEntity::getSort))
+                .stream().map(this::toDomain).toList();
+    }
+
     private Menu toMenu(Long id, MenuRequest request) {
         long parentId = request.parentId() == null ? 0L : request.parentId();
         int sort = request.sort() == null ? 0 : request.sort();
@@ -95,6 +132,32 @@ public class MenuServiceImpl implements MenuService {
         int visible = request.visible() == null ? 1 : request.visible();
         return new Menu(id, parentId, request.name(), request.type(), request.path(), request.component(),
                 request.perms(), request.icon(), sort, status, visible);
+    }
+
+    private Menu toDomain(MenuEntity po) {
+        return new Menu(po.getId(), po.getParentId(), po.getName(), po.getType(), po.getPath(),
+                po.getComponent(), po.getPerms(), po.getIcon(), po.getSort(), po.getStatus(), po.getVisible(),
+                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
+    }
+
+    private MenuEntity toEntity(Menu m) {
+        MenuEntity po = new MenuEntity();
+        po.setId(m.getId());
+        po.setParentId(m.getParentId());
+        po.setName(m.getName());
+        po.setType(m.getType());
+        po.setPath(m.getPath());
+        po.setComponent(m.getComponent());
+        po.setPerms(m.getPerms());
+        po.setIcon(m.getIcon());
+        po.setSort(m.getSort());
+        po.setStatus(m.getStatus());
+        po.setVisible(m.getVisible());
+        po.setCreateTime(m.getCreateTime());
+        po.setCreateBy(m.getCreateBy());
+        po.setUpdateTime(m.getUpdateTime());
+        po.setUpdateBy(m.getUpdateBy());
+        return po;
     }
 
     private List<MenuTreeNode> buildTree(List<Menu> menus) {

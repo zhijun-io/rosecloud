@@ -8,6 +8,7 @@ public enum SecurityErrorCode implements ErrorCode {
     USER_NOT_FOUND("用户不存在"),
     USER_DISABLED("用户已禁用"),
     BAD_CREDENTIALS("用户名或密码错误"),
+    ACCOUNT_LOCKED("账号已临时锁定，请稍后再试"),
     FORBIDDEN("无权限访问"),
     TENANT_UNAVAILABLE("租户不可用"),
     TENANT_DISABLED("租户已禁用"),
@@ -29,6 +30,7 @@ public enum SecurityErrorCode implements ErrorCode {
         return switch (this) {
             case UNAUTHORIZED, BAD_CREDENTIALS,
                  TENANT_UNAVAILABLE, TENANT_DISABLED, TENANT_PENDING -> 401;
+            case ACCOUNT_LOCKED -> 423;
             case FORBIDDEN -> 403;
             default -> 400;
         };

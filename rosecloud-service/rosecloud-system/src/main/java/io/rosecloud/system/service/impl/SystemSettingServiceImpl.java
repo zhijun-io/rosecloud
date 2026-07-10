@@ -1,11 +1,15 @@
 package io.rosecloud.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.starter.audit.AuditLog;
-import io.rosecloud.system.domain.SettingKeyRepository;
+import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.domain.SystemSetting;
-import io.rosecloud.system.domain.SystemSettingRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.SettingKeyEntity;
+import io.rosecloud.system.persistence.SettingKeyMapper;
+import io.rosecloud.system.persistence.SystemSettingEntity;
+import io.rosecloud.system.persistence.SystemSettingMapper;
 import io.rosecloud.system.service.SystemSettingService;
 import io.rosecloud.system.service.dto.SettingValueRequest;
 import org.springframework.security.core.Authentication;
@@ -14,27 +18,29 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SystemSettingServiceImpl implements SystemSettingService {
 
-    private final SettingKeyRepository settingKeyRepository;
-    private final SystemSettingRepository systemSettingRepository;
+    private final SystemSettingMapper systemSettingMapper;
+    private final SettingKeyMapper settingKeyMapper;
 
-    public SystemSettingServiceImpl(SettingKeyRepository settingKeyRepository,
-                                   SystemSettingRepository systemSettingRepository) {
-        this.settingKeyRepository = settingKeyRepository;
-        this.systemSettingRepository = systemSettingRepository;
+    public SystemSettingServiceImpl(SystemSettingMapper systemSettingMapper,
+                                   SettingKeyMapper settingKeyMapper) {
+        this.systemSettingMapper = systemSettingMapper;
+        this.settingKeyMapper = settingKeyMapper;
     }
 
     @Override
     public List<SystemSetting> list() {
-        return systemSettingRepository.findAll();
+        return systemSettingMapper.selectList(new LambdaQueryWrapper<SystemSettingEntity>()
+                        .orderByAsc(SystemSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public SystemSetting get(String key) {
-        return systemSettingRepository.findByKey(key)
+        return findByKey(key)
                 .orElseThrow(() -> new BizException(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND));
     }
 
@@ -42,21 +48,32 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     @Override
     public void save(String key, SettingValueRequest request) {
         ensureSettingKeyExists(key);
-        systemSettingRepository.save(new SystemSetting(key, request.value(), now(), currentUserId()));
+        SystemSettingEntity existing = systemSettingMapper.selectById(key);
+        SystemSettingEntity po = toEntity(new SystemSetting(key, request.value(), now(), currentUserId()));
+        if (existing == null) {
+            systemSettingMapper.insert(po);
+            return;
+        }
+        systemSettingMapper.updateById(po);
     }
 
     @AuditLog(action = "system-setting-delete", description = "删除系统配置")
     @Override
     public void delete(String key) {
         ensureSettingKeyExists(key);
-        if (systemSettingRepository.findByKey(key).isEmpty()) {
+        if (findByKey(key).isEmpty()) {
             throw new BizException(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND);
         }
-        systemSettingRepository.deleteByKey(key);
+        systemSettingMapper.deleteById(key);
+    }
+
+    private Optional<SystemSetting> findByKey(String key) {
+        return Optional.ofNullable(systemSettingMapper.selectById(key)).map(this::toDomain);
     }
 
     private void ensureSettingKeyExists(String key) {
-        if (settingKeyRepository.findByKey(key).isEmpty()) {
+        if (settingKeyMapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
+                .eq(SettingKeyEntity::getKey, key)) == null) {
             throw new BizException(SystemErrorCode.SETTING_KEY_NOT_FOUND);
         }
     }
@@ -71,5 +88,18 @@ public class SystemSettingServiceImpl implements SystemSettingService {
             return null;
         }
         return su.getUserId();
+    }
+
+    private SystemSetting toDomain(SystemSettingEntity po) {
+        return new SystemSetting(po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
+    }
+
+    private SystemSettingEntity toEntity(SystemSetting setting) {
+        SystemSettingEntity po = new SystemSettingEntity();
+        po.setSettingKey(setting.getKey());
+        po.setValue(setting.getValue());
+        po.setUpdatedAt(setting.getUpdatedAt());
+        po.setUpdatedBy(setting.getUpdatedBy());
+        return po;
     }
 }

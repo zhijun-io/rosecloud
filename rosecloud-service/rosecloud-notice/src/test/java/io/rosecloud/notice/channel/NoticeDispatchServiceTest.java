@@ -25,16 +25,13 @@ class NoticeDispatchServiceTest {
                 new NoticeRecipient(1L, "a@x.com", "110"),
                 new NoticeRecipient(2L, "b@x.com", null));
         AtomicInteger emailCount = new AtomicInteger();
-        AtomicInteger smsCount = new AtomicInteger();
         NoticeDispatchService service = new NoticeDispatchService(
-                List.of(capturingSender(NoticeChannel.EMAIL, emailCount),
-                        capturingSender(NoticeChannel.SMS, smsCount)), SYNC);
+                List.of(capturingSender(NoticeChannel.EMAIL, emailCount)), SYNC);
 
         Notice notice = notice(NoticeChannel.EMAIL.code(), recipients);
         service.doDispatch(notice, NoticeChannel.maskOf(notice.getChannels()));
 
         assertThat(emailCount.get()).isEqualTo(2);
-        assertThat(smsCount.get()).isEqualTo(0);
     }
 
     @Test

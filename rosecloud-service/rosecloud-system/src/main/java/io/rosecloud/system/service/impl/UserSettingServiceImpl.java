@@ -1,41 +1,48 @@
 package io.rosecloud.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import io.rosecloud.system.domain.SettingKeyRepository;
+import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.domain.UserSetting;
-import io.rosecloud.system.domain.UserSettingRepository;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.SettingKeyEntity;
+import io.rosecloud.system.persistence.SettingKeyMapper;
+import io.rosecloud.system.persistence.UserSettingEntity;
+import io.rosecloud.system.persistence.UserSettingMapper;
 import io.rosecloud.system.service.UserSettingService;
 import io.rosecloud.system.service.dto.SettingValueRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserSettingServiceImpl implements UserSettingService {
 
-    private final SettingKeyRepository settingKeyRepository;
-    private final UserSettingRepository userSettingRepository;
+    private final UserSettingMapper userSettingMapper;
+    private final SettingKeyMapper settingKeyMapper;
 
-    public UserSettingServiceImpl(SettingKeyRepository settingKeyRepository,
-                                 UserSettingRepository userSettingRepository) {
-        this.settingKeyRepository = settingKeyRepository;
-        this.userSettingRepository = userSettingRepository;
+    public UserSettingServiceImpl(UserSettingMapper userSettingMapper,
+                                 SettingKeyMapper settingKeyMapper) {
+        this.userSettingMapper = userSettingMapper;
+        this.settingKeyMapper = settingKeyMapper;
     }
 
     @Override
     public List<UserSetting> listMine() {
-        return userSettingRepository.findByUserId(currentUserId());
+        return userSettingMapper.selectList(new LambdaQueryWrapper<UserSettingEntity>()
+                        .eq(UserSettingEntity::getUserId, currentUserId())
+                        .orderByAsc(UserSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
     }
 
     @Override
     public UserSetting getMine(String key) {
-        return userSettingRepository.findByUserIdAndKey(currentUserId(), key)
+        return findByUserIdAndKey(currentUserId(), key)
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_SETTING_NOT_FOUND));
     }
 
@@ -44,21 +51,40 @@ public class UserSettingServiceImpl implements UserSettingService {
     public void saveMine(String key, SettingValueRequest request) {
         Long userId = currentUserId();
         ensureSettingKeyExists(key);
-        userSettingRepository.save(new UserSetting(userId, key, request.value(), now(), userId));
+        UserSettingEntity existing = userSettingMapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getUserId, userId)
+                .eq(UserSettingEntity::getSettingKey, key));
+        UserSettingEntity po = toEntity(new UserSetting(userId, key, request.value(), now(), userId));
+        if (existing == null) {
+            userSettingMapper.insert(po);
+            return;
+        }
+        po.setId(existing.getId());
+        userSettingMapper.updateById(po);
     }
 
     @AuditLog(action = "user-setting-delete", description = "删除用户配置")
     @Override
     public void deleteMine(String key) {
         Long userId = currentUserId();
-        if (userSettingRepository.findByUserIdAndKey(userId, key).isEmpty()) {
+        if (findByUserIdAndKey(userId, key).isEmpty()) {
             throw new BizException(SystemErrorCode.USER_SETTING_NOT_FOUND);
         }
-        userSettingRepository.deleteByUserIdAndKey(userId, key);
+        userSettingMapper.delete(new LambdaQueryWrapper<UserSettingEntity>()
+                .eq(UserSettingEntity::getUserId, userId)
+                .eq(UserSettingEntity::getSettingKey, key));
+    }
+
+    private Optional<UserSetting> findByUserIdAndKey(Long userId, String key) {
+        return Optional.ofNullable(userSettingMapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
+                        .eq(UserSettingEntity::getUserId, userId)
+                        .eq(UserSettingEntity::getSettingKey, key)))
+                .map(this::toDomain);
     }
 
     private void ensureSettingKeyExists(String key) {
-        if (settingKeyRepository.findByKey(key).isEmpty()) {
+        if (settingKeyMapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
+                .eq(SettingKeyEntity::getKey, key)) == null) {
             throw new BizException(SystemErrorCode.SETTING_KEY_NOT_FOUND);
         }
     }
@@ -73,5 +99,19 @@ public class UserSettingServiceImpl implements UserSettingService {
 
     private static LocalDateTime now() {
         return LocalDateTime.now();
+    }
+
+    private UserSetting toDomain(UserSettingEntity po) {
+        return new UserSetting(po.getUserId(), po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
+    }
+
+    private UserSettingEntity toEntity(UserSetting setting) {
+        UserSettingEntity po = new UserSettingEntity();
+        po.setUserId(setting.getUserId());
+        po.setSettingKey(setting.getKey());
+        po.setValue(setting.getValue());
+        po.setUpdatedAt(setting.getUpdatedAt());
+        po.setUpdatedBy(setting.getUpdatedBy());
+        return po;
     }
 }

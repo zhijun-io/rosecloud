@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
@@ -40,7 +41,11 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
 
         eventPublisher.publishEvent(new LoginFailedEvent(username, null, e.getMessage(), ip, userAgent));
 
-        SecurityErrorCode errorCode = SecurityErrorCode.BAD_CREDENTIALS;
+        // A locked account (H3) surfaces a distinct 423 so a legitimate user knows why they
+        // are blocked; every other failure stays a uniform 401 to avoid username enumeration.
+        SecurityErrorCode errorCode = (e instanceof LockedException)
+                ? SecurityErrorCode.ACCOUNT_LOCKED
+                : SecurityErrorCode.BAD_CREDENTIALS;
         response.setStatus(errorCode.httpStatus());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

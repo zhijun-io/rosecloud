@@ -6,6 +6,7 @@ import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
+import io.rosecloud.starter.security.auth.BruteForceProtection;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -22,15 +23,18 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
     private final SessionStore sessionStore;
     private final UserDetailsService userDetailsService;
     private final TenantLookupApi tenantLookupApi;
+    private final BruteForceProtection bruteForce;
 
     public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
                                               SessionStore sessionStore,
                                               UserDetailsService userDetailsService,
-                                              TenantLookupApi tenantLookupApi) {
+                                              TenantLookupApi tenantLookupApi,
+                                              BruteForceProtection bruteForce) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
         this.userDetailsService = userDetailsService;
         this.tenantLookupApi = tenantLookupApi;
+        this.bruteForce = bruteForce;
     }
 
     @Override
@@ -40,29 +44,38 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
 
         Jws<Claims> jws = tokenFactory.parseRefreshToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
+        String subject = claims.getSubject();
 
-        if (sessionStore.isRevoked(rawAccessToken.token())) {
-            throw new BadCredentialsException("Refresh token is revoked");
+        // H3: throttle refresh attempts per account, mirroring the login provider.
+        bruteForce.assertNotLocked(subject);
+        try {
+            if (sessionStore.isRevoked(rawAccessToken.token())) {
+                throw new BadCredentialsException("Refresh token is revoked");
+            }
+
+            // A disabled account must not be able to mint fresh tokens from a still-valid
+            // refresh token; mirrors the same guard on the access-token path
+            // (JwtAuthenticationProvider) so disabling a user takes effect immediately.
+            SecurityUser securityUser = JwtAuthSupport.loadAndValidateUser(claims.getSubject(), userDetailsService);
+
+            // Refresh-token rotation: revoke the session bound to the presented (old) refresh
+            // token so it cannot be reused after a new token pair is minted by the success handler.
+            sessionStore.revoke(rawAccessToken.token());
+
+            // Preserve the active tenant carried by the refresh token so the refreshed access
+            // token keeps the same tenant scope (no implicit switch on refresh).
+            String tokenTenant = claims.get("tenant", String.class);
+            String effectiveTenant = (tokenTenant == null || tokenTenant.isBlank())
+                    ? JwtAuthSupport.normalizeTenantId(securityUser.getTenantId())
+                    : tokenTenant.trim().toUpperCase(Locale.ROOT);
+            TenantStatusChecks.requireEnabled(effectiveTenant, tenantLookupApi);
+            SecurityUser effectiveUser = securityUser.withTenantId(effectiveTenant);
+            bruteForce.onSuccess(subject);
+            return new RefreshAuthenticationToken(effectiveUser);
+        } catch (AuthenticationException e) {
+            bruteForce.onFailure(subject);
+            throw e;
         }
-
-        // A disabled account must not be able to mint fresh tokens from a still-valid
-        // refresh token; mirrors the same guard on the access-token path
-        // (JwtAuthenticationProvider) so disabling a user takes effect immediately.
-        SecurityUser securityUser = JwtAuthSupport.loadAndValidateUser(claims.getSubject(), userDetailsService);
-
-        // Refresh-token rotation: revoke the session bound to the presented (old) refresh
-        // token so it cannot be reused after a new token pair is minted by the success handler.
-        sessionStore.revoke(rawAccessToken.token());
-
-        // Preserve the active tenant carried by the refresh token so the refreshed access
-        // token keeps the same tenant scope (no implicit switch on refresh).
-        String tokenTenant = claims.get("tenant", String.class);
-        String effectiveTenant = (tokenTenant == null || tokenTenant.isBlank())
-                ? JwtAuthSupport.normalizeTenantId(securityUser.getTenantId())
-                : tokenTenant.trim().toUpperCase(Locale.ROOT);
-        TenantStatusChecks.requireEnabled(effectiveTenant, tenantLookupApi);
-        SecurityUser effectiveUser = securityUser.withTenantId(effectiveTenant);
-        return new RefreshAuthenticationToken(effectiveUser);
     }
 
     @Override

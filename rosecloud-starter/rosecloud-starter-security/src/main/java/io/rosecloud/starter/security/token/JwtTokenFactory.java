@@ -22,6 +22,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -32,6 +34,8 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     private static final String ENABLED = "enabled";
     private static final String TOKEN_TYPE = "type";
     private static final String TENANT = "tenant";
+    private static final String AUDIENCE = "aud";
+    private static final String FINGERPRINT = "fp";
 
     /** Minimum secret length (bytes) recommended for HS512 (512 bits). */
     private static final int MIN_SECRET_BYTES = 64;
@@ -57,10 +61,15 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser) {
-        return createAccessJwtToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
+        return createAccessJwtToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()), null);
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser, String activeTenantId) {
+        return createAccessJwtToken(securityUser, activeTenantId, null);
+    }
+
+    public AccessJwtToken createAccessJwtToken(SecurityUser securityUser, String activeTenantId,
+                                               String deviceFingerprint) {
         activeTenantId = resolveActiveTenantId(activeTenantId);
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
@@ -74,6 +83,8 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
             claims.add(NICKNAME, securityUser.getNickname());
         }
 
+        withAudienceAndFingerprint(claims, deviceFingerprint);
+
         String token = Jwts.builder()
                 .claims(claims.build())
                 .issuedAt(Date.from(now.toInstant()))
@@ -86,10 +97,15 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser) {
-        return createRefreshToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
+        return createRefreshToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()), null);
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser, String activeTenantId) {
+        return createRefreshToken(securityUser, activeTenantId, null);
+    }
+
+    public AccessJwtToken createRefreshToken(SecurityUser securityUser, String activeTenantId,
+                                             String deviceFingerprint) {
         activeTenantId = resolveActiveTenantId(activeTenantId);
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
@@ -98,6 +114,8 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
                 .add(USER_ID, securityUser.getUserId())
                 .add(TOKEN_TYPE, "refresh")
                 .add(TENANT, activeTenantId);
+
+        withAudienceAndFingerprint(claims, deviceFingerprint);
 
         String token = Jwts.builder()
                 .claims(claims.build())
@@ -112,7 +130,11 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
 
     public Jws<Claims> parseAccessToken(String token) {
         Jws<Claims> jws = parseTokenClaims(token);
-        if (jws.getPayload().get(TOKEN_TYPE, String.class) != null) {
+        // An access token must not be a refresh token. A null or "access" type is allowed;
+        // only "refresh" is rejected here (L1: the previous check rejected ANY `type` claim,
+        // which would have broken a future `type=access` convention).
+        String type = jws.getPayload().get(TOKEN_TYPE, String.class);
+        if ("refresh".equals(type)) {
             throw new BadCredentialsException("Invalid token type: expected access token");
         }
         return jws;
@@ -128,24 +150,58 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public JwtPair createTokenPair(SecurityUser securityUser) {
-        return createTokenPair(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
+        return createTokenPair(securityUser, resolveActiveTenantId(securityUser.getTenantId()), null);
     }
 
     public JwtPair createTokenPair(SecurityUser securityUser, String activeTenantId) {
-        AccessJwtToken access = createAccessJwtToken(securityUser, activeTenantId);
-        AccessJwtToken refresh = createRefreshToken(securityUser, activeTenantId);
+        return createTokenPair(securityUser, activeTenantId, null);
+    }
+
+    public JwtPair createTokenPair(SecurityUser securityUser, String activeTenantId, String deviceFingerprint) {
+        AccessJwtToken access = createAccessJwtToken(securityUser, activeTenantId, deviceFingerprint);
+        AccessJwtToken refresh = createRefreshToken(securityUser, activeTenantId, deviceFingerprint);
         return new JwtPair(access.token(), refresh.token());
+    }
+
+    private void withAudienceAndFingerprint(ClaimsBuilder claims, String deviceFingerprint) {
+        String aud = audience();
+        if (aud != null) {
+            // M2: audience claim. Set as a plain claim to stay version-independent; it is
+            // verified in parseTokenClaims via requireAudience.
+            claims.add(AUDIENCE, aud);
+        }
+        if (deviceFingerprint != null && !deviceFingerprint.isBlank()) {
+            claims.add(FINGERPRINT, deviceFingerprint);
+        }
+    }
+
+    private String audience() {
+        String aud = properties.getJwt().getAudience();
+        return (aud == null || aud.isBlank()) ? null : aud;
     }
 
     public Jws<Claims> parseTokenClaims(String token) {
         try {
-            return getJwtParser().parseSignedClaims(token);
+            Jws<Claims> jws = getJwtParser().parseSignedClaims(token);
+            requireAudience(jws);
+            return jws;
         } catch (UnsupportedJwtException | MalformedJwtException | IllegalArgumentException ex) {
             throw new BadCredentialsException("Invalid JWT token", ex);
         } catch (SignatureException ex) {
             throw new BadCredentialsException("Invalid JWT signature", ex);
         } catch (ExpiredJwtException ex) {
             throw new JwtExpiredTokenException("JWT token expired", ex);
+        }
+    }
+
+    private void requireAudience(Jws<Claims> jws) {
+        String expected = audience();
+        if (expected == null) {
+            return;
+        }
+        Set<String> audiences = jws.getPayload().getAudience();
+        if (audiences == null || audiences.stream().noneMatch(expected::equals)) {
+            throw new BadCredentialsException("Invalid JWT audience");
         }
     }
 

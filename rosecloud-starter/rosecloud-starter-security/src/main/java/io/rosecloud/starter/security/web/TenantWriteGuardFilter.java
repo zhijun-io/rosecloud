@@ -37,9 +37,11 @@ public class TenantWriteGuardFilter extends OncePerRequestFilter {
     private static final String EXPIRED = "EXPIRED";
 
     private final ObjectProvider<TenantLookupApi> tenantLookupApiProvider;
+    private final boolean failClosed;
 
-    public TenantWriteGuardFilter(ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
+    public TenantWriteGuardFilter(ObjectProvider<TenantLookupApi> tenantLookupApiProvider, boolean failClosed) {
         this.tenantLookupApiProvider = tenantLookupApiProvider;
+        this.failClosed = failClosed;
     }
 
     @Override
@@ -58,17 +60,32 @@ public class TenantWriteGuardFilter extends OncePerRequestFilter {
 
         TenantLookupApi tenantLookupApi = tenantLookupApiProvider.getIfAvailable();
         if (tenantLookupApi == null) {
+            // M5: no user API available to resolve tenant status. Fail-open by default (the
+            // original behaviour for services without a user API); fail-closed blocks the write.
+            if (failClosed) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant status unavailable");
+                return;
+            }
             filterChain.doFilter(request, response);
             return;
         }
 
         ApiResponse<TenantStatusView> apiResponse = tenantLookupApi.findTenantStatus(tenantId);
-        if (apiResponse != null && apiResponse.success() && apiResponse.data() != null) {
-            String status = apiResponse.data().tenantStatus();
-            if (STOPPED.equalsIgnoreCase(status) || EXPIRED.equalsIgnoreCase(status)) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant write suspended");
+        if (apiResponse == null || !apiResponse.success() || apiResponse.data() == null) {
+            // M5: could not resolve tenant status (lookup failed / empty). Same fail-open vs
+            // fail-closed decision as above.
+            if (failClosed) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant status unavailable");
                 return;
             }
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String status = apiResponse.data().tenantStatus();
+        if (STOPPED.equalsIgnoreCase(status) || EXPIRED.equalsIgnoreCase(status)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant write suspended");
+            return;
         }
 
         filterChain.doFilter(request, response);

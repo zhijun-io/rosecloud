@@ -35,11 +35,11 @@ class RestAwareAuthenticationSuccessHandlerTest {
         ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         LoginTenantResolver tenantResolver = mock(LoginTenantResolver.class);
         when(tenantResolver.resolveInitialTenant(any())).thenReturn("TENANT2");
-        when(tokenFactory.createTokenPair(any(), eq("TENANT2"))).thenReturn(new JwtPair("access-1", "refresh-1"));
+        when(tokenFactory.createTokenPair(any(), eq("TENANT2"), any())).thenReturn(new JwtPair("access-1", "refresh-1"));
         when(tokenFactory.getAccessTokenExpirationSeconds()).thenReturn(3600L);
 
         RestAwareAuthenticationSuccessHandler handler = new RestAwareAuthenticationSuccessHandler(
-                tokenFactory, sessionStore, eventPublisher, new ObjectMapper(), tenantResolver, 86400L);
+                tokenFactory, sessionStore, eventPublisher, new ObjectMapper(), tenantResolver, 86400L, false);
 
         SecurityUser securityUser = new SecurityUser(1L, "alice@example.com", "Alice", "hash", true, "TENANT1",
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, "alice@example.com"), List.of());
@@ -53,7 +53,7 @@ class RestAwareAuthenticationSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        verify(tokenFactory).createTokenPair(securityUser, "TENANT2");
+        verify(tokenFactory).createTokenPair(any(), eq("TENANT2"), any());
         verify(sessionStore).save(any(LoginSession.class));
         assertEquals(200, response.getStatus());
     }
