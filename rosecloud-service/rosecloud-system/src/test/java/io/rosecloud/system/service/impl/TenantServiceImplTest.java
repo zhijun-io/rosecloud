@@ -44,8 +44,9 @@ class TenantServiceImplTest {
         TenantCreateRequest request = new TenantCreateRequest("tenant1", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", null, "admin");
         when(tenantProfileRepository.defaultProfileId()).thenReturn("profile-default");
-        when(tenantRepository.findById("TENANT1")).thenReturn(Optional.empty());
-        when(tenantRepository.insert(any(Tenant.class), any())).thenReturn("tenant-99");
+        Tenant pending = new Tenant("TENANT1", "Acme", TenantStatus.PENDING, "Owner", "13800000000",
+                LocalDate.now().plusDays(30), "remark", "profile-default", null);
+        when(tenantRepository.findById("TENANT1")).thenReturn(Optional.empty(), Optional.of(pending));
 
         String id = service().create(request);
 
@@ -67,9 +68,7 @@ class TenantServiceImplTest {
         when(tenantProfileRepository.findById("profile-custom")).thenReturn(Optional.of(
                 new io.rosecloud.system.domain.TenantProfile("profile-custom", "Custom", "tier",
                         new io.rosecloud.system.domain.TenantProfileData("custom", 1, 1, 1, 1, java.util.List.of()))));
-        when(tenantRepository.findById("TENANT2")).thenReturn(Optional.empty());
-        when(tenantRepository.insert(any(Tenant.class), any())).thenReturn("TENANT2");
-        when(tenantRepository.findById("TENANT2")).thenReturn(Optional.of(pending));
+        when(tenantRepository.findById("TENANT2")).thenReturn(Optional.empty(), Optional.of(pending));
 
         assertEquals("TENANT2", service().create(request));
         verify(tenantProvisioner).provision("TENANT2");
@@ -87,16 +86,31 @@ class TenantServiceImplTest {
     }
 
     @Test
+    void createRejectsDuplicateTenantId() {
+        Tenant existing = new Tenant("TENANT9", "Acme", TenantStatus.ENABLED,
+                "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
+        when(tenantRepository.findById("TENANT9")).thenReturn(Optional.of(existing));
+
+        TenantCreateRequest request = new TenantCreateRequest("tenant9", "Acme", "Owner", "13800000000",
+                LocalDate.now().plusDays(30), "remark", null, "admin");
+
+        BizException ex = assertThrows(BizException.class, () -> service().create(request));
+
+        assertEquals(SystemErrorCode.TENANT_CODE_EXISTS, ex.getErrorCode());
+        verify(tenantRepository, never()).insert(any(), any());
+    }
+
+    @Test
     void updateReusesExistingProfileWhenNotSpecified() {
-        Tenant existing = new Tenant("tenant-200", "Old", TenantStatus.ENABLED,
+        Tenant existing = new Tenant("TENANT200", "Old", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", "profile-default", null);
-        when(tenantRepository.findById("tenant-200")).thenReturn(Optional.of(existing));
+        when(tenantRepository.findById("TENANT200")).thenReturn(Optional.of(existing));
         when(tenantProfileRepository.findById("profile-default")).thenReturn(Optional.of(
                 new io.rosecloud.system.domain.TenantProfile("profile-default", "Default", "tier",
                         new io.rosecloud.system.domain.TenantProfileData("default", 1, 1, 1, 1,
                                 java.util.List.of()))));
 
-        service().update("tenant-200", new TenantUpdateRequest("New", "Owner-2", "13900000000",
+        service().update("tenant200", new TenantUpdateRequest("New", "Owner-2", "13900000000",
                 LocalDate.now().plusDays(60), "new remark", null));
 
         ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
@@ -107,22 +121,22 @@ class TenantServiceImplTest {
 
     @Test
     void deleteDelegatesToRepository() {
-        Tenant existing = new Tenant("tenant-300", "Old", TenantStatus.ENABLED,
+        Tenant existing = new Tenant("TENANT300", "Old", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
-        when(tenantRepository.findById("tenant-300")).thenReturn(Optional.of(existing));
+        when(tenantRepository.findById("TENANT300")).thenReturn(Optional.of(existing));
 
-        service().delete("tenant-300");
+        service().delete("tenant300");
 
-        verify(tenantRepository).deleteById("tenant-300");
+        verify(tenantRepository).deleteById("TENANT300");
     }
 
     @Test
     void openRejectsEnabledTenant() {
-        Tenant tenant = new Tenant("tenant-400", "Acme", TenantStatus.ENABLED,
+        Tenant tenant = new Tenant("TENANT400", "Acme", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
-        when(tenantRepository.findById("tenant-400")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT400")).thenReturn(Optional.of(tenant));
 
-        BizException ex = assertThrows(BizException.class, () -> service().open("tenant-400"));
+        BizException ex = assertThrows(BizException.class, () -> service().open("tenant400"));
 
         assertEquals(SystemErrorCode.TENANT_STATUS_INVALID, ex.getErrorCode());
         verify(tenantProvisioner, never()).provision(any());
@@ -130,43 +144,43 @@ class TenantServiceImplTest {
 
     @Test
     void openProvisionsPendingTenant() {
-        Tenant tenant = new Tenant("tenant-401", "Acme", TenantStatus.PENDING,
+        Tenant tenant = new Tenant("TENANT401", "Acme", TenantStatus.PENDING,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
-        when(tenantRepository.findById("tenant-401")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT401")).thenReturn(Optional.of(tenant));
 
-        assertEquals("tenant-401", service().open("tenant-401"));
-        verify(tenantProvisioner).provision("tenant-401");
+        assertEquals("TENANT401", service().open("tenant401"));
+        verify(tenantProvisioner).provision("TENANT401");
     }
 
     @Test
     void disableUpdatesEnabledTenantToDisabled() {
-        Tenant tenant = new Tenant("tenant-500", "Acme", TenantStatus.ENABLED,
+        Tenant tenant = new Tenant("TENANT500", "Acme", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
-        when(tenantRepository.findById("tenant-500")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT500")).thenReturn(Optional.of(tenant));
 
-        service().disable("tenant-500");
+        service().disable("tenant500");
 
-        verify(tenantRepository).updateStatus("tenant-500", TenantStatus.DISABLED);
+        verify(tenantRepository).updateStatus("TENANT500", TenantStatus.DISABLED);
     }
 
     @Test
     void enableUpdatesDisabledTenantToEnabled() {
-        Tenant tenant = new Tenant("tenant-600", "Acme", TenantStatus.DISABLED,
+        Tenant tenant = new Tenant("TENANT600", "Acme", TenantStatus.DISABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", null, null);
-        when(tenantRepository.findById("tenant-600")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT600")).thenReturn(Optional.of(tenant));
 
-        service().enable("tenant-600");
+        service().enable("tenant600");
 
-        verify(tenantRepository).updateStatus("tenant-600", TenantStatus.ENABLED);
+        verify(tenantRepository).updateStatus("TENANT600", TenantStatus.ENABLED);
     }
 
     @Test
     void enableRejectsExpiredTenant() {
-        Tenant tenant = new Tenant("tenant-7", "Acme", TenantStatus.DISABLED,
+        Tenant tenant = new Tenant("TENANT7", "Acme", TenantStatus.DISABLED,
                 "Owner", "13800000000", LocalDate.now().minusDays(1), "remark", null, null);
-        when(tenantRepository.findById("tenant-7")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT7")).thenReturn(Optional.of(tenant));
 
-        BizException ex = assertThrows(BizException.class, () -> service().enable("tenant-7"));
+        BizException ex = assertThrows(BizException.class, () -> service().enable("tenant7"));
 
         assertEquals("system.tenant_status_invalid", ex.getErrorCode().code());
         verify(tenantRepository, never()).updateStatus(any(), any());
@@ -174,10 +188,10 @@ class TenantServiceImplTest {
 
     @Test
     void getReturnsRepositoryValue() {
-        Tenant tenant = new Tenant("tenant-8", "Beta", TenantStatus.ENABLED,
+        Tenant tenant = new Tenant("TENANT8", "Beta", TenantStatus.ENABLED,
                 "Owner", "13800000000", LocalDate.now().plusDays(1), "remark", null, null);
-        when(tenantRepository.findById("tenant-8")).thenReturn(Optional.of(tenant));
+        when(tenantRepository.findById("TENANT8")).thenReturn(Optional.of(tenant));
 
-        assertEquals(tenant, service().get("tenant-8"));
+        assertEquals(tenant, service().get("tenant8"));
     }
 }

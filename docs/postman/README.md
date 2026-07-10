@@ -2,6 +2,12 @@
 
 这里提供 RoseCloud 当前登录、退出、获取当前登录用户、查询用户和撤销 token 的 Postman collection。
 
+租户相关请求约定：
+
+- `tenantId` 统一使用字母开头、仅含字母和数字、长度不超过 10 的大写编码
+- 系统租户固定为 `ROOT`
+- 平台管理员的活动租户会在 token 里体现为 `ROOT`
+
 ## 文件
 
 - [rosecloud-auth-system.postman_collection.json](/Users/zhijunio/github/rosecloud/docs/postman/rosecloud-auth-system.postman_collection.json)

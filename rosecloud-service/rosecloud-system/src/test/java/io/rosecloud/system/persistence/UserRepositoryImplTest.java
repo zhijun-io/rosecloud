@@ -56,7 +56,7 @@ class UserRepositoryImplTest {
 
         doAnswer(invocation -> 1).when(userCredentialMapper).insert(any(UserCredentialEntity.class));
 
-        User user = new User(null, "alice@example.com", "Alice", 1, "tenant-1", null);
+        User user = new User(null, "alice@example.com", "Alice", 1, "TENANT1", null);
 
         assertEquals(101L, repository().insert(user, "hash-123"));
 
@@ -74,7 +74,7 @@ class UserRepositoryImplTest {
         user.setId(201L);
         user.setEmail("alice@example.com");
         user.setStatus(1);
-        user.setTenantId("tenant-1");
+        user.setTenantId("TENANT1");
         UserCredentialEntity credential = new UserCredentialEntity();
         credential.setUserId(201L);
         credential.setPassword("hash-456");

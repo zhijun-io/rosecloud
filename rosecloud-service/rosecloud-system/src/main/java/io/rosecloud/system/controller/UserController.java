@@ -11,6 +11,7 @@ import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.service.dto.UserRoleAssignRequest;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,7 @@ public class UserController {
 
     @PreAuthorize("hasAuthority('system:user:add')")
     @PostMapping
-    public ApiResponse<Long> create(@RequestBody UserCreateRequest request) {
+    public ApiResponse<Long> create(@Valid @RequestBody UserCreateRequest request) {
         return ApiResponse.ok(userService.create(request));
     }
 

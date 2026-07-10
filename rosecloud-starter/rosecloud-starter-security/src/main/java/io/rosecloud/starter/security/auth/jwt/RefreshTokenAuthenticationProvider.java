@@ -54,16 +54,20 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         // Preserve the active tenant carried by the refresh token so the refreshed access
         // token keeps the same tenant scope (no implicit switch on refresh).
         String tokenTenant = claims.get("tenant", String.class);
-        SecurityUser effectiveUser = (tokenTenant == null || tokenTenant.isBlank())
-                ? securityUser.withTenantId(securityUser.getTenantId() != null
-                    ? securityUser.getTenantId()
-                    : TenantContextHolder.SYSTEM_TENANT_ID)
-                : securityUser.withTenantId(tokenTenant.trim().toUpperCase(Locale.ROOT));
+        SecurityUser effectiveUser = securityUser.withTenantId((tokenTenant == null || tokenTenant.isBlank())
+                ? normalizeTenantId(securityUser.getTenantId())
+                : tokenTenant.trim().toUpperCase(Locale.ROOT));
         return new RefreshAuthenticationToken(effectiveUser);
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
         return RefreshAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+
+    private static String normalizeTenantId(String tenantId) {
+        return (tenantId == null || tenantId.isBlank())
+                ? TenantContextHolder.SYSTEM_TENANT_ID
+                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 }

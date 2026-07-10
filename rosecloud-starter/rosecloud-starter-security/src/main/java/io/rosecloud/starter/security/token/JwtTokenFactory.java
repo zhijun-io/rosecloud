@@ -22,6 +22,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 public class JwtTokenFactory implements io.rosecloud.common.security.token.TokenFactory {
@@ -60,6 +61,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser, String activeTenantId) {
+        activeTenantId = resolveActiveTenantId(activeTenantId);
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
                 .subject(securityUser.getUsername())
@@ -88,6 +90,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser, String activeTenantId) {
+        activeTenantId = resolveActiveTenantId(activeTenantId);
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
                 .subject(securityUser.getUsername())
@@ -179,7 +182,9 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     private static String resolveActiveTenantId(String tenantId) {
-        return (tenantId == null || tenantId.isBlank()) ? TenantContextHolder.SYSTEM_TENANT_ID : tenantId;
+        return (tenantId == null || tenantId.isBlank())
+                ? TenantContextHolder.SYSTEM_TENANT_ID
+                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 
 }

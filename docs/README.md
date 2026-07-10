@@ -11,7 +11,7 @@
 4. [configuration-model-decision.md](/Users/zhijunio/github/rosecloud/docs/adr/configuration-model-decision.md)
    配置模型决策，定义 `setting_key`、`system_setting` / `user_setting` / `tenant_profile` 的最小配置模型。
 5. [id-and-tenant-model-decision.md](/Users/zhijunio/github/rosecloud/docs/adr/id-and-tenant-model-decision.md)
-   主键与租户标识决策，定义雪花 ID 与字符串 `tenantId` 的分工。
+   主键与租户标识决策，定义雪花 ID 与字符串 `tenantId` 的分工，以及租户 ID 规则（字母开头、仅含字母和数字、最长 10 位、默认大写、系统租户为 `ROOT`）。
 6. [postman/README.md](/Users/zhijunio/github/rosecloud/docs/postman/README.md)
    Postman 脚本说明，包含登录、退出、当前用户、用户查询和 token 撤销的导入与执行顺序。
 

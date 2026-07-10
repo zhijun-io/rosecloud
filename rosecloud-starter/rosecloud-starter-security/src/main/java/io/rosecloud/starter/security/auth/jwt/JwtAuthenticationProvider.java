@@ -49,9 +49,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         // system tenant. Trusted because the token is signature-verified.
         String tokenTenant = claims.get("tenant", String.class);
         if (tokenTenant == null || tokenTenant.isBlank()) {
-            tokenTenant = securityUser.getTenantId() != null
-                    ? securityUser.getTenantId()
-                    : TenantContextHolder.SYSTEM_TENANT_ID;
+            tokenTenant = normalizeTenantId(securityUser.getTenantId());
         } else {
             tokenTenant = tokenTenant.trim().toUpperCase(Locale.ROOT);
         }
@@ -62,5 +60,11 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean supports(Class<?> authentication) {
         return JwtAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+
+    private static String normalizeTenantId(String tenantId) {
+        return (tenantId == null || tenantId.isBlank())
+                ? TenantContextHolder.SYSTEM_TENANT_ID
+                : tenantId.trim().toUpperCase(Locale.ROOT);
     }
 }

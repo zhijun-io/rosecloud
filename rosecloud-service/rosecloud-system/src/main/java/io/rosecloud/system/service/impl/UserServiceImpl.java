@@ -16,6 +16,7 @@ import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.support.PasswordPolicyValidator;
+import io.rosecloud.system.support.TenantIdSupport;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,7 +60,8 @@ public class UserServiceImpl implements UserService, UserApi {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
         PasswordPolicyValidator.validate(request.password());
-        User user = new User(null, request.username(), request.nickname(), 1, request.tenantId(), null);
+        User user = new User(null, request.username(), request.nickname(), 1,
+                TenantIdSupport.requireValid(request.tenantId()), null);
         return userRepository.insert(user, passwordEncoder.encode(request.password()));
     }
 
@@ -69,7 +71,7 @@ public class UserServiceImpl implements UserService, UserApi {
         if (userRepository.existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
-        User user = new User(null, username, nickname, 1, tenantId, null);
+        User user = new User(null, username, nickname, 1, TenantIdSupport.requireValid(tenantId), null);
         return userRepository.insert(user, passwordHash);
     }
 
@@ -79,7 +81,7 @@ public class UserServiceImpl implements UserService, UserApi {
         if (userRepository.existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
-        User user = new User(null, username, nickname, 0, tenantId, null);
+        User user = new User(null, username, nickname, 0, TenantIdSupport.requireValid(tenantId), null);
         return userRepository.insert(user, null);
     }
 

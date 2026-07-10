@@ -13,7 +13,7 @@ public final class TenantContextHolder {
      * 默认系统租户（平台管理员所属）。保留租户，不可经普通创建/删除流程变更。
      * 活动租户为该值时，视为「平台视角」，行级隔离豁免。
      */
-    public static final String SYSTEM_TENANT_ID = "ROOT";
+    public static final String SYSTEM_TENANT_ID = String.valueOf("ROOT");
 
     private static final ThreadLocal<String> TENANT_ID = new ThreadLocal<>();
 

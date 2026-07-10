@@ -53,7 +53,7 @@ class TenantControllerTest {
 
     @Test
     void createDelegatesToTenantService() throws Exception {
-        when(tenantService.create(any(TenantCreateRequest.class))).thenReturn("tenant-1");
+        when(tenantService.create(any(TenantCreateRequest.class))).thenReturn("TENANT1");
 
         mockMvc.perform(post("/api/system/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -64,14 +64,14 @@ class TenantControllerTest {
                                 """.formatted(LocalDate.now().plusDays(30))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value("tenant-1"));
+                .andExpect(jsonPath("$.data").value("TENANT1"));
 
         verify(tenantService).create(any(TenantCreateRequest.class));
     }
 
     @Test
     void updateDelegatesToTenantService() throws Exception {
-        mockMvc.perform(put("/api/system/tenants/tenant-1")
+        mockMvc.perform(put("/api/system/tenants/TENANT1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Acme","contactUser":"Owner","contactPhone":"13800000000",
@@ -85,23 +85,23 @@ class TenantControllerTest {
 
     @Test
     void deleteDelegatesToTenantService() throws Exception {
-        mockMvc.perform(delete("/api/system/tenants/tenant-1"))
+        mockMvc.perform(delete("/api/system/tenants/TENANT1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        verify(tenantService).delete("tenant-1");
+        verify(tenantService).delete("TENANT1");
     }
 
     @Test
     void getReturnsTenantData() throws Exception {
-        Tenant tenant = new Tenant("tenant-1", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+        Tenant tenant = new Tenant("TENANT1", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", "profile-1",
                 new ObjectMapper().valueToTree(new TenantProfileData("pro", 10, 5, 100, 60, List.of())));
-        when(tenantService.get("tenant-1")).thenReturn(tenant);
+        when(tenantService.get("TENANT1")).thenReturn(tenant);
 
-        mockMvc.perform(get("/api/system/tenants/tenant-1"))
+        mockMvc.perform(get("/api/system/tenants/TENANT1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.id").value("tenant-1"))
+                .andExpect(jsonPath("$.data.id").value("TENANT1"))
                 .andExpect(jsonPath("$.data.tenantProfileId").value("profile-1"));
     }
 
@@ -117,12 +117,12 @@ class TenantControllerTest {
 
     @Test
     void openDelegatesToTenantService() throws Exception {
-        when(tenantService.open("tenant-1")).thenReturn("tenant-1");
+        when(tenantService.open("TENANT1")).thenReturn("TENANT1");
 
-        mockMvc.perform(post("/api/system/tenants/tenant-1/open"))
+        mockMvc.perform(post("/api/system/tenants/TENANT1/open"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").value("tenant-1"));
+                .andExpect(jsonPath("$.data").value("TENANT1"));
 
-        verify(tenantService).open("tenant-1");
+        verify(tenantService).open("TENANT1");
     }
 }

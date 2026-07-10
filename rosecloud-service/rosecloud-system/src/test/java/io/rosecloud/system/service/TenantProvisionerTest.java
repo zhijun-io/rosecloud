@@ -47,45 +47,45 @@ class TenantProvisionerTest {
 
     @Test
     void provisionEnablesTenantWithoutAdminUsername() {
-        when(tenantRepository.findAdminUsername("tenant-1")).thenReturn(Optional.of(" "));
+        when(tenantRepository.findAdminUsername("TENANT1")).thenReturn(Optional.of(" "));
         when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
-        service().provision("tenant-1");
+        service().provision("TENANT1");
 
-        verify(tenantRepository).updateStatus("tenant-1", TenantStatus.ENABLED);
+        verify(tenantRepository).updateStatus("TENANT1", TenantStatus.ENABLED);
         verify(userService, never()).createWithoutPassword(any(), any(), any());
         verify(userActivationService, never()).resend(any());
     }
 
     @Test
     void provisionCreatesAdminAndAssignsRolesWhenUsernameExists() {
-        when(tenantRepository.findAdminUsername("tenant-2")).thenReturn(Optional.of("admin"));
+        when(tenantRepository.findAdminUsername("TENANT2")).thenReturn(Optional.of("admin"));
         when(roleRepository.findByCode("tenant-admin")).thenReturn(Optional.of(new Role(7L, "tenant-admin",
                 "Tenant admin")));
-        when(userService.createWithoutPassword("admin", "admin", "tenant-2")).thenReturn(88L);
+        when(userService.createWithoutPassword("admin", "admin", "TENANT2")).thenReturn(88L);
         doNothing().when(userActivationService).resend("admin");
         when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
-        service().provision("tenant-2");
+        service().provision("TENANT2");
 
-        verify(userService).createWithoutPassword("admin", "admin", "tenant-2");
+        verify(userService).createWithoutPassword("admin", "admin", "TENANT2");
         verify(userService).assignRoles(88L, java.util.List.of(7L));
         verify(userActivationService).resend("admin");
-        verify(tenantRepository).updateStatus("tenant-2", TenantStatus.ENABLED);
+        verify(tenantRepository).updateStatus("TENANT2", TenantStatus.ENABLED);
         ArgumentCaptor<NoticePublishRequest> noticeCaptor = ArgumentCaptor.forClass(NoticePublishRequest.class);
         verify(noticePublishApi).publish(noticeCaptor.capture());
         assertEquals(NoticeTargetType.TENANT.code(), noticeCaptor.getValue().targetType());
-        assertEquals("tenant-2", noticeCaptor.getValue().targetTenantId());
+        assertEquals("TENANT2", noticeCaptor.getValue().targetTenantId());
         assertEquals(null, noticeCaptor.getValue().targetRoleCode());
         assertEquals(null, noticeCaptor.getValue().targetUsername());
     }
 
     @Test
     void provisionFailsWhenTenantAdminRoleMissing() {
-        when(tenantRepository.findAdminUsername("tenant-3")).thenReturn(Optional.of("admin"));
+        when(tenantRepository.findAdminUsername("TENANT3")).thenReturn(Optional.of("admin"));
         when(roleRepository.findByCode("tenant-admin")).thenReturn(Optional.empty());
 
-        BizException ex = assertThrows(BizException.class, () -> service().provision("tenant-3"));
+        BizException ex = assertThrows(BizException.class, () -> service().provision("TENANT3"));
 
         assertEquals(SystemErrorCode.ROLE_NOT_FOUND, ex.getErrorCode());
         verify(tenantRepository, never()).updateStatus(any(), any());

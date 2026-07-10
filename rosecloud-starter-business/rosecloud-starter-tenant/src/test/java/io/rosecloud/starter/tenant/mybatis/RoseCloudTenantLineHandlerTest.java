@@ -37,12 +37,12 @@ class RoseCloudTenantLineHandlerTest {
                 "sys_user_setting"
         ));
 
-        TenantContextHolder.setTenantId("tenant-100");
+        TenantContextHolder.setTenantId("TENANT100");
         RoseCloudTenantLineHandler handler = new RoseCloudTenantLineHandler(properties);
 
         assertTrue(handler.ignoreTable("sys_role"));
         assertTrue(handler.ignoreTable("sys_login_log"));
-        assertEquals("'tenant-100'", handler.getTenantId().toString());
+        assertEquals("'TENANT100'", handler.getTenantId().toString());
     }
 
     @Test
