@@ -8,10 +8,13 @@ import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.Locale;
 
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
@@ -48,7 +51,9 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         if (tokenTenant == null || tokenTenant.isBlank()) {
             tokenTenant = securityUser.getTenantId() != null
                     ? securityUser.getTenantId()
-                    : io.rosecloud.starter.tenant.core.TenantContextHolder.SYSTEM_TENANT_ID;
+                    : TenantContextHolder.SYSTEM_TENANT_ID;
+        } else {
+            tokenTenant = tokenTenant.trim().toUpperCase(Locale.ROOT);
         }
         SecurityUser effectiveUser = securityUser.withTenantId(tokenTenant);
         return new JwtAuthenticationToken(effectiveUser);

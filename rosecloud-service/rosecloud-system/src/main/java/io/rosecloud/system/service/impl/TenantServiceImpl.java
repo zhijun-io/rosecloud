@@ -12,11 +12,12 @@ import io.rosecloud.system.service.TenantProvisioner;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
+import io.rosecloud.system.support.TenantIdSupport;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class TenantServiceImpl implements TenantService {
@@ -43,11 +44,12 @@ public class TenantServiceImpl implements TenantService {
     @AuditLog(action = "tenant-update", description = "修改租户")
     @Override
     public void update(String id, TenantUpdateRequest request) {
-        Tenant tenant = load(id);
+        String tenantId = requireTenantId(id);
+        Tenant tenant = load(tenantId);
         String tenantProfileId = resolveTenantProfileId(
                 request.tenantProfileId() == null || request.tenantProfileId().isBlank()
                         ? tenant.getTenantProfileId() : request.tenantProfileId());
-        Tenant updated = new Tenant(id, request.name(), tenant.getStatus(), request.contactUser(),
+        Tenant updated = new Tenant(tenantId, request.name(), tenant.getStatus(), request.contactUser(),
                 request.contactPhone(), request.expireTime(), request.remark(), tenantProfileId,
                 tenant.getAdditionalInfo());
         tenantRepository.update(updated);
@@ -56,13 +58,14 @@ public class TenantServiceImpl implements TenantService {
     @AuditLog(action = "tenant-delete", description = "删除租户")
     @Override
     public void delete(String id) {
-        load(id);
-        tenantRepository.deleteById(id);
+        String tenantId = requireTenantId(id);
+        load(tenantId);
+        tenantRepository.deleteById(tenantId);
     }
 
     @Override
     public Tenant get(String id) {
-        return load(id);
+        return load(requireTenantId(id));
     }
 
     /**
@@ -73,27 +76,30 @@ public class TenantServiceImpl implements TenantService {
     @AuditLog(action = "tenant-open", description = "开通租户")
     @Override
     public String open(String id) {
-        Tenant tenant = load(id);
+        String tenantId = requireTenantId(id);
+        Tenant tenant = load(tenantId);
         tenant.getStatus().transitionTo(TenantStatus.ENABLED);
-        tenantProvisioner.provision(id);
-        return id;
+        tenantProvisioner.provision(tenantId);
+        return tenantId;
     }
 
     @AuditLog(action = "tenant-disable", description = "停用租户")
     @Override
     public void disable(String id) {
-        Tenant tenant = load(id);
-        tenantRepository.updateStatus(id, tenant.getStatus().transitionTo(TenantStatus.DISABLED));
+        String tenantId = requireTenantId(id);
+        Tenant tenant = load(tenantId);
+        tenantRepository.updateStatus(tenantId, tenant.getStatus().transitionTo(TenantStatus.DISABLED));
     }
 
     @AuditLog(action = "tenant-enable", description = "启用租户")
     @Override
     public void enable(String id) {
-        Tenant tenant = load(id);
+        String tenantId = requireTenantId(id);
+        Tenant tenant = load(tenantId);
         if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDate.now())) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
-        tenantRepository.updateStatus(id, tenant.getStatus().transitionTo(TenantStatus.ENABLED));
+        tenantRepository.updateStatus(tenantId, tenant.getStatus().transitionTo(TenantStatus.ENABLED));
     }
 
     @Override
@@ -112,12 +118,17 @@ public class TenantServiceImpl implements TenantService {
     }
 
     private String persistTenant(TenantCreateRequest request) {
-        String tenantId = UUID.randomUUID().toString();
+        String tenantId = TenantIdSupport.requireCreatable(request.tenantId());
+        Optional<Tenant> existing = tenantRepository.findById(tenantId);
+        if (existing != null && existing.isPresent()) {
+            throw new BizException(SystemErrorCode.TENANT_CODE_EXISTS);
+        }
         String tenantProfileId = resolveTenantProfileId(request.tenantProfileId());
         Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
                 request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(),
                 tenantProfileId, null);
-        return tenantRepository.insert(tenant, request.adminUsername());
+        tenantRepository.insert(tenant, request.adminUsername());
+        return tenantId;
     }
 
     private String resolveTenantProfileId(String tenantProfileId) {
@@ -127,6 +138,10 @@ public class TenantServiceImpl implements TenantService {
         tenantProfileRepository.findById(tenantProfileId)
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
         return tenantProfileId;
+    }
+
+    private String requireTenantId(String id) {
+        return TenantIdSupport.requireValid(id);
     }
 
 }

@@ -58,7 +58,7 @@ class TenantControllerTest {
         mockMvc.perform(post("/api/system/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                                {"name":"Acme","contactUser":"Owner","contactPhone":"13800000000",
+                                {"tenantId":"tenant1","name":"Acme","contactUser":"Owner","contactPhone":"13800000000",
                                 "expireTime":"%s","remark":"remark","tenantProfileId":"profile-1",
                                 "adminUsername":"admin"}
                                 """.formatted(LocalDate.now().plusDays(30))))

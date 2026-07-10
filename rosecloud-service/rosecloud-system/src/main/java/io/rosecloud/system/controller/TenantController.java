@@ -8,6 +8,7 @@ import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class TenantController {
 
     @PreAuthorize("hasAuthority('system:tenant:add')")
     @PostMapping
-    public ApiResponse<String> create(@RequestBody TenantCreateRequest request) {
+    public ApiResponse<String> create(@Valid @RequestBody TenantCreateRequest request) {
         return ApiResponse.ok(tenantService.create(request));
     }
 

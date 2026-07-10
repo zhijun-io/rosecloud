@@ -41,38 +41,49 @@ class TenantServiceImplTest {
 
     @Test
     void createPersistsTenantAndTriggersProvisioning() {
-        TenantCreateRequest request = new TenantCreateRequest("Acme", "Owner", "13800000000",
+        TenantCreateRequest request = new TenantCreateRequest("tenant1", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", null, "admin");
         when(tenantProfileRepository.defaultProfileId()).thenReturn("profile-default");
+        when(tenantRepository.findById("TENANT1")).thenReturn(Optional.empty());
         when(tenantRepository.insert(any(Tenant.class), any())).thenReturn("tenant-99");
-        when(tenantRepository.findById("tenant-99")).thenReturn(Optional.of(
-                new Tenant("tenant-99", "Acme", TenantStatus.PENDING, "Owner", "13800000000",
-                        LocalDate.now().plusDays(30), "remark", "profile-default", null)));
 
         String id = service().create(request);
 
-        assertEquals("tenant-99", id);
+        assertEquals("TENANT1", id);
         ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
         verify(tenantRepository).insert(tenantCaptor.capture(), any());
+        assertEquals("TENANT1", tenantCaptor.getValue().getId());
         assertEquals(TenantStatus.PENDING, tenantCaptor.getValue().getStatus());
         assertEquals("profile-default", tenantCaptor.getValue().getTenantProfileId());
-        verify(tenantProvisioner).provision("tenant-99");
+        verify(tenantProvisioner).provision("TENANT1");
     }
 
     @Test
     void createUsesProvidedTenantProfile() {
-        TenantCreateRequest request = new TenantCreateRequest("Acme", "Owner", "13800000000",
+        TenantCreateRequest request = new TenantCreateRequest("tenant2", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", "profile-custom", "admin");
-        Tenant pending = new Tenant("tenant-100", "Acme", TenantStatus.PENDING,
+        Tenant pending = new Tenant("TENANT2", "Acme", TenantStatus.PENDING,
                 "Owner", "13800000000", LocalDate.now().plusDays(30), "remark", "profile-custom", null);
         when(tenantProfileRepository.findById("profile-custom")).thenReturn(Optional.of(
                 new io.rosecloud.system.domain.TenantProfile("profile-custom", "Custom", "tier",
                         new io.rosecloud.system.domain.TenantProfileData("custom", 1, 1, 1, 1, java.util.List.of()))));
-        when(tenantRepository.insert(any(Tenant.class), any())).thenReturn("tenant-100");
-        when(tenantRepository.findById("tenant-100")).thenReturn(Optional.of(pending));
+        when(tenantRepository.findById("TENANT2")).thenReturn(Optional.empty());
+        when(tenantRepository.insert(any(Tenant.class), any())).thenReturn("TENANT2");
+        when(tenantRepository.findById("TENANT2")).thenReturn(Optional.of(pending));
 
-        assertEquals("tenant-100", service().create(request));
-        verify(tenantProvisioner).provision("tenant-100");
+        assertEquals("TENANT2", service().create(request));
+        verify(tenantProvisioner).provision("TENANT2");
+    }
+
+    @Test
+    void createRejectsReservedSystemTenantId() {
+        TenantCreateRequest request = new TenantCreateRequest("root", "Acme", "Owner", "13800000000",
+                LocalDate.now().plusDays(30), "remark", null, "admin");
+
+        BizException ex = assertThrows(BizException.class, () -> service().create(request));
+
+        assertEquals(SystemErrorCode.TENANT_ID_RESERVED, ex.getErrorCode());
+        verify(tenantRepository, never()).insert(any(), any());
     }
 
     @Test

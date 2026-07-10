@@ -50,6 +50,7 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
     @Override
     public Long publish(NoticePublishRequest request) {
         validateTarget(request);
+        validateRecipients(request);
         LocalDateTime now = LocalDateTime.now();
         int publishType = request.publishType() == null ? NoticePublishType.IMMEDIATE.code() : request.publishType();
         int status;
@@ -224,6 +225,16 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
             throw new BizException(CommonErrorCode.PARAM_INVALID);
         }
         if (type == NoticeTargetType.USER.code() && (request.targetUsername() == null || request.targetUsername().isBlank())) {
+            throw new BizException(CommonErrorCode.PARAM_INVALID);
+        }
+    }
+
+    private static void validateRecipients(NoticePublishRequest request) {
+        int channels = request.channels() == null ? NoticeChannel.defaultMask() : request.channels();
+        if (!NoticeChannel.EMAIL.in(channels) && !NoticeChannel.SMS.in(channels)) {
+            return;
+        }
+        if (request.recipients() == null || request.recipients().isEmpty()) {
             throw new BizException(CommonErrorCode.PARAM_INVALID);
         }
     }

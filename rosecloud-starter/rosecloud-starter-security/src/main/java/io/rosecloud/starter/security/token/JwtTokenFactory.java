@@ -14,6 +14,7 @@ import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.config.SecurityProperties;
 import io.rosecloud.common.security.exception.JwtExpiredTokenException;
 import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import javax.crypto.SecretKey;
@@ -55,7 +56,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser) {
-        return createAccessJwtToken(securityUser, securityUser.getTenantId());
+        return createAccessJwtToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser, String activeTenantId) {
@@ -83,7 +84,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser) {
-        return createRefreshToken(securityUser, securityUser.getTenantId());
+        return createRefreshToken(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser, String activeTenantId) {
@@ -124,7 +125,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public JwtPair createTokenPair(SecurityUser securityUser) {
-        return createTokenPair(securityUser, securityUser.getTenantId());
+        return createTokenPair(securityUser, resolveActiveTenantId(securityUser.getTenantId()));
     }
 
     public JwtPair createTokenPair(SecurityUser securityUser, String activeTenantId) {
@@ -175,6 +176,10 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
             }
         }
         return jwtParser;
+    }
+
+    private static String resolveActiveTenantId(String tenantId) {
+        return (tenantId == null || tenantId.isBlank()) ? TenantContextHolder.SYSTEM_TENANT_ID : tenantId;
     }
 
 }

@@ -18,7 +18,7 @@
 
 本方案目标：
 
-- 引入**系统租户**（`id` 固定常量，如 `__system__`）：平台管理员归属系统租户，其「看所有租户」
+- 引入**系统租户**（`id` 固定常量，如 `ROOT`）：平台管理员归属系统租户，其「看所有租户」
   的语义由系统租户在行级隔离中的豁免规则承载，而非靠「无租户上下文」。
 - 支持「一个用户属于多个租户」的成员关系模型。
 - 支持用户在其**授权范围内**受控切换当前活动租户（active tenant）。
@@ -28,14 +28,14 @@
 非目标（不做项）：
 
 - 不引入前端页面（沿用 `docs/plan/development-plan.md` 的后端优先原则）。
-- 不改变 `tenantId` 为字符串主键的既定决策（见 ADR）。
+- 不改变 `tenantId` 为字符串主键的既定决策（见 ADR），并遵循统一格式约束：字母开头、仅含字母和数字、长度不超过 10、默认大写。
 - 不做「一个请求同时跨多租户读写」，切换是「切当前上下文」，不是「聚合多租户」。
 - 系统租户不可被普通租户创建流程创建，也不可被删除。
 
 ## 1.1 系统租户语义
 
 - 系统租户是**保留租户**：固定 `id`（`TenantContextHolder.SYSTEM_TENANT_ID`，建议值
-  `__system__`），在 `sys_tenant` 中以保留行存在（`status` 标记保留，不参与普通租户列表）。
+  `ROOT`），在 `sys_tenant` 中以保留行存在（`status` 标记保留，不参与普通租户列表）。
 - 平台管理员（如具备 `ROLE_platform-admin`）的归属租户 = 系统租户；其登录签发的访问令牌
   `tenant` claim = 系统租户 `id`。
 - 行级隔离对用户语义：当活动租户 == 系统租户时，视为「平台视角」，行级 WHERE 不追加
@@ -73,30 +73,30 @@
 
 用户与租户多对多。归属租户（`sys_user.tenant_id`）视为「主租户」，同时也应在成员表中冗余一
 行，便于统一查询（迁移脚本负责回填）。平台管理员 `sys_user.tenant_id` 置为系统租户 id
-（`__system__`），也照常在成员表中有一行（系统租户行）。
+（`ROOT`），也照常在成员表中有一行（系统租户行）。
 
 字段建议：
 
 - `id BIGINT` 主键（`IdType.ASSIGN_ID`）
 - `user_id BIGINT` 用户
-- `tenant_id VARCHAR(64)` 租户（含系统租户 id）
+- `tenant_id VARCHAR(10)` 租户（含系统租户 id）
 - `is_primary TINYINT` 是否主租户（0/1）
 - `create_time` / `update_time`
 - 唯一索引 `(user_id, tenant_id)`；辅助索引 `(user_id)`、`(tenant_id)`
 
 `sys_tenant` 增加一行保留记录：
 
-- `id = '__system__'`，`name = '系统租户'`，`status` 标记保留（如 `status = 9`，与正常
+- `id = 'ROOT'`，`name = '系统租户'`，`status` 标记保留（如 `status = 9`，与正常
   `0/1` 区分），不参与普通租户分页列表（查询侧过滤）。
 
 > 迁移脚本负责：① 插入系统租户保留行；② 将现有 `sys_user.tenant_id IS NULL` 的平台管理员
-> 行更新为 `__system__`；③ 为所有用户（含平台管理员）按其 `tenant_id` 回填 `sys_user_tenant`
+> 行更新为 `ROOT`；③ 为所有用户（含平台管理员）按其 `tenant_id` 回填 `sys_user_tenant`
 > 主租户成员行。
 
 ### 3.2 令牌模型：新增 `tenant` claim（活动租户）
 
 - 在 `JwtTokenFactory` 增加常量 `TENANT = "tenant"`。
-- 活动租户的来源：主体的 `getTenantId()`（平台管理员 = 系统租户 id `__system__`）。
+- 活动租户的来源：主体的 `getTenantId()`（平台管理员 = 系统租户 id `ROOT`）。
 - `createAccessJwtToken(SecurityUser)`：写入 `.add(TENANT, securityUser.getTenantId())`
   （登录时活动租户 = 主租户 / 平台管理员 = 系统租户）。
 - 新增重载 `createAccessJwtToken(SecurityUser, String activeTenantId)` 与
@@ -114,9 +114,9 @@
    - claim 缺失（老令牌）→ 回退用主体的主租户（向后兼容）。
 3. 用有效活动租户构造返回主体：`securityUser.withTenantId(activeTenant)`。
 
-活动租户为系统租户 id（`__system__`）时，租户上下文被设为系统租户——由 3.4 的行级隔离豁免
+活动租户为系统租户 id（`ROOT`）时，租户上下文被设为系统租户——由 3.4 的行级隔离豁免
 承载「看所有租户」语义。注意：`TenantContextHolder` 此时「有租户」（=系统租户），不再是
-`null`，因此 `hasTenant()` 为 true，需配合 3.4 的豁免规则，避免反被限定到 `__system__` 这一行。
+`null`，因此 `hasTenant()` 为 true，需配合 3.4 的豁免规则，避免反被限定到 `ROOT` 这一行。
 
 因为 claim 来自我方签名令牌，**不需要**每请求回查成员关系（成员被移除时靠令牌吊销/过期收敛）。
 
@@ -136,7 +136,7 @@ public SecurityUser withTenantId(String newTenantId) {
 
 `RoseCloudTenantLineHandler` 调整（`rosecloud-starter-business/rosecloud-starter-tenant/.../mybatis/`）：
 
-- `TenantContextHolder` 新增常量 `SYSTEM_TENANT_ID = "__system__"` 与便捷判定
+- `TenantContextHolder` 新增常量 `SYSTEM_TENANT_ID = "ROOT"` 与便捷判定
   `isSystemTenant()`。
 - `getTenantId()`：活动租户为系统租户时，返回 `null`（即不追加 `tenant_id` WHERE），
   等效于「看所有租户」。
@@ -189,11 +189,11 @@ public SecurityUser withTenantId(String newTenantId) {
 
 1. **DB 迁移**：新增 `db/migration/V2.3.0__add_user_tenant_membership.sql`
    - 建 `sys_user_tenant` 表 + 唯一/辅助索引；
-   - 插入系统租户保留行 `id='__system__'`（保留状态）；
-   - 将 `sys_user.tenant_id IS NULL` 的平台管理员更新为 `__system__`；
+   - 插入系统租户保留行 `id='ROOT'`（保留状态）；
+   - 将 `sys_user.tenant_id IS NULL` 的平台管理员更新为 `ROOT`；
    - 为所有用户按其 `tenant_id` 回填 `sys_user_tenant` 主租户成员行。
    验证：`./mvnw -pl rosecloud-service/rosecloud-system -am -Dmaven.test.skip=true install` 通过；
-   本地 Flyway 迁移成功；系统租户行存在且历史平台管理员 `tenant_id = '__system__'`。
+   本地 Flyway 迁移成功；系统租户行存在且历史平台管理员 `tenant_id = 'ROOT'`。
 
 2. **租户上下文与行级隔离豁免**：`TenantContextHolder` 增加 `SYSTEM_TENANT_ID` 与 `isSystemTenant()`；
    `RoseCloudTenantLineHandler` 按 3.4 处理系统租户豁免。

@@ -30,10 +30,12 @@ public class LoginSessionController {
                                                         @RequestParam(defaultValue = "10") long size) {
         List<LoginSession> all = sessionStoreService.findAll();
         long total = all.size();
-        int start = (int) ((current - 1) * size);
-        int end = Math.min(start + (int) size, all.size());
+        long safeCurrent = current < 1 ? 1 : current;
+        long safeSize = size < 1 ? 10 : Math.min(size, 100);
+        int start = (int) ((safeCurrent - 1) * safeSize);
+        int end = Math.min(start + (int) safeSize, all.size());
         List<LoginSession> page = start >= all.size() ? List.of() : all.subList(start, end);
-        return ApiResponse.ok(PageResult.of(page, total, current, size));
+        return ApiResponse.ok(PageResult.of(page, total, safeCurrent, safeSize));
     }
 
     @PreAuthorize("hasAuthority('system:session:kick')")

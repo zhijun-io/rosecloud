@@ -6,6 +6,8 @@ import io.rosecloud.common.core.error.ErrorCode;
 public enum SystemErrorCode implements ErrorCode {
 
     TENANT_CODE_EXISTS("租户编码已存在"),
+    TENANT_ID_INVALID("租户标识不合法"),
+    TENANT_ID_RESERVED("系统租户标识已保留"),
     TENANT_NOT_FOUND("租户不存在"),
     TENANT_PROFILE_NOT_FOUND("租户套餐不存在"),
     TENANT_PROFILE_EXISTS("租户套餐已存在"),

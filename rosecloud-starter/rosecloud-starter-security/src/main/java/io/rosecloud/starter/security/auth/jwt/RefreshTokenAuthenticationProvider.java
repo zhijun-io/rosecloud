@@ -7,11 +7,14 @@ import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
+import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.Locale;
 
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
@@ -52,8 +55,10 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         // token keeps the same tenant scope (no implicit switch on refresh).
         String tokenTenant = claims.get("tenant", String.class);
         SecurityUser effectiveUser = (tokenTenant == null || tokenTenant.isBlank())
-                ? securityUser
-                : securityUser.withTenantId(tokenTenant);
+                ? securityUser.withTenantId(securityUser.getTenantId() != null
+                    ? securityUser.getTenantId()
+                    : TenantContextHolder.SYSTEM_TENANT_ID)
+                : securityUser.withTenantId(tokenTenant.trim().toUpperCase(Locale.ROOT));
         return new RefreshAuthenticationToken(effectiveUser);
     }
 
