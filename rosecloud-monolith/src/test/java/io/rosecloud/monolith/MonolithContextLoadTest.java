@@ -26,8 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.nacos.discovery.enabled=false",
         "spring.cloud.discovery.enabled=false",
         "spring.cloud.service-registry.auto-registration.enabled=false",
-        "rosecloud.security.jwt.secret=01234567890123456789012345678901",
-        "rosecloud.tenant.enabled=true",
+        "rosecloud.security.jwt.secret=wICxDnixZdbwEvLEPfL1ZR5SNVZnEouFKjQ/Mi5pMAkO+9zOA9eAiVf82sZ+xZpKgoy322rJWXKpcPy8UsALlQ==",
+        "rosecloud.security.internal-token=UIW0QRgE96atD9YB1z4Xo9Dlar5fECsp",
         "rosecloud.audit.enabled=true",
         "rosecloud.notice.publish-check-ms=3600000"
 })

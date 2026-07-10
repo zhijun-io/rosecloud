@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -21,14 +20,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 /**
  * Auto-configuration for multi-tenant support.
  *
- * <p>Activated by {@code rosecloud.tenant.enabled=true}; dormant otherwise. In
- * servlet apps it wires the web filter; in reactive (gateway) apps it wires the
- * gateway filter. Tenant context is propagated across {@code @Async} boundaries
- * via a {@link ThreadPoolTaskExecutor} task decorator.
+ * <p>Multi-tenancy is enabled by default: the servlet web filter and async
+ * decorators are always wired. The isolation {@link TenantProperties#getType()}
+ * still governs behaviour — {@code COLUMN} applies row-level isolation, while
+ * {@code NONE} makes the filter a no-op (no tenant predicate). In reactive
+ * (gateway) apps the gateway filter strips any client-supplied tenant header.
+ * Tenant context is propagated across {@code @Async} boundaries via a
+ * {@link ThreadPoolTaskExecutor} task decorator.
  */
 @AutoConfiguration
 @EnableConfigurationProperties(TenantProperties.class)
-@ConditionalOnProperty(prefix = "rosecloud.tenant", name = "enabled", havingValue = "true")
 public class TenantAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(TenantAutoConfiguration.class);
@@ -45,7 +46,9 @@ public class TenantAutoConfiguration {
     @PostConstruct
     public void validateTenantType() {
         MultiTenantType type = tenantProperties.getType();
-        if (type != MultiTenantType.COLUMN && type != MultiTenantType.NONE) {
+        if (type == MultiTenantType.NONE) {
+            log.info("Multi-tenant isolation is disabled (rosecloud.tenant.type=NONE); tenant filter is a no-op.");
+        } else if (type != MultiTenantType.COLUMN) {
             log.warn("Tenant isolation type '{}' is not implemented; only COLUMN and NONE are supported. "
                     + "Falling back to row-level COLUMN isolation. Configure rosecloud.tenant.type=COLUMN.", type);
         }

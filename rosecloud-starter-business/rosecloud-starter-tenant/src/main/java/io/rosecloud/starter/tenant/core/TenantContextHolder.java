@@ -9,6 +9,12 @@ package io.rosecloud.starter.tenant.core;
  */
 public final class TenantContextHolder {
 
+    /**
+     * 默认系统租户（平台管理员所属）。保留租户，不可经普通创建/删除流程变更。
+     * 使用全零 UUID 作为稳定标识。活动租户为该值时，视为「平台视角」，行级隔离豁免。
+     */
+    public static final String SYSTEM_TENANT_ID = "00000000-0000-0000-0000-000000000000";
+
     private static final ThreadLocal<String> TENANT_ID = new ThreadLocal<>();
 
     private TenantContextHolder() {
@@ -24,6 +30,10 @@ public final class TenantContextHolder {
 
     public static boolean hasTenant() {
         return TENANT_ID.get() != null;
+    }
+
+    public static boolean isSystemTenant() {
+        return SYSTEM_TENANT_ID.equals(TENANT_ID.get());
     }
 
     public static void clear() {

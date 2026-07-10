@@ -9,14 +9,9 @@ import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import io.rosecloud.common.security.session.SessionStore;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-
-import java.util.Optional;
-import java.util.function.Function;
 
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
@@ -34,9 +29,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         RawAccessJwtToken rawAccessToken = (RawAccessJwtToken) authentication.getCredentials();
-        if (rawAccessToken == null || rawAccessToken.token() == null || rawAccessToken.token().isBlank()) {
-            throw new BadCredentialsException("Token is invalid");
-        }
+        JwtAuthSupport.requireValidRawToken(rawAccessToken, "Token is invalid");
 
         Jws<Claims> jws = tokenFactory.parseAccessToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
@@ -45,20 +38,20 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
             throw new JwtExpiredTokenException("Token is outdated");
         }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
-        if (userDetails == null) {
-            throw new BadCredentialsException("User not found");
-        }
+        SecurityUser securityUser = JwtAuthSupport.loadAndValidateUser(claims.getSubject(), userDetailsService);
 
-        if (!userDetails.isEnabled()) {
-            throw new BadCredentialsException("User is disabled");
+        // The active tenant travels in the token's signed "tenant" claim (set at login or
+        // after a tenant switch). For legacy tokens that predate the claim, fall back to the
+        // principal's home tenant — and treat a null home tenant (platform admin) as the
+        // system tenant. Trusted because the token is signature-verified.
+        String tokenTenant = claims.get("tenant", String.class);
+        if (tokenTenant == null || tokenTenant.isBlank()) {
+            tokenTenant = securityUser.getTenantId() != null
+                    ? securityUser.getTenantId()
+                    : io.rosecloud.starter.tenant.core.TenantContextHolder.SYSTEM_TENANT_ID;
         }
-
-        if (!(userDetails instanceof SecurityUser securityUser)) {
-            throw new BadCredentialsException(
-                    "Unsupported UserDetails type: " + userDetails.getClass().getName());
-        }
-        return new JwtAuthenticationToken(securityUser);
+        SecurityUser effectiveUser = securityUser.withTenantId(tokenTenant);
+        return new JwtAuthenticationToken(effectiveUser);
     }
 
     @Override

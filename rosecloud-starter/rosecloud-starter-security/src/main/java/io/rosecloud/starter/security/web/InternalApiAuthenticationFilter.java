@@ -1,5 +1,6 @@
 package io.rosecloud.starter.security.web;
 
+import io.rosecloud.starter.security.config.SecurityProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,17 +14,20 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Gateway-trusted internal marker: when the {@code X-Internal} header is present (the
- * gateway is expected to strip it from external requests), the caller is treated as an
- * internal service and granted {@code ROLE_INTERNAL}. Internal endpoints guarded by
- * {@code @InternalApi} then pass their method-level {@code @PreAuthorize}.
+ * Internal-service trust boundary. Services authenticate each other by presenting a
+ * shared {@code X-Internal} token (set by the Feign {@code ServiceAuthRequestInterceptor});
+ * a request carrying a valid token is granted {@code ROLE_INTERNAL} so that endpoints guarded
+ * by {@code @InternalApi} pass their method-level {@code @PreAuthorize}.
  *
- * <p>No secret is verified here — trust is placed in the gateway/network boundary, which is
- * the Tier-A trade-off. For stronger guarantees use a signed internal header (Tier B).
+ * <p>The token value is verified (constant-time) against {@code rosecloud.security.internal-token};
+ * a present-but-invalid token is rejected. External clients can never supply a valid token because
+ * the gateway strips {@code X-Internal} from every inbound request. This replaces the previous
+ * trust-on-presence model, which any client could spoof by simply adding the header.
  */
 public class InternalApiAuthenticationFilter extends OncePerRequestFilter {
 
@@ -32,12 +36,29 @@ public class InternalApiAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String INTERNAL_PRINCIPAL = "internal-service";
 
+    private final String internalToken;
+
+    public InternalApiAuthenticationFilter(SecurityProperties properties) {
+        String token = properties.getInternalToken();
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException(
+                    "rosecloud.security.internal-token must be set (env ROSECLOUD_SECURITY_INTERNAL_TOKEN). "
+                            + "Refusing to start with an empty internal token.");
+        }
+        this.internalToken = token;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String internal = request.getHeader(INTERNAL_HEADER);
-        if (internal == null || internal.isBlank()) {
+        if (internal == null) {
             filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (!constantTimeEquals(internal, internalToken)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid internal token");
             return;
         }
 
@@ -58,5 +79,15 @@ public class InternalApiAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean constantTimeEquals(String a, String b) {
+        byte[] ab = a.getBytes(StandardCharsets.UTF_8);
+        byte[] bb = b.getBytes(StandardCharsets.UTF_8);
+        int result = ab.length ^ bb.length;
+        for (int i = 0; i < Math.min(ab.length, bb.length); i++) {
+            result |= ab[i] ^ bb[i];
+        }
+        return result == 0;
     }
 }

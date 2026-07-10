@@ -103,6 +103,7 @@ public class SecurityUser implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return password;
     }
@@ -141,6 +142,17 @@ public class SecurityUser implements UserDetails {
 
     public String getTenantId() {
         return tenantId;
+    }
+
+    /**
+     * Returns a copy of this principal with a different effective tenant id.
+     * Used when the authenticated token carries an explicit active-tenant claim
+     * (e.g. after a tenant switch) so the tenant context reflects the token,
+     * not the principal's home tenant.
+     */
+    public SecurityUser withTenantId(String newTenantId) {
+        return new SecurityUser(userId, username, nickname, password, enabled,
+                newTenantId, userPrincipal, getAuthorities());
     }
 
     public String getNickname() {

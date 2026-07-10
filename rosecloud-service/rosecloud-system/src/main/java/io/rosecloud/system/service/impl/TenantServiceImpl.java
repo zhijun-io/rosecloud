@@ -15,6 +15,7 @@ import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -98,6 +99,11 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public PageResult<Tenant> page(long current, long size, String keyword) {
         return tenantRepository.page(current, size, keyword);
+    }
+
+    @Override
+    public List<String> findAllIds() {
+        return tenantRepository.findAllIds();
     }
 
     private Tenant load(String id) {

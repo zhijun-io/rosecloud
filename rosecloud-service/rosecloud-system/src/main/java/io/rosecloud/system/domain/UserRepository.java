@@ -48,6 +48,9 @@ public interface UserRepository {
     /** User ids that currently hold the given role. Used to revoke sessions when role permissions change. */
     List<Long> findUserIdsByRoleId(Long roleId);
 
+    /** Tenant ids the user is a member of (from {@code sys_user_tenant}). */
+    List<String> findTenantIdsByUserId(Long userId);
+
     void assignRoles(Long userId, Collection<Long> roleIds);
 
     /** Resolves recipient contacts (email/phone) for a notice target. */

@@ -22,4 +22,7 @@ public interface TenantService {
     void enable(String id);
 
     PageResult<Tenant> page(long current, long size, String keyword);
+
+    /** All tenant ids (excluding the reserved system tenant). */
+    List<String> findAllIds();
 }

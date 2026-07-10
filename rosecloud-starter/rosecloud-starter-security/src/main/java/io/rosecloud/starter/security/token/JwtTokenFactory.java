@@ -14,8 +14,6 @@ import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.config.SecurityProperties;
 import io.rosecloud.common.security.exception.JwtExpiredTokenException;
 import io.rosecloud.common.security.model.SecurityUser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import javax.crypto.SecretKey;
@@ -27,12 +25,11 @@ import java.util.UUID;
 
 public class JwtTokenFactory implements io.rosecloud.common.security.token.TokenFactory {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtTokenFactory.class);
-
     private static final String USER_ID = "userId";
     private static final String NICKNAME = "nickname";
     private static final String ENABLED = "enabled";
     private static final String TOKEN_TYPE = "type";
+    private static final String TENANT = "tenant";
 
     /** Minimum secret length (bytes) recommended for HS512 (512 bits). */
     private static final int MIN_SECRET_BYTES = 64;
@@ -43,24 +40,32 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
 
     public JwtTokenFactory(SecurityProperties properties) {
         this.properties = properties;
-        // Signing and parsing now use the exact same key material, so behaviour is
-        // consistent regardless of secret length. Warn (not fail) when the secret is
-        // shorter than the HS512 recommendation.
-        byte[] decoded = Base64.getDecoder().decode(properties.getJwt().getSecret());
+        String secret = properties.getJwt().getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException(
+                    "rosecloud.security.jwt.secret must be set (env ROSECLOUD_SECURITY_JWT_SECRET). "
+                            + "Refusing to start with a default/empty signing key.");
+        }
+        byte[] decoded = Base64.getDecoder().decode(secret);
         if (decoded.length < MIN_SECRET_BYTES) {
-            log.warn("Configured rosecloud.security.jwt.secret decodes to {} bytes; HS512 recommends "
-                    + "at least {} bytes. Tokens will still work but the key is weaker than ideal.",
-                    decoded.length, MIN_SECRET_BYTES);
+            throw new IllegalArgumentException("Configured rosecloud.security.jwt.secret decodes to "
+                    + decoded.length + " bytes; HS512 requires at least " + MIN_SECRET_BYTES
+                    + " bytes of high-entropy key.");
         }
     }
 
     public AccessJwtToken createAccessJwtToken(SecurityUser securityUser) {
+        return createAccessJwtToken(securityUser, securityUser.getTenantId());
+    }
+
+    public AccessJwtToken createAccessJwtToken(SecurityUser securityUser, String activeTenantId) {
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
                 .subject(securityUser.getUsername())
                 .id(UUID.randomUUID().toString())
                 .add(USER_ID, securityUser.getUserId())
-                .add(ENABLED, securityUser.isEnabled());
+                .add(ENABLED, securityUser.isEnabled())
+                .add(TENANT, activeTenantId);
 
         if (securityUser.getNickname() != null) {
             claims.add(NICKNAME, securityUser.getNickname());
@@ -78,12 +83,17 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public AccessJwtToken createRefreshToken(SecurityUser securityUser) {
+        return createRefreshToken(securityUser, securityUser.getTenantId());
+    }
+
+    public AccessJwtToken createRefreshToken(SecurityUser securityUser, String activeTenantId) {
         ZonedDateTime now = ZonedDateTime.now();
         ClaimsBuilder claims = Jwts.claims()
                 .subject(securityUser.getUsername())
                 .id(UUID.randomUUID().toString())
                 .add(USER_ID, securityUser.getUserId())
-                .add(TOKEN_TYPE, "refresh");
+                .add(TOKEN_TYPE, "refresh")
+                .add(TENANT, activeTenantId);
 
         String token = Jwts.builder()
                 .claims(claims.build())
@@ -114,8 +124,12 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     }
 
     public JwtPair createTokenPair(SecurityUser securityUser) {
-        AccessJwtToken access = createAccessJwtToken(securityUser);
-        AccessJwtToken refresh = createRefreshToken(securityUser);
+        return createTokenPair(securityUser, securityUser.getTenantId());
+    }
+
+    public JwtPair createTokenPair(SecurityUser securityUser, String activeTenantId) {
+        AccessJwtToken access = createAccessJwtToken(securityUser, activeTenantId);
+        AccessJwtToken refresh = createRefreshToken(securityUser, activeTenantId);
         return new JwtPair(access.token(), refresh.token());
     }
 
@@ -155,6 +169,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
                 if (jwtParser == null) {
                     jwtParser = Jwts.parser()
                             .verifyWith(getSecretKey())
+                            .requireIssuer(properties.getJwt().getIssuer())
                             .build();
                 }
             }

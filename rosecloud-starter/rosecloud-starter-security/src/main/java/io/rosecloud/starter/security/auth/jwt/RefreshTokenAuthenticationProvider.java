@@ -11,11 +11,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-
-import java.util.Optional;
-import java.util.function.Function;
 
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
@@ -34,9 +30,7 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         RawAccessJwtToken rawAccessToken = (RawAccessJwtToken) authentication.getCredentials();
-        if (rawAccessToken == null || rawAccessToken.token() == null || rawAccessToken.token().isBlank()) {
-            throw new BadCredentialsException("Refresh token is invalid");
-        }
+        JwtAuthSupport.requireValidRawToken(rawAccessToken, "Refresh token is invalid");
 
         Jws<Claims> jws = tokenFactory.parseRefreshToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
@@ -45,27 +39,22 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
             throw new BadCredentialsException("Refresh token is revoked");
         }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
-        if (userDetails == null) {
-            throw new BadCredentialsException("User not found");
-        }
-
         // A disabled account must not be able to mint fresh tokens from a still-valid
         // refresh token; mirrors the same guard on the access-token path
         // (JwtAuthenticationProvider) so disabling a user takes effect immediately.
-        if (!userDetails.isEnabled()) {
-            throw new BadCredentialsException("User is disabled");
-        }
+        SecurityUser securityUser = JwtAuthSupport.loadAndValidateUser(claims.getSubject(), userDetailsService);
 
         // Refresh-token rotation: revoke the session bound to the presented (old) refresh
         // token so it cannot be reused after a new token pair is minted by the success handler.
         sessionStore.revoke(rawAccessToken.token());
 
-        if (!(userDetails instanceof SecurityUser securityUser)) {
-            throw new BadCredentialsException(
-                    "Unsupported UserDetails type: " + userDetails.getClass().getName());
-        }
-        return new RefreshAuthenticationToken(securityUser);
+        // Preserve the active tenant carried by the refresh token so the refreshed access
+        // token keeps the same tenant scope (no implicit switch on refresh).
+        String tokenTenant = claims.get("tenant", String.class);
+        SecurityUser effectiveUser = (tokenTenant == null || tokenTenant.isBlank())
+                ? securityUser
+                : securityUser.withTenantId(tokenTenant);
+        return new RefreshAuthenticationToken(effectiveUser);
     }
 
     @Override

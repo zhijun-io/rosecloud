@@ -38,10 +38,12 @@ class UserRepositoryImplTest {
     RoleMenuMapper roleMenuMapper;
     @Mock
     MenuMapper menuMapper;
+    @Mock
+    UserTenantMapper userTenantMapper;
 
     private UserRepositoryImpl repository() {
-        return new UserRepositoryImpl(userMapper, userCredentialMapper, userRoleMapper, roleMapper,
-                roleMenuMapper, menuMapper, new ObjectMapper());
+        return new UserRepositoryImpl(userMapper, userCredentialMapper, userRoleMapper, userTenantMapper,
+                roleMapper, roleMenuMapper, menuMapper, new ObjectMapper());
     }
 
     @Test

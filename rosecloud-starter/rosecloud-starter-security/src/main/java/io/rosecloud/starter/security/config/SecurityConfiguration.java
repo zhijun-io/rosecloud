@@ -1,7 +1,9 @@
 package io.rosecloud.starter.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import io.rosecloud.starter.security.web.InternalApiAuthenticationFilter;
 import io.rosecloud.starter.security.auth.jwt.*;
@@ -48,10 +50,10 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfiguration {
 
-    public static final String LOGIN_ENTRY_POINT = "/api/auth/login";
-    public static final String REFRESH_ENTRY_POINT = "/api/auth/refresh";
-    public static final String LOGOUT_ENTRY_POINT = "/api/auth/logout";
-    public static final String TOKEN_BASED_AUTH_ENTRY_POINT = "/api/**";
+    public static final String LOGIN_ENTRY_POINT = ServiceMetadata.API_PREFIX + "/auth/login";
+    public static final String REFRESH_ENTRY_POINT = ServiceMetadata.API_PREFIX + "/auth/refresh";
+    public static final String LOGOUT_ENTRY_POINT = ServiceMetadata.API_PREFIX + "/auth/logout";
+    public static final String TOKEN_BASED_AUTH_ENTRY_POINT = ServiceMetadata.API_PREFIX + "/**";
 
     private final SecurityProperties properties;
     private final ObjectMapper objectMapper;
@@ -94,7 +96,7 @@ public class SecurityConfiguration {
                 .addFilterBefore(refreshTokenProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtTokenAuthenticationProcessingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(logoutProcessingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new InternalApiAuthenticationFilter(), JwtTokenAuthenticationProcessingFilter.class);
+                .addFilterBefore(new InternalApiAuthenticationFilter(properties), JwtTokenAuthenticationProcessingFilter.class);
 
         return http.build();
     }
@@ -248,8 +250,13 @@ public class SecurityConfiguration {
 
     private CorsConfigurationSource corsConfigurationSource() {
         SecurityProperties.Cors cors = properties.getCors();
+        if (cors.isAllowCredentials()
+                && cors.getAllowedOrigins().stream().anyMatch(o -> "*".equals(o))) {
+            throw new IllegalStateException(
+                    "CORS allowCredentials=true must not be combined with a wildcard '*' origin");
+        }
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(cors.getAllowedOrigins());
+        config.setAllowedOriginPatterns(cors.getAllowedOrigins());
         config.setAllowedMethods(cors.getAllowedMethods());
         config.setAllowedHeaders(cors.getAllowedHeaders());
         config.setAllowCredentials(cors.isAllowCredentials());

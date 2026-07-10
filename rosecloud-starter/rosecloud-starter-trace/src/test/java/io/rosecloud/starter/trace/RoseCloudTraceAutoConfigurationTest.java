@@ -3,8 +3,8 @@ package io.rosecloud.starter.trace;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
-import org.springframework.boot.actuate.autoconfigure.tracing.BraveAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.tracing.MicrometerTracingAutoConfiguration;
+import org.springframework.boot.micrometer.tracing.autoconfigure.MicrometerTracingAutoConfiguration;
+import org.springframework.boot.micrometer.tracing.brave.autoconfigure.BraveAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

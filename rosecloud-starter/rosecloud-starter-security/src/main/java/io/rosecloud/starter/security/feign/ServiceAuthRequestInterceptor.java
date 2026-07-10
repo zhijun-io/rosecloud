@@ -25,9 +25,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class ServiceAuthRequestInterceptor implements RequestInterceptor {
 
     private final String serviceName;
+    private final String internalToken;
 
     public ServiceAuthRequestInterceptor(Environment environment) {
         this.serviceName = environment.getProperty("spring.application.name", "unknown");
+        this.internalToken = environment.getProperty("rosecloud.security.internal-token", "");
     }
 
     @Override
@@ -38,9 +40,11 @@ public class ServiceAuthRequestInterceptor implements RequestInterceptor {
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getDetails() instanceof String rawToken) {
-            template.header("Authorization", "Bearer " + rawToken);
+            template.header(SecurityHeaders.AUTHORIZATION, SecurityHeaders.BEARER_PREFIX + rawToken);
         }
-        template.header(InternalApiAuthenticationFilter.INTERNAL_HEADER, "true");
-        template.header("X-Service-Name", serviceName);
+        if (!internalToken.isBlank()) {
+            template.header(InternalApiAuthenticationFilter.INTERNAL_HEADER, internalToken);
+        }
+        template.header(SecurityHeaders.SERVICE_NAME, serviceName);
     }
 }

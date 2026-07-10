@@ -23,11 +23,12 @@
 
 ### 1.3 多租户基础
 
-- 租户上下文已实现
-- Header 解析、Servlet Filter、Reactive Gateway Filter 已实现
-- `@Async` 线程池租户透传已实现
-- MyBatis-Plus 的租户行级隔离已接入
-- 租户能力默认关闭，开启后可走列级隔离主路径
+- 租户上下文已实现，多租户默认启用（列级 COLUMN 隔离为默认主路径；`rosecloud.tenant.type=NONE` 时为 no-op）
+- 平台管理员归属**系统租户**（保留租户，id 为全零 UUID `00000000-0000-0000-0000-000000000000`）；系统租户上下文为平台视角，行级隔离豁免，可见全部租户数据
+- 活动租户由服务端签发的 JWT `tenant` claim 承载；客户端 `X-Tenant-Id` 头在网关注入层被剥离，下游只信任已认证主体
+- Servlet Filter 从已认证主体派生租户（运行于 Spring Security 之后），`@Async` 线程池租户透传已实现
+- MyBatis-Plus 的租户行级隔离已接入，系统租户豁免
+- 受控租户切换已实现：`GET /api/auth/tenants` 列出可切租户，`POST /api/auth/switch-tenant` 校验成员关系后重发令牌并吊销旧会话
 
 ### 1.4 审计与日志
 
@@ -157,16 +158,16 @@
 
 #### 模块边界
 
-- `auth` 负责登录、登出、令牌签发、租户上下文与会话登记；JWT 仅保存 `username`，其他上下文登录后由服务端补全。
-- `auth` 负责会话查询、强制下线、在线会话管理。
+- `auth` 负责登录、登出、令牌签发、租户上下文与会话登记；JWT 保存 `username`、用户 id、`enabled`、有效活动租户 `tenant` 等最小字段，角色/权限等业务上下文登录后由服务端按 `username` 补全。
+- `auth` 负责会话查询、强制下线、在线会话管理、租户切换。
 - `notice` 不参与认证语义，只消费用户上下文。
 
 #### 状态机
 
-- 平台管理员登录时不要求租户标识
-- 普通用户登录时要求租户标识
+- 平台管理员归属系统租户（id 全零 UUID），登录时活动租户为系统租户，无需显式租户标识
+- 普通用户登录时活动租户取其归属租户（来自 `sys_user.tenant_id` / `sys_user_tenant` 成员关系）
 - 当前仅提供用户名密码登录，不在同一接口中混合验证码等其他登录方式
-- JWT 不携带租户、角色、权限等业务上下文，登录后由服务端按 `username` 还原
+- JWT 携带有效活动租户 `tenant` claim；租户、角色、权限等为业务上下文，登录/刷新时由服务端按 `username` 还原，变更后通过吊销会话强制重发令牌生效
 - `user_credential.password_changed_time` 之后签发的旧 access / refresh token 视为失效
 - 登录成功后生成有效会话
 - 登出后按 `jti` 吊销令牌并下线会话
@@ -176,18 +177,20 @@
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
+- `GET /api/auth/tenants`（列出当前用户可切入的租户）
+- `POST /api/auth/switch-tenant`（切换当前活动租户，重发令牌）
 - `GET /api/auth/sessions/online`
 - `DELETE /api/auth/sessions?sessionId={id}`
 
 #### 验收
 
-- 不同角色按不同租户语义登录
-- 登录后上下文正确
+- 不同角色按不同租户语义登录（平台管理员=系统租户视角，普通用户=归属租户）
+- 登录后上下文正确，活动租户写入 JWT `tenant` claim
 - 登出后旧令牌失效
-- 密码变更后旧 access / refresh token 失效
+- 密码/角色/权限变更后旧 access / refresh token 失效（会话被吊销）
 - 在线会话可查询且可强制下线
 - 登录凭据仅存在于 `user_credential`，`sys_user` 不存密码
-- JWT 仅包含 `username` 与标准时效字段，不包含租户、角色、权限等业务信息
+- 租户切换仅可在授权范围内进行，越权切换被拒绝且不签发新令牌
 
 ### 2.5 审计与可追踪性
 

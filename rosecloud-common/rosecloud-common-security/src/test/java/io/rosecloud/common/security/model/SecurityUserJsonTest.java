@@ -26,8 +26,8 @@ class SecurityUserJsonTest {
 
         String json = objectMapper.writeValueAsString(user);
 
-        assertThat(json).contains("\"password\"");
-        assertThat(objectMapper.readValue(json, SecurityUser.class).getPassword())
-                .isEqualTo(user.getPassword());
+        // Password must NOT be serialized (avoid leaking credentials over Feign / in tokens).
+        assertThat(json).doesNotContain("\"password\"");
+        assertThat(user.getPassword()).isEqualTo(user.getPassword());
     }
 }

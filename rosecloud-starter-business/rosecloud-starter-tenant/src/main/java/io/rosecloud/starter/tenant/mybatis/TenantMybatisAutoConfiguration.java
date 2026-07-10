@@ -5,18 +5,17 @@ import io.rosecloud.starter.tenant.core.TenantProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 /**
  * Registers the MyBatis-Plus {@link TenantLineInnerInterceptor} so row-level
- * tenant isolation is applied to SQL when {@code rosecloud.tenant.enabled=true}
- * and MyBatis-Plus is on the classpath. The interceptor is collected by
+ * tenant isolation is applied to SQL when MyBatis-Plus is on the classpath.
+ * Multi-tenancy is enabled by default; with {@code rosecloud.tenant.type=NONE}
+ * the line handler is a no-op. The interceptor is collected by
  * {@code rosecloud-starter-data-mybatisplus}'s {@code MybatisPlusInterceptor}
  * (which adds all {@code InnerInterceptor} beans before pagination).
  */
 @AutoConfiguration
-@ConditionalOnProperty(prefix = "rosecloud.tenant", name = "enabled", havingValue = "true")
 @ConditionalOnClass(TenantLineInnerInterceptor.class)
 public class TenantMybatisAutoConfiguration {
 

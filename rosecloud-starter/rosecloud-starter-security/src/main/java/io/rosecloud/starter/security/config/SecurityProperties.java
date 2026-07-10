@@ -5,18 +5,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.rosecloud.common.core.model.ServiceMetadata.API_PREFIX;
+
 @ConfigurationProperties(prefix = "rosecloud.security")
 public class SecurityProperties {
 
     private Jwt jwt = new Jwt();
     private long accessTokenExpirationSeconds = 3600;
     private long refreshTokenExpirationSeconds = 86400;
-    private String[] publicPaths = {"/api/auth/login", "/api/auth/refresh", "/api/auth/logout",
-            "/api/noauth/**", "/api/public/**", "/actuator/health/**", "/error"};
+    private String[] publicPaths = {API_PREFIX + "/auth/login", API_PREFIX + "/auth/refresh", API_PREFIX + "/auth/logout",
+            API_PREFIX + "/noauth/**", API_PREFIX + "/public/**", "/actuator/health/**", "/error"};
     private Cors cors = new Cors();
+    private String internalToken;
 
     public Jwt getJwt() { return jwt; }
     public void setJwt(Jwt jwt) { this.jwt = jwt; }
+
+    public String getInternalToken() { return internalToken; }
+    public void setInternalToken(String internalToken) { this.internalToken = internalToken; }
 
     public long getAccessTokenExpirationSeconds() { return accessTokenExpirationSeconds; }
     public void setAccessTokenExpirationSeconds(long accessTokenExpirationSeconds) { this.accessTokenExpirationSeconds = accessTokenExpirationSeconds; }

@@ -15,10 +15,6 @@
       private final OrRequestMatcher matchers;
       private final RequestMatcher processingMatcher;
 
-      public SkipPathRequestMatcher(List<String> pathsToSkip, String processingPath) {
-          this(pathsToSkip, List.of(), processingPath);
-      }
-
       public SkipPathRequestMatcher(List<String> pathsToSkip, List<RequestMatcher> additionalSkips, String processingPath) {
           Assert.notNull(pathsToSkip, "List of paths to skip is required.");
          List<RequestMatcher> m = new ArrayList<>(pathsToSkip.stream()

@@ -28,7 +28,7 @@ x-app-env: &app-env
   NACOS_SERVER_ADDR: nacos:8848
   NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
   NACOS_PASSWORD: ${NACOS_PASSWORD:-nacos}
-  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
+      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-vILppcDa7RPw2RJjTu2dqqZz1Uxv10pqOBJ6kbdKmbtaD/4VrphiuEDkSG4U6HW5m5X5aXCcQZaPbkjBA5steQ==}
   ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}
 
 services:
@@ -167,7 +167,7 @@ services:
       MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-rosecloud}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       MYSQL_USER: ${MYSQL_USER:-rosecloud}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-rosecloud123}
-      ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-fVu4cebkmcHeXsN6VTR81UMUsOK0RYD4Cb8yaBiP7bXfOhyAotCXJpfYqyddNMSrSRQKc59NiG7Q1oHQDz4z+Q==}
+  ROSECLOUD_SECURITY_JWT_SECRET: ${ROSECLOUD_SECURITY_JWT_SECRET:-vILppcDa7RPw2RJjTu2dqqZz1Uxv10pqOBJ6kbdKmbtaD/4VrphiuEDkSG4U6HW5m5X5aXCcQZaPbkjBA5steQ==}
       ROSECLOUD_SECURITY_INTERNAL_API_KEY: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:-rosecloud-dev-internal-key}  # 服务间内部调用密钥
     depends_on: [ mysql,redis ]
     # 与 gateway 同用宿主 8080；二者 profile（monolith / microservice）互斥，不会同时运行

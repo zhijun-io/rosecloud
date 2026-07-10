@@ -8,9 +8,7 @@ public enum SecurityErrorCode implements ErrorCode {
     USER_NOT_FOUND("用户不存在"),
     USER_DISABLED("用户已禁用"),
     BAD_CREDENTIALS("用户名或密码错误"),
-    FORBIDDEN("无权限访问"),
-    TOKEN_EXPIRED("Token 已过期"),
-    TOKEN_INVALID("无效的 Token");
+    FORBIDDEN("无权限访问");
 
     private final String message;
 
@@ -26,7 +24,7 @@ public enum SecurityErrorCode implements ErrorCode {
     @Override
     public int httpStatus() {
         return switch (this) {
-            case UNAUTHORIZED, BAD_CREDENTIALS, TOKEN_EXPIRED, TOKEN_INVALID -> 401;
+            case UNAUTHORIZED, BAD_CREDENTIALS -> 401;
             case FORBIDDEN -> 403;
             default -> 400;
         };

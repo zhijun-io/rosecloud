@@ -32,17 +32,20 @@ public class UserRepositoryImpl implements UserRepository {
     private final UserMapper userMapper;
     private final UserCredentialMapper userCredentialMapper;
     private final UserRoleMapper userRoleMapper;
+    private final UserTenantMapper userTenantMapper;
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final MenuMapper menuMapper;
     private final ObjectMapper objectMapper;
 
     public UserRepositoryImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
-                              UserRoleMapper userRoleMapper, RoleMapper roleMapper,
+                              UserRoleMapper userRoleMapper, UserTenantMapper userTenantMapper,
+                              RoleMapper roleMapper,
                               RoleMenuMapper roleMenuMapper, MenuMapper menuMapper, ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.userCredentialMapper = userCredentialMapper;
         this.userRoleMapper = userRoleMapper;
+        this.userTenantMapper = userTenantMapper;
         this.roleMapper = roleMapper;
         this.roleMenuMapper = roleMenuMapper;
         this.menuMapper = menuMapper;
@@ -278,6 +281,13 @@ public class UserRepositoryImpl implements UserRepository {
         return userRoleMapper.selectList(
                         new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getRoleId, roleId))
                 .stream().map(UserRoleEntity::getUserId).toList();
+    }
+
+    @Override
+    public List<String> findTenantIdsByUserId(Long userId) {
+        return userTenantMapper.selectList(
+                        new LambdaQueryWrapper<UserTenantEntity>().eq(UserTenantEntity::getUserId, userId))
+                .stream().map(UserTenantEntity::getTenantId).toList();
     }
 
     @Override

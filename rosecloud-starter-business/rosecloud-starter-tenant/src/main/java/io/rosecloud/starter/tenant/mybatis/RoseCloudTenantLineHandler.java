@@ -23,12 +23,21 @@ public class RoseCloudTenantLineHandler implements TenantLineHandler {
 
     @Override
     public Expression getTenantId() {
+        // The system tenant (platform admins) is a platform-wide view: no tenant_id
+        // predicate is appended, so all tenants' rows are visible.
+        if (TenantContextHolder.isSystemTenant()) {
+            return null;
+        }
         String tenantId = TenantContextHolder.getTenantId();
         return tenantId == null ? null : new StringValue(tenantId);
     }
 
     @Override
     public boolean ignoreTable(String tableName) {
+        if (TenantContextHolder.isSystemTenant()) {
+            // Platform perspective: bypass row-level isolation entirely.
+            return true;
+        }
         if (!TenantContextHolder.hasTenant()) {
             return true;
         }

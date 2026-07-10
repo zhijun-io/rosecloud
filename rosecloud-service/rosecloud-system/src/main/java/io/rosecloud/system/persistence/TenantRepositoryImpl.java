@@ -79,6 +79,14 @@ public class TenantRepositoryImpl implements TenantRepository {
     }
 
     @Override
+    public List<String> findAllIds() {
+        return mapper.selectList(new LambdaQueryWrapper<TenantEntity>()
+                        .eq(TenantEntity::getDeleted, 0)
+                        .ne(TenantEntity::getId, io.rosecloud.starter.tenant.core.TenantContextHolder.SYSTEM_TENANT_ID))
+                .stream().map(TenantEntity::getId).toList();
+    }
+
+    @Override
     public PageResult<Tenant> page(long current, long size, String keyword) {
         Page<TenantEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();

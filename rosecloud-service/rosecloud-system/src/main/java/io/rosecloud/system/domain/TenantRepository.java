@@ -2,6 +2,7 @@ package io.rosecloud.system.domain;
 
 import io.rosecloud.common.core.model.PageResult;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,4 +26,7 @@ public interface TenantRepository {
     void updateStatus(String id, TenantStatus status);
 
     long countByTenantProfileId(String tenantProfileId);
+
+    /** All tenant ids (excluding the reserved system tenant). Used for platform-admin tenant switching. */
+    List<String> findAllIds();
 }
