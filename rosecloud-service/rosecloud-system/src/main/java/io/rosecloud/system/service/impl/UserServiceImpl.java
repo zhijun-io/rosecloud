@@ -6,6 +6,7 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.SecurityUser;
+import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.domain.UserRepository;
@@ -29,10 +30,12 @@ public class UserServiceImpl implements UserService, UserApi {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SessionStore sessionStore;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, SessionStore sessionStore) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sessionStore = sessionStore;
     }
 
     // ==================== helper ====================
@@ -125,6 +128,9 @@ public class UserServiceImpl implements UserService, UserApi {
             throw new BizException(SystemErrorCode.USER_NOT_FOUND);
         }
         userRepository.assignRoles(userId, roleIds == null ? List.of() : roleIds);
+        // Roles/permissions are cached in the JWT; revoke the user's sessions so the next
+        // request is forced to re-authenticate with the updated authority set.
+        sessionStore.revokeByUserId(userId);
     }
 
     @Override

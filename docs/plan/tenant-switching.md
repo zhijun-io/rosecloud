@@ -12,11 +12,17 @@
 `TenantGatewayFilter` 还会主动剥离该头。这套设计修复了「伪造头越权跨租户」的问题，但
 也意味着用户无法归属多个租户，更无法切换。
 
+平台管理员目前是特殊特例：`sys_user.tenant_id` 为 `NULL` → 租户上下文为空 →
+`RoseCloudTenantLineHandler.ignoreTable` 在 `hasTenant()==false` 时放行全部数据（平台视角看所有租户）。
+本方案把这一**隐含特例显式建模为「系统租户」**。
+
 本方案目标：
 
+- 引入**系统租户**（`id` 固定常量，如 `__system__`）：平台管理员归属系统租户，其「看所有租户」
+  的语义由系统租户在行级隔离中的豁免规则承载，而非靠「无租户上下文」。
 - 支持「一个用户属于多个租户」的成员关系模型。
 - 支持用户在其**授权范围内**受控切换当前活动租户（active tenant）。
-- 支持平台管理员（无归属租户）以受控方式「代入」某个租户操作。
+- 支持平台管理员（归属系统租户）以受控方式「代入」某个普通租户操作。
 - 全程不信任客户端 `X-Tenant-Id`，活动租户始终绑定到已认证身份并由服务端签发的令牌承载。
 
 非目标（不做项）：
@@ -24,6 +30,18 @@
 - 不引入前端页面（沿用 `docs/plan/development-plan.md` 的后端优先原则）。
 - 不改变 `tenantId` 为字符串主键的既定决策（见 ADR）。
 - 不做「一个请求同时跨多租户读写」，切换是「切当前上下文」，不是「聚合多租户」。
+- 系统租户不可被普通租户创建流程创建，也不可被删除。
+
+## 1.1 系统租户语义
+
+- 系统租户是**保留租户**：固定 `id`（`TenantContextHolder.SYSTEM_TENANT_ID`，建议值
+  `__system__`），在 `sys_tenant` 中以保留行存在（`status` 标记保留，不参与普通租户列表）。
+- 平台管理员（如具备 `ROLE_platform-admin`）的归属租户 = 系统租户；其登录签发的访问令牌
+  `tenant` claim = 系统租户 `id`。
+- 行级隔离对用户语义：当活动租户 == 系统租户时，视为「平台视角」，行级 WHERE 不追加
+  （与现状「无租户上下文放行全部」效果一致，但来源更明确、可审计）。
+- 普通租户之间、普通租户与系统租户之间：活动租户为某普通租户时，照常追加
+  `tenant_id = <活动租户>` 的 WHERE。
 
 ## 2. 现状与约束（关键代码位置）
 
@@ -54,25 +72,33 @@
 ### 3.1 数据模型：成员关系表 `sys_user_tenant`
 
 用户与租户多对多。归属租户（`sys_user.tenant_id`）视为「主租户」，同时也应在成员表中冗余一
-行，便于统一查询（迁移脚本负责回填）。
+行，便于统一查询（迁移脚本负责回填）。平台管理员 `sys_user.tenant_id` 置为系统租户 id
+（`__system__`），也照常在成员表中有一行（系统租户行）。
 
 字段建议：
 
 - `id BIGINT` 主键（`IdType.ASSIGN_ID`）
 - `user_id BIGINT` 用户
-- `tenant_id VARCHAR(64)` 租户
+- `tenant_id VARCHAR(64)` 租户（含系统租户 id）
 - `is_primary TINYINT` 是否主租户（0/1）
 - `create_time` / `update_time`
 - 唯一索引 `(user_id, tenant_id)`；辅助索引 `(user_id)`、`(tenant_id)`
 
-平台管理员：`sys_user.tenant_id` 为 `NULL`，成员表可不落行；其「可切入任意租户」的能力由
-角色判定（见 3.5），不依赖成员表。
+`sys_tenant` 增加一行保留记录：
+
+- `id = '__system__'`，`name = '系统租户'`，`status` 标记保留（如 `status = 9`，与正常
+  `0/1` 区分），不参与普通租户分页列表（查询侧过滤）。
+
+> 迁移脚本负责：① 插入系统租户保留行；② 将现有 `sys_user.tenant_id IS NULL` 的平台管理员
+> 行更新为 `__system__`；③ 为所有用户（含平台管理员）按其 `tenant_id` 回填 `sys_user_tenant`
+> 主租户成员行。
 
 ### 3.2 令牌模型：新增 `tenant` claim（活动租户）
 
 - 在 `JwtTokenFactory` 增加常量 `TENANT = "tenant"`。
+- 活动租户的来源：主体的 `getTenantId()`（平台管理员 = 系统租户 id `__system__`）。
 - `createAccessJwtToken(SecurityUser)`：写入 `.add(TENANT, securityUser.getTenantId())`
-  （登录时活动租户 = 主租户）。
+  （登录时活动租户 = 主租户 / 平台管理员 = 系统租户）。
 - 新增重载 `createAccessJwtToken(SecurityUser, String activeTenantId)` 与
   `createTokenPair(SecurityUser, String activeTenantId)`，供「切换」时以指定活动租户签发。
 - refresh token 也写入 `tenant` claim，保证刷新后活动租户不丢失。
@@ -88,6 +114,10 @@
    - claim 缺失（老令牌）→ 回退用主体的主租户（向后兼容）。
 3. 用有效活动租户构造返回主体：`securityUser.withTenantId(activeTenant)`。
 
+活动租户为系统租户 id（`__system__`）时，租户上下文被设为系统租户——由 3.4 的行级隔离豁免
+承载「看所有租户」语义。注意：`TenantContextHolder` 此时「有租户」（=系统租户），不再是
+`null`，因此 `hasTenant()` 为 true，需配合 3.4 的豁免规则，避免反被限定到 `__system__` 这一行。
+
 因为 claim 来自我方签名令牌，**不需要**每请求回查成员关系（成员被移除时靠令牌吊销/过期收敛）。
 
 为此在 `SecurityUser` 增加不可变拷贝方法：
@@ -99,18 +129,35 @@ public SecurityUser withTenantId(String newTenantId) {
 }
 ```
 
-`TenantWebFilter` 无需改动：它仍读 `SecurityUser.getTenantId()`，此时已是被验证过的活动租户。
+`TenantWebFilter` 无需改动：它仍读 `SecurityUser.getTenantId()`，此时已是被验证过的活动租户
+（系统租户或某普通租户）。
 
-### 3.4 切换与查询接口（auth 服务）
+### 3.4 行级隔离豁免：系统租户 = 平台视角
+
+`RoseCloudTenantLineHandler` 调整（`rosecloud-starter-business/rosecloud-starter-tenant/.../mybatis/`）：
+
+- `TenantContextHolder` 新增常量 `SYSTEM_TENANT_ID = "__system__"` 与便捷判定
+  `isSystemTenant()`。
+- `getTenantId()`：活动租户为系统租户时，返回 `null`（即不追加 `tenant_id` WHERE），
+  等效于「看所有租户」。
+- `ignoreTable(tableName)`：
+  - 若 `TenantContextHolder.isSystemTenant()` → 返回 `true`（平台视角放行全部）；
+  - 否则维持现状（无租户放行 / `ignore-tables` 列表放行）。
+
+这样「平台管理员看所有租户」由「系统租户 + 豁免规则」显式承载，不再依赖 `tenant_id IS NULL`。
+普通租户活动上下文仍正常追加 WHERE。
+
+### 3.5 切换与查询接口（auth 服务）
 
 新增 `TenantSwitchController`（`rosecloud-service/rosecloud-auth/.../controller/`）：
 
 - `GET /api/auth/tenants`
-  返回当前用户可切入的租户列表（成员集合，平台管理员另行说明）。
+  返回当前用户可切入的租户列表（成员集合；平台管理员活动租户 = 系统租户，列表为其成员租户 +
+  其可代入的普通租户，具体见 3.6）。
 - `POST /api/auth/switch-tenant`  body：`{ "tenantId": "..." }`
   流程：
-  1. 从 `SecurityContext` 取当前用户 `userId`；
-  2. **服务端校验** 目标租户 ∈ 用户成员集合（或用户是平台管理员，见 3.5）；不通过 → `403`；
+  1. 从 `SecurityContext` 取当前用户 `userId` 与活动租户；
+  2. **服务端校验** 目标租户 ∈ 用户成员集合（或当前活动租户为系统租户，见 3.6）；不通过 → `403`；
   3. 用 `createTokenPair(securityUser, targetTenantId)` 重新签发 access/refresh；
   4. 旧令牌吊销（复用 `SessionStore.revoke` / 现有登出逻辑），返回新令牌对。
 
@@ -119,17 +166,18 @@ public SecurityUser withTenantId(String newTenantId) {
 - `UserTenantApi`（system 提供）：
   - `List<String> listTenantIds(Long userId)`
   - `boolean isMember(Long userId, String tenantId)`
+  - `boolean isPlatformAdmin(Long userId)`（或复用现有角色判定）
 - system 侧实现：`sys_user_tenant` 查询 + 主租户并入结果。
 
 > 说明：切换只需在「切换那一刻」查一次成员关系；日常每请求走 3.3 的签名 claim，零额外查询。
 
-### 3.5 平台管理员「代入租户」
+### 3.6 平台管理员「代入租户」
 
-- 判定：主体具备平台管理员角色（如 `ROLE_platform-admin`，以现有角色码为准，代码中以常量收口）。
-- `switch-tenant` 对平台管理员放行任意存在的租户（可选：校验租户存在且状态正常）。
-- 代入后签发的令牌 `tenant` claim = 目标租户，其请求即被行级隔离限定到该租户；
-  代入前（无 claim 或 claim 为空）保持「无租户上下文 → 平台视角」。
-- 审计：`switch-tenant` 应写审计日志（复用 `@AuditLog`），记录 who / 代入哪个租户。
+- 判定：主体活动租户 = 系统租户（即平台管理员）。
+- `switch-tenant` 对平台管理员放行任意存在的租户（可选：校验租户存在、状态正常且非系统租户自身）。
+- 代入后签发的令牌 `tenant` claim = 目标普通租户，其请求即被行级隔离限定到该租户；
+  切回平台视角时，`tenant` claim 重新设为系统租户 id，由 3.4 豁免规则恢复「看所有租户」。
+- 审计：`switch-tenant` 应写审计日志（复用 `@AuditLog`），记录 who / 从何租户 / 代入哪个租户。
 
 ### 3.6 兼容性
 
@@ -140,51 +188,62 @@ public SecurityUser withTenantId(String newTenantId) {
 ## 4. 分步实施（建议顺序，每步可独立验证）
 
 1. **DB 迁移**：新增 `db/migration/V2.3.0__add_user_tenant_membership.sql`
-   建 `sys_user_tenant` 表 + 唯一/辅助索引 + 回填主租户成员。
+   - 建 `sys_user_tenant` 表 + 唯一/辅助索引；
+   - 插入系统租户保留行 `id='__system__'`（保留状态）；
+   - 将 `sys_user.tenant_id IS NULL` 的平台管理员更新为 `__system__`；
+   - 为所有用户按其 `tenant_id` 回填 `sys_user_tenant` 主租户成员行。
    验证：`./mvnw -pl rosecloud-service/rosecloud-system -am -Dmaven.test.skip=true install` 通过；
-   本地 Flyway 迁移成功、回填行数 = 非空 `tenant_id` 用户数。
+   本地 Flyway 迁移成功；系统租户行存在且历史平台管理员 `tenant_id = '__system__'`。
 
-2. **持久化层**：`UserTenantEntity` + `UserTenantMapper` + `UserTenantRepository(Impl)`
-   （`rosecloud-service/rosecloud-system/.../persistence/`），提供 `listTenantIds` / `isMember`。
+2. **租户上下文与行级隔离豁免**：`TenantContextHolder` 增加 `SYSTEM_TENANT_ID` 与 `isSystemTenant()`；
+   `RoseCloudTenantLineHandler` 按 3.4 处理系统租户豁免。
+   验证：`RoseCloudTenantLineHandlerTest` 补充用例：上下文=系统租户 → `getTenantId()` 返回 `null`、
+   `ignoreTable` 返回 `true`。
+
+3. **持久化层**：`UserTenantEntity` + `UserTenantMapper` + `UserTenantRepository(Impl)`
+   （`rosecloud-service/rosecloud-system/.../persistence/`），提供 `listTenantIds` / `isMember` /
+   `isPlatformAdmin`。
    验证：`UserTenantRepositoryImplTest`（参照现有 `UserRepositoryImplTest` 的 Testcontainers/MyBatis 风格）。
 
-3. **契约**：`rosecloud-api` 增加 `UserTenantApi` + 相关 record；system 侧新增
+4. **契约**：`rosecloud-api` 增加 `UserTenantApi` + 相关 record；system 侧新增
    `UserTenantController` 实现内部端点（走现有内部鉴权，参考 `InternalApi`/内部过滤器）。
    验证：编译 + `TenantSwitchController` 可通过 Feign 注入。
 
-4. **SecurityUser 拷贝方法**：新增 `withTenantId(String)`。
+5. **SecurityUser 拷贝方法**：新增 `withTenantId(String)`。
    验证：`SecurityUserJsonTest` 补充一条 `withTenantId` 断言（拷贝后其余字段不变）。
 
-5. **令牌**：`JwtTokenFactory` 增加 `tenant` claim 与带活动租户的重载。
-   验证：新增 `JwtTokenFactoryTest`：签发含 `tenant` claim → 解析回读一致；带活动租户重载生效。
+6. **令牌**：`JwtTokenFactory` 增加 `tenant` claim 与带活动租户的重载（来源含系统租户）。
+   验证：新增 `JwtTokenFactoryTest`：签发含 `tenant` claim → 解析回读一致；平台管理员活动租户 = 系统租户。
 
-6. **访问/刷新校验**：`JwtAuthenticationProvider` / `RefreshTokenAuthenticationProvider`
+7. **访问/刷新校验**：`JwtAuthenticationProvider` / `RefreshTokenAuthenticationProvider`
    读取 `tenant` claim 并用 `withTenantId` 构造有效主体；claim 缺失回退主租户。
-   验证：单测覆盖「有 claim 用 claim」「无 claim 回退主租户」两分支。
+   验证：单测覆盖「有 claim 用 claim」「无 claim 回退主租户」「claim=系统租户」分支。
 
-7. **切换接口**：`TenantSwitchController`（`/api/auth/tenants`、`/api/auth/switch-tenant`），
-   含成员校验、平台管理员放行、旧令牌吊销、审计。
+8. **切换接口**：`TenantSwitchController`（`/api/auth/tenants`、`/api/auth/switch-tenant`），
+   含成员校验、平台管理员（活动租户=系统租户）放行、旧令牌吊销、审计。
    验证：切换到成员内租户 → `200` 且新令牌 `tenant` claim 更新；切换到非成员 → `403`。
 
-8. **文档**：更新 `docs/plan/development-plan.md`（多租户小节）与 `README`（如涉及）；
+9. **文档**：更新 `docs/plan/development-plan.md`（多租户小节）与 `README`（如涉及）；
    如切换语义构成架构决策，补一条 ADR。
 
 ## 5. 验收标准（可机器校验）
 
+- 平台管理员登录后活动租户 = 系统租户，可读取所有租户数据（行级隔离豁免生效）。
 - 成员用户 `POST /api/auth/switch-tenant` 到其成员租户：返回新令牌，后续请求数据被限定到目标租户。
 - 用户切换到**非成员**租户：返回 `403`，且不签发新令牌。
+- 平台管理员 `switch-tenant` 到任意存在租户：成功且被限定到该租户；切回平台视角恢复系统租户。
 - 携带 `tenant=B` 的令牌请求，即使再传 `X-Tenant-Id: C`，实际生效仍为 B（头被忽略/网关剥离）。
 - 老令牌（无 `tenant` claim）请求：行为等同主租户，不报错。
-- 平台管理员可代入任意存在租户；非管理员不能。
+- 系统租户不可被普通创建/删除流程操作（保留行受保护）。
 - 受影响模块单测全绿：
-  `./mvnw -o test -pl rosecloud-common/rosecloud-common-security,rosecloud-starter/rosecloud-starter-security,rosecloud-service/rosecloud-system,rosecloud-service/rosecloud-auth`。
+  `./mvnw -o test -pl rosecloud-common/rosecloud-common-security,rosecloud-starter/rosecloud-starter-security,rosecloud-starter-business/rosecloud-starter-tenant,rosecloud-service/rosecloud-system,rosecloud-service/rosecloud-auth`。
 
 ## 6. 安全边界
 
 - 任何时候都不以客户端 `X-Tenant-Id` 作为租户来源（`TenantWebFilter` 已只信任主体，网关已剥离头）。
-- 活动租户只能通过 `switch-tenant`（经成员校验）写入签名令牌来变更。
+- 活动租户只能通过 `switch-tenant`（经成员校验）写入签名令牌来变更；系统租户是常量、不可伪造。
 - 切换必须吊销旧令牌，避免「旧租户令牌」与「新租户令牌」并存扩大暴露面。
-- 平台管理员代入能力必须基于角色判定并写审计。
+- 平台管理员代入普通租户能力必须基于角色判定并写审计；系统租户保留行不可经普通流程变更。
 
 ## 7. 风险与回滚
 

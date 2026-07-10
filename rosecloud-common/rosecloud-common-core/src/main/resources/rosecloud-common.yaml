@@ -20,6 +20,8 @@ spring:
       autoconfiguration:
         jackson:
           enabled: false
+  reactor:
+    context-propagation: AUTO
 
 logging:
   pattern:
@@ -30,6 +32,12 @@ management:
     web:
       exposure:
         include: health,info
+  tracing:
+    enabled: true
+    propagation:
+      type: w3c
+    sampling:
+      probability: 1.0
 
 rosecloud:
   audit:

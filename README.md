@@ -26,9 +26,8 @@ rosecloud
 │   ├── rosecloud-starter-security
 │   ├── rosecloud-starter-trace
 │   ├── rosecloud-starter-data-mybatisplus
-│   ├── rosecloud-starter-lock
 │   ├── rosecloud-starter-cache
-│   └── rosecloud-starter-storage
+│   └── rosecloud-starter-trace
 ├── rosecloud-starter-business    # 业务型 starter 父模块
 │   ├── rosecloud-starter-tenant  # 多租户（rosecloud.tenant.enabled）
 │   └── rosecloud-starter-audit   # 审计（rosecloud.audit.enabled）
@@ -48,7 +47,7 @@ starter 分成两个父模块：`rosecloud-starter` 承载技术型 starter，`r
 |---|---|---|
 | rosecloud-starter-web | servlet 服务接入 | Jackson 2（替代默认 Jackson 3）+ 全局异常 |
 | rosecloud-starter-security | 引入即装配 | JWT(HS256) access/refresh 签发与校验，claims 对齐 CurrentUser；安全上下文与 Feign 透传；OAuth2 JWT 资源服务器；预留 MFA hooks |
-| rosecloud-starter-trace | 引入即装配 | 服务端 traceId 生成与透传，便于日志链路追踪 |
+| rosecloud-starter-trace | 引入即装配 | 基于 Micrometer Tracing（Brave 桥），由 Spring Boot 自动装配服务端追踪；日志 MDC 注入 `traceId`/`spanId`，跨服务经 W3C `traceparent` 透传。后续接入 Zipkin/OTel 仅需补一个 reporter 依赖 |
 | rosecloud-starter-data-mybatisplus | 服务按需接入 | MyBatis-Plus 持久化（可换 JPA）+ 审计自动填充 + 分页拦截器 |
 | rosecloud-starter-tenant | `rosecloud.tenant.enabled` | 多租户上下文、解析器、servlet/reactive 过滤器、`@Async` 透传、MyBatis-Plus 行级隔离（`TenantLineInnerInterceptor`） |
 | rosecloud-starter-audit | `rosecloud.audit.enabled` | `@AuditLog` 切面，发布 `AuditLogEvent`（含操作人/租户，内置日志监听器） |

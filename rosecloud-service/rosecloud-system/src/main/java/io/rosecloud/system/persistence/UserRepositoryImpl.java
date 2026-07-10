@@ -274,6 +274,13 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public List<Long> findUserIdsByRoleId(Long roleId) {
+        return userRoleMapper.selectList(
+                        new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getRoleId, roleId))
+                .stream().map(UserRoleEntity::getUserId).toList();
+    }
+
+    @Override
     public List<String> findRoleCodesByUserId(Long userId) {
         List<Long> roleIds = findRoleIdsByUserId(userId);
         if (roleIds.isEmpty()) {

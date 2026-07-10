@@ -45,6 +45,9 @@ public interface UserRepository {
 
     List<String> findRoleCodesByUserId(Long userId);
 
+    /** User ids that currently hold the given role. Used to revoke sessions when role permissions change. */
+    List<Long> findUserIdsByRoleId(Long roleId);
+
     void assignRoles(Long userId, Collection<Long> roleIds);
 
     /** Resolves recipient contacts (email/phone) for a notice target. */

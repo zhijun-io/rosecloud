@@ -65,17 +65,7 @@
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-starter-lock</artifactId>
-                <version>${rosecloud.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.rosecloud</groupId>
                 <artifactId>rosecloud-starter-cache</artifactId>
-                <version>${rosecloud.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-starter-storage</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
 

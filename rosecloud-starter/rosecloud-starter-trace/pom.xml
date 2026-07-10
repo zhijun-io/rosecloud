@@ -13,13 +13,17 @@
 
     <artifactId>rosecloud-starter-trace</artifactId>
     <name>RoseCloud Trace Starter</name>
-    <description>Server-side trace id generation for servlet and gateway requests; replaceable with third-party tracing later.</description>
+    <description>Brings Micrometer Tracing (Brave bridge) so Spring Boot auto-configures server-side tracing,
+        MDC correlation (traceId/spanId) and W3C traceparent propagation. Export to Zipkin/OTel later by adding a reporter.</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-common-security</artifactId>
-            <version>${project.version}</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -27,22 +31,12 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
-            <optional>true</optional>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
