@@ -2,6 +2,7 @@ package io.rosecloud.notice.channel;
 
 import io.rosecloud.api.notice.NoticeRecipient;
 import io.rosecloud.notice.domain.NoticeChannel;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -16,16 +17,13 @@ import org.springframework.stereotype.Component;
  * service still starts without mail configured (the channel is skipped).
  */
 @Component
+@RequiredArgsConstructor
 @ConditionalOnClass(JavaMailSender.class)
 public class EmailNoticeSender implements NoticeChannelSender {
 
     private static final Logger log = LoggerFactory.getLogger(EmailNoticeSender.class);
 
     private final ObjectProvider<JavaMailSender> mailSender;
-
-    public EmailNoticeSender(ObjectProvider<JavaMailSender> mailSender) {
-        this.mailSender = mailSender;
-    }
 
     @Override
     public NoticeChannel channel() {

@@ -8,11 +8,17 @@ import io.rosecloud.common.core.model.HasStatus;
 import io.rosecloud.common.core.model.HasTenantId;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * Domain view of a user. ORM-free; the persistence layer maps to/from {@code sys_user}.
  */
+@Getter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class User extends BaseDataWithAdditionalInfo implements HasAdditionalInfo, HasId, HasStatus<Integer>, HasTenantId {
 
     private final Long id;
@@ -41,83 +47,5 @@ public final class User extends BaseDataWithAdditionalInfo implements HasAdditio
         this.createBy = createBy;
         this.updateTime = updateTime;
         this.updateBy = updateBy;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public String getTenantId() {
-        return tenantId;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
-
-    public Long getCreateBy() {
-        return createBy;
-    }
-
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
-
-    public Long getUpdateBy() {
-        return updateBy;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof User user)) {
-            return false;
-        }
-        return Objects.equals(id, user.id)
-                && Objects.equals(username, user.username)
-                && Objects.equals(nickname, user.nickname)
-                && Objects.equals(status, user.status)
-                && Objects.equals(tenantId, user.tenantId)
-                && Objects.equals(getAdditionalInfo(), user.getAdditionalInfo())
-                && Objects.equals(createTime, user.createTime)
-                && Objects.equals(createBy, user.createBy)
-                && Objects.equals(updateTime, user.updateTime)
-                && Objects.equals(updateBy, user.updateBy);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, username, nickname, status, tenantId, getAdditionalInfo(), createTime, createBy,
-                updateTime, updateBy);
-    }
-
-    @Override
-    public String toString() {
-        return "User[" +
-                "id=" + id +
-                ", username=" + username +
-                ", nickname=" + nickname +
-                ", status=" + status +
-                ", tenantId=" + tenantId +
-                ", additionalInfo=" + getAdditionalInfo() +
-                ", createTime=" + createTime +
-                ", createBy=" + createBy +
-                ", updateTime=" + updateTime +
-                ", updateBy=" + updateBy +
-                ']';
     }
 }

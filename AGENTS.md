@@ -57,7 +57,7 @@ cd rosecloud-service/rosecloud-auth && ./mvnw spring-boot:run
 - 分页统一使用 `ApiResponse<PageResult<T>>`
 - 错误码使用 `ErrorCode`，业务异常使用 `BizException`
 - 常量类使用 `final` + 私有构造
-- DTO / 值对象优先使用 `record`
+- 不可变数据载体与 DTO 的注解选型见 [docs/lombok-conventions.md](docs/lombok-conventions.md)。简则：纯 DTO / 不实现接口的值对象用 `record`；**实现 `HasId`/`HasTenantId`/`HasUserId`/`HasStatus` 等 JavaBean 接口的不可变载体必须用 `@Value`**（不能用 `record`）；Entity / 可变 POJO 用 `@Getter @Setter @NoArgsConstructor`。
 - starter 命名使用 `rosecloud-{name}-starter`
 - 新 starter 通过 `AutoConfiguration.imports` 注册
 - 对外可见变化时同步更新相关测试和文档

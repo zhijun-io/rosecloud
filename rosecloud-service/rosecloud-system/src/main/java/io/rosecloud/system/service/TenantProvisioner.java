@@ -13,7 +13,6 @@ import io.rosecloud.system.persistence.RoleEntity;
 import io.rosecloud.system.persistence.RoleMapper;
 import io.rosecloud.system.persistence.TenantEntity;
 import io.rosecloud.system.persistence.TenantMapper;
-import io.rosecloud.system.service.UserActivationService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

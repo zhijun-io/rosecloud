@@ -10,7 +10,14 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /** MyBatis-Plus persistent entity for {@code sys_tenant}; confined to infrastructure. */
+@Getter
+@Setter
+@NoArgsConstructor
 @TableName("sys_tenant")
 public class TenantEntity {
 
@@ -35,36 +42,4 @@ public class TenantEntity {
     private Long updateBy;
     @TableLogic
     private Integer deleted;
-
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public Integer getStatus() { return status; }
-    public void setStatus(Integer status) { this.status = status; }
-    public String getContactUser() { return contactUser; }
-    public void setContactUser(String contactUser) { this.contactUser = contactUser; }
-    public String getContactPhone() { return contactPhone; }
-    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
-    public LocalDate getExpireTime() { return expireTime; }
-    public void setExpireTime(LocalDate expireTime) { this.expireTime = expireTime; }
-    public String getRemark() { return remark; }
-    public void setRemark(String remark) { this.remark = remark; }
-    public String getTenantProfileId() { return tenantProfileId; }
-    public void setTenantProfileId(String tenantProfileId) { this.tenantProfileId = tenantProfileId; }
-    public String getExtra() { return extra; }
-    public void setExtra(String extra) { this.extra = extra; }
-    public String getAdminUsername() { return adminUsername; }
-    public void setAdminUsername(String adminUsername) { this.adminUsername = adminUsername; }
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
-    public Long getCreateBy() { return createBy; }
-    public void setCreateBy(Long createBy) { this.createBy = createBy; }
-    public Long getUpdateBy() { return updateBy; }
-    public void setUpdateBy(Long updateBy) { this.updateBy = updateBy; }
-    public Integer getDeleted() { return deleted; }
-    public void setDeleted(Integer deleted) { this.deleted = deleted; }
 }

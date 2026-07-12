@@ -3,6 +3,7 @@ package io.rosecloud.auth.service.impl;
 import io.rosecloud.auth.service.LoginSessionService;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.token.JwtClaimsExtractor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import java.util.Set;
  * the same Redis, and a valid token is accepted even after a restart.
  */
 @Service
+@RequiredArgsConstructor
 public class LoginSessionServiceImpl implements LoginSessionService {
 
     private static final String KEY_PREFIX = "session:";
@@ -33,10 +35,6 @@ public class LoginSessionServiceImpl implements LoginSessionService {
     private static final Duration MAX_TTL = Duration.ofDays(7);
 
     private final StringRedisTemplate redisTemplate;
-
-    public LoginSessionServiceImpl(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     @Override
     public void save(LoginSession session) {

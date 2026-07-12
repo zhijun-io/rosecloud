@@ -7,7 +7,14 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("sys_user_setting")
+@Getter
+@Setter
+@NoArgsConstructor
 public class UserSettingEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
@@ -26,52 +33,4 @@ public class UserSettingEntity {
 
     @TableField("updated_by")
     private Long updatedBy;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getSettingKey() {
-        return settingKey;
-    }
-
-    public void setSettingKey(String settingKey) {
-        this.settingKey = settingKey;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(Long updatedBy) {
-        this.updatedBy = updatedBy;
-    }
 }

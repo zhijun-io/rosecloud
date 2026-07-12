@@ -5,6 +5,8 @@ import io.rosecloud.common.core.model.PageResult;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.auth.service.LoginSessionService;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,15 +16,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/auth/sessions")
 public class LoginSessionController {
 
     private final LoginSessionService sessionStoreService;
-
-    public LoginSessionController(LoginSessionService sessionStoreService) {
-        this.sessionStoreService = sessionStoreService;
-    }
 
     @PreAuthorize("hasAuthority('system:session:list')")
     @GetMapping("/online")

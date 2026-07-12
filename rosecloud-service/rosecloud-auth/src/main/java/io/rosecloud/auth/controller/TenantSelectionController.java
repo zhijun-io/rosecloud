@@ -8,6 +8,7 @@ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,16 +17,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/auth/tenants")
 public class TenantSelectionController {
 
     private final TenantSelectionService tenantSelectionService;
     private final BearerTokenExtractor tokenExtractor = new BearerTokenExtractor();
-
-    public TenantSelectionController(TenantSelectionService tenantSelectionService) {
-        this.tenantSelectionService = tenantSelectionService;
-    }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping

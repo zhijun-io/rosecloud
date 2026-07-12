@@ -14,6 +14,8 @@
    主键与租户标识决策，定义雪花 ID 与字符串 `tenantId` 的分工，以及租户 ID 规则（字母开头、仅含字母和数字、最长 10 位、默认大写、系统租户为 `ROOT`）。
 6. [postman/README.md](/Users/zhijunio/github/rosecloud/docs/postman/README.md)
    Postman 脚本说明，包含登录、退出、当前用户、用户查询和 token 撤销的导入与执行顺序。
+7. [lombok-conventions.md](/Users/zhijunio/github/rosecloud/docs/lombok-conventions.md)
+   Lombok 与 `record` 选型规范：注解决策表、`@Value` 写法纪律、`record` 不能实现 JavaBean 接口（`HasId` 等）的禁令、验证纪律与反模式清单。
 
 参考资料：
 

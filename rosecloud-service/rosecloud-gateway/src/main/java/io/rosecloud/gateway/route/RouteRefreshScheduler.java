@@ -1,5 +1,6 @@
 package io.rosecloud.gateway.route;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cloud.gateway.event.RefreshRoutesEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -18,13 +19,10 @@ import org.springframework.scheduling.annotation.Scheduled;
  */
 @Configuration
 @EnableScheduling
+@RequiredArgsConstructor
 public class RouteRefreshScheduler {
 
     private final ApplicationEventPublisher publisher;
-
-    public RouteRefreshScheduler(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
-    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {

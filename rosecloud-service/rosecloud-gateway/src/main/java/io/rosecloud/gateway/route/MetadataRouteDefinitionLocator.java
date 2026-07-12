@@ -1,5 +1,6 @@
 package io.rosecloud.gateway.route;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
 import org.springframework.cloud.gateway.handler.predicate.PredicateDefinition;
 import org.springframework.cloud.gateway.route.RouteDefinition;
@@ -22,16 +23,13 @@ import java.util.List;
  * break the route refresh or gateway startup.
  */
 @Component
+@RequiredArgsConstructor
 public class MetadataRouteDefinitionLocator implements RouteDefinitionLocator {
 
     /** Discovery metadata key a service sets to opt into auto-routing (comma-separated path patterns). */
     public static final String PATH_META = "gateway.path";
 
     private final ReactiveDiscoveryClient discoveryClient;
-
-    public MetadataRouteDefinitionLocator(ReactiveDiscoveryClient discoveryClient) {
-        this.discoveryClient = discoveryClient;
-    }
 
     @Override
     public Flux<RouteDefinition> getRouteDefinitions() {

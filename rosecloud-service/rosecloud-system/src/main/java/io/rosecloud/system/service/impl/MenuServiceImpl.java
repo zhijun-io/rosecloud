@@ -130,7 +130,7 @@ public class MenuServiceImpl implements MenuService {
         int sort = request.sort() == null ? 0 : request.sort();
         int status = request.status() == null ? 1 : request.status();
         int visible = request.visible() == null ? 1 : request.visible();
-        return new Menu(id, parentId, request.name(), request.type(), request.path(), request.component(),
+        return Menu.of(id, parentId, request.name(), request.type(), request.path(), request.component(),
                 request.perms(), request.icon(), sort, status, visible);
     }
 

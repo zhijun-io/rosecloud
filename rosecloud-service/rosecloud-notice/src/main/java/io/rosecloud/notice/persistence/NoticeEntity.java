@@ -5,7 +5,14 @@ import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /** MyBatis-Plus persistent entity for {@code sys_notice}; confined to infrastructure. */
+@Getter
+@Setter
+@NoArgsConstructor
 @TableName("sys_notice")
 public class NoticeEntity extends BaseEntity {
 
@@ -25,37 +32,4 @@ public class NoticeEntity extends BaseEntity {
     private String tenantId;
     private Integer channels;
     private String recipientSnapshot;
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public Integer getTargetType() { return targetType; }
-    public void setTargetType(Integer targetType) { this.targetType = targetType; }
-    public String getTargetTenantId() { return targetTenantId; }
-    public void setTargetTenantId(String targetTenantId) { this.targetTenantId = targetTenantId; }
-    public String getTargetRoleCode() { return targetRoleCode; }
-    public void setTargetRoleCode(String targetRoleCode) { this.targetRoleCode = targetRoleCode; }
-    public String getTargetUsername() { return targetUsername; }
-    public void setTargetUsername(String targetUsername) { this.targetUsername = targetUsername; }
-    public Integer getPublishType() { return publishType; }
-    public void setPublishType(Integer publishType) { this.publishType = publishType; }
-    public LocalDateTime getPublishTime() { return publishTime; }
-    public void setPublishTime(LocalDateTime publishTime) { this.publishTime = publishTime; }
-    public LocalDateTime getEffectiveTime() { return effectiveTime; }
-    public void setEffectiveTime(LocalDateTime effectiveTime) { this.effectiveTime = effectiveTime; }
-    public LocalDateTime getExpireTime() { return expireTime; }
-    public void setExpireTime(LocalDateTime expireTime) { this.expireTime = expireTime; }
-    public Integer getStatus() { return status; }
-    public void setStatus(Integer status) { this.status = status; }
-    public Boolean getNeedConfirm() { return needConfirm; }
-    public void setNeedConfirm(Boolean needConfirm) { this.needConfirm = needConfirm; }
-    public Long getSenderId() { return senderId; }
-    public void setSenderId(Long senderId) { this.senderId = senderId; }
-    public String getTenantId() { return tenantId; }
-    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
-    public Integer getChannels() { return channels; }
-    public void setChannels(Integer channels) { this.channels = channels; }
-    public String getRecipientSnapshot() { return recipientSnapshot; }
-    public void setRecipientSnapshot(String recipientSnapshot) { this.recipientSnapshot = recipientSnapshot; }
 }

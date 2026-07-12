@@ -1,11 +1,23 @@
 package io.rosecloud.common.core.model;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  * Base data container with common creation metadata.
+ *
+ * <p>Deliberately declares no {@code equals/hashCode}: comparing only the single
+ * {@link #createdTime} field (the only state here) would wrongly treat unrelated
+ * instances as equal. Concrete subclasses define their own equality semantics, and
+ * {@link BaseDataWithAdditionalInfo} relies on {@code callSuper=true} (identity for
+ * this base). Falls back to Object identity, which is the safe default.
  */
+@Getter
+@Setter
+@ToString
 public abstract class BaseData {
 
     private LocalDateTime createdTime;
@@ -19,35 +31,5 @@ public abstract class BaseData {
 
     protected BaseData(BaseData data) {
         this.createdTime = data.createdTime;
-    }
-
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(createdTime);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        BaseData other = (BaseData) obj;
-        return createdTime == other.createdTime;
-    }
-
-    @Override
-    public String toString() {
-        return "BaseData[createdTime=" + createdTime + "]";
     }
 }

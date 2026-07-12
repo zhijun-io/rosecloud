@@ -2,20 +2,27 @@ package io.rosecloud.system.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+
 /**
  * Tenant profile entity aligned with ThingsBoard's split between tenant and
  * tenant profile. {@code additionalInfo} carries the structured profile JSON,
- * while {@link #profileData} is the typed view used by callers.
+ * while {@link #getProfileData()} is the typed view used by callers.
  */
+@Getter
 public final class TenantProfile extends BaseDataWithAdditionalInfo implements HasAdditionalInfo {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // Module-aware mapper so Jackson modules (e.g. JavaTimeModule) registered on the
+    // classpath are picked up, instead of a bare ObjectMapper() that silently drops them.
+    private static final ObjectMapper MAPPER = JsonMapper.builder().findAndAddModules().build();
 
     private final String id;
     private final String name;
@@ -25,6 +32,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
     private final Long createBy;
     private final LocalDateTime updateTime;
     private final Long updateBy;
+    @Getter(AccessLevel.NONE)
     private transient TenantProfileData profileData;
 
     public TenantProfile(String id, String name, String description, TenantProfileData profileData) {
@@ -51,38 +59,6 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
         this.createBy = createBy;
         this.updateTime = updateTime;
         this.updateBy = updateBy;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public boolean isDefault() {
-        return isDefault;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
-
-    public Long getCreateBy() {
-        return createBy;
-    }
-
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
-
-    public Long getUpdateBy() {
-        return updateBy;
     }
 
     public TenantProfileData getProfileData() {

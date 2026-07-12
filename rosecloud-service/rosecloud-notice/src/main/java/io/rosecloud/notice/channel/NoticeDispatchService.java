@@ -1,7 +1,7 @@
 package io.rosecloud.notice.channel;
 
-import io.rosecloud.notice.domain.NoticeChannel;
 import io.rosecloud.notice.domain.Notice;
+import io.rosecloud.notice.domain.NoticeChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;

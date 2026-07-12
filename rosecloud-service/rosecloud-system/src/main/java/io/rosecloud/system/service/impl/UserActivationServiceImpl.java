@@ -12,9 +12,9 @@ import io.rosecloud.system.persistence.UserCredentialMapper;
 import io.rosecloud.system.persistence.UserEntity;
 import io.rosecloud.system.persistence.UserMapper;
 import io.rosecloud.system.service.UserActivationService;
+import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.system.support.PasswordPolicyValidator;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,16 +53,14 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     public UserActivationServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
                                      PasswordEncoder passwordEncoder, NoticePublishApi noticePublishApi,
-                                     @Value("${rosecloud.user.activation-ttl-hours:24}") long activationTtlHours,
-                                     @Value("${rosecloud.user.activation-link-base-url:}") String activationLinkBaseUrl,
-                                     @Value("${rosecloud.user.activation-resend-cooldown-seconds:60}") long resendCooldownSeconds) {
+                                     UserActivationProperties properties) {
         this.userMapper = userMapper;
         this.userCredentialMapper = userCredentialMapper;
         this.passwordEncoder = passwordEncoder;
         this.noticePublishApi = noticePublishApi;
-        this.activationTtlHours = activationTtlHours;
-        this.activationLinkBaseUrl = activationLinkBaseUrl;
-        this.resendCooldownSeconds = resendCooldownSeconds;
+        this.activationTtlHours = properties.getActivationTtlHours();
+        this.activationLinkBaseUrl = properties.getActivationLinkBaseUrl();
+        this.resendCooldownSeconds = properties.getResendCooldownSeconds();
     }
 
     @Override

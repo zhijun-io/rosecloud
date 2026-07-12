@@ -5,8 +5,15 @@ import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /** MyBatis-Plus persistent object for {@code sys_login_log}; confined to infrastructure. */
 @TableName("sys_login_log")
+@Getter
+@Setter
+@NoArgsConstructor
 public class LoginLogEntity extends BaseEntity {
 
     private String username;
@@ -15,17 +22,4 @@ public class LoginLogEntity extends BaseEntity {
     private String ip;
     private String userAgent;
     private LocalDateTime loginTime;
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    public Integer getSuccess() { return success; }
-    public void setSuccess(Integer success) { this.success = success; }
-    public String getFailReason() { return failReason; }
-    public void setFailReason(String failReason) { this.failReason = failReason; }
-    public String getIp() { return ip; }
-    public void setIp(String ip) { this.ip = ip; }
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-    public LocalDateTime getLoginTime() { return loginTime; }
-    public void setLoginTime(LocalDateTime loginTime) { this.loginTime = loginTime; }
 }

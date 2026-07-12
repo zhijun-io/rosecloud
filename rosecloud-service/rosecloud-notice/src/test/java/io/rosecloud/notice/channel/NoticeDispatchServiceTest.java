@@ -63,6 +63,6 @@ class NoticeDispatchServiceTest {
     private static Notice notice(int channels, List<NoticeRecipient> recipients) {
         return new Notice(1L, "t", "c", NoticeTargetType.GLOBAL.code(), null, null,
                 null, NoticePublishType.IMMEDIATE.code(), null, null, null, NoticeStatus.PUBLISHED.code(), false,
-                null, null, channels, recipients);
+                null, null, channels, recipients, null, null, null, null);
     }
 }

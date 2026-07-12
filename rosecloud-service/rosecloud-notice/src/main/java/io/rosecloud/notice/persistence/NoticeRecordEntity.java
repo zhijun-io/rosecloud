@@ -5,7 +5,14 @@ import io.rosecloud.starter.data.BaseEntity;
 
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /** MyBatis-Plus persistent entity for {@code sys_notice_record}; confined to infrastructure. */
+@Getter
+@Setter
+@NoArgsConstructor
 @TableName("sys_notice_record")
 public class NoticeRecordEntity extends BaseEntity {
 
@@ -14,15 +21,4 @@ public class NoticeRecordEntity extends BaseEntity {
     private String tenantId;
     private LocalDateTime readTime;
     private LocalDateTime confirmTime;
-
-    public Long getNoticeId() { return noticeId; }
-    public void setNoticeId(Long noticeId) { this.noticeId = noticeId; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public String getTenantId() { return tenantId; }
-    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
-    public LocalDateTime getReadTime() { return readTime; }
-    public void setReadTime(LocalDateTime readTime) { this.readTime = readTime; }
-    public LocalDateTime getConfirmTime() { return confirmTime; }
-    public void setConfirmTime(LocalDateTime confirmTime) { this.confirmTime = confirmTime; }
 }

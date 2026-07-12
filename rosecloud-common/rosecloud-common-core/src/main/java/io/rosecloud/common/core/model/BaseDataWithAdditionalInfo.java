@@ -6,10 +6,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.function.Function;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 /**
  * Base class for domain data that carries optional JSON additional info.
  * Subclasses expose their own business fields with standard getter methods.
  */
+@Getter
+@Setter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public abstract class BaseDataWithAdditionalInfo extends BaseData implements HasAdditionalInfo {
 
     private JsonNode additionalInfo;
@@ -25,15 +34,6 @@ public abstract class BaseDataWithAdditionalInfo extends BaseData implements Has
     protected BaseDataWithAdditionalInfo(BaseDataWithAdditionalInfo data) {
         super(data);
         this.additionalInfo = data.additionalInfo;
-    }
-
-    @Override
-    public JsonNode getAdditionalInfo() {
-        return additionalInfo;
-    }
-
-    public void setAdditionalInfo(JsonNode additionalInfo) {
-        this.additionalInfo = additionalInfo;
     }
 
     public void setAdditionalInfoField(String field, JsonNode value) {

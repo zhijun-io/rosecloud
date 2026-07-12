@@ -15,6 +15,7 @@ import io.rosecloud.notice.domain.NoticePublishType;
 import io.rosecloud.notice.domain.NoticeRecord;
 import io.rosecloud.notice.domain.NoticeRepository;
 import io.rosecloud.notice.domain.NoticeStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class NoticeRepositoryImpl implements NoticeRepository {
 
     private static final TypeReference<List<NoticeRecipient>> NOTICE_RECIPIENTS = new TypeReference<>() {};
@@ -30,12 +32,6 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     private final NoticeMapper noticeMapper;
     private final NoticeRecordMapper recordMapper;
     private final ObjectMapper objectMapper;
-
-    public NoticeRepositoryImpl(NoticeMapper noticeMapper, NoticeRecordMapper recordMapper, ObjectMapper objectMapper) {
-        this.noticeMapper = noticeMapper;
-        this.recordMapper = recordMapper;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public Long insert(Notice notice) {

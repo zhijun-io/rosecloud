@@ -20,8 +20,7 @@ import java.util.List;
  * deterministic: the JSON wire format is {@code ["ROLE_admin", "system:user:list"]}.
  *
  * <p>A single programmatic constructor avoids ambiguity in overload resolution.
- * Jackson deserialisation uses the {@link #fromJson(Long, String, String, String,
- * boolean, UserPrincipal, List)} factory method.
+ * Jackson deserialisation uses the  factory method.
  */
 public class SecurityUser implements UserDetails {
 

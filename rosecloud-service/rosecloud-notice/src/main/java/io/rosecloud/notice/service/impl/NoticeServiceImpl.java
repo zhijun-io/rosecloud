@@ -19,6 +19,7 @@ import io.rosecloud.notice.service.dto.MyNotice;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -34,17 +35,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
 
     private static final Logger log = LoggerFactory.getLogger(NoticeServiceImpl.class);
 
     private final NoticeRepository noticeRepository;
     private final NoticeDispatchService dispatchService;
-
-    public NoticeServiceImpl(NoticeRepository noticeRepository, NoticeDispatchService dispatchService) {
-        this.noticeRepository = noticeRepository;
-        this.dispatchService = dispatchService;
-    }
 
     @AuditLog(action = "notice-publish", description = "发布通知")
     @Override
@@ -72,7 +69,8 @@ public class NoticeServiceImpl implements NoticeService, NoticePublishApi {
         Notice notice = new Notice(null, request.title(), request.content(), request.targetType(),
                 request.targetTenantId(), request.targetRoleCode(), request.targetUsername(), publishType, publishTime,
                 request.effectiveTime(), request.expireTime(), status,
-                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels, request.recipients());
+                Boolean.TRUE.equals(request.needConfirm()), senderId, senderTenantId, channels, request.recipients(),
+                null, null, null, null);
         Long id = noticeRepository.insert(notice);
         if (status == NoticeStatus.PUBLISHED.code()) {
             dispatchService.dispatch(notice.withId(id));

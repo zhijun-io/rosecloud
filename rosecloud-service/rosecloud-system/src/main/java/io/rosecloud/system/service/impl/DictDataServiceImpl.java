@@ -29,7 +29,7 @@ public class DictDataServiceImpl implements DictDataService {
     @AuditLog(action = "dict-data-create", description = "创建字典项")
     @Override
     public Long create(DictDataRequest request) {
-        DictDataEntity po = toEntity(new DictData(null, request.dictCode(), request.label(),
+        DictDataEntity po = toEntity(DictData.of(null, request.dictCode(), request.label(),
                 request.value(), request.sort() == null ? 0 : request.sort(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         po.setId(null);
@@ -41,7 +41,7 @@ public class DictDataServiceImpl implements DictDataService {
     @Override
     public void update(Long id, DictDataRequest request) {
         findById(id).orElseThrow(() -> new BizException(SystemErrorCode.DICT_DATA_NOT_FOUND));
-        DictDataEntity po = toEntity(new DictData(id, request.dictCode(), request.label(), request.value(),
+        DictDataEntity po = toEntity(DictData.of(id, request.dictCode(), request.label(), request.value(),
                 request.sort() == null ? 0 : request.sort(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         dictDataMapper.updateById(po);

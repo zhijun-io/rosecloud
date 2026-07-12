@@ -37,7 +37,7 @@ public class DictTypeServiceImpl implements DictTypeService {
         if (dictTypeMapper.exists(new LambdaQueryWrapper<DictTypeEntity>().eq(DictTypeEntity::getCode, request.code()))) {
             throw new BizException(SystemErrorCode.DICT_TYPE_CODE_EXISTS);
         }
-        DictTypeEntity po = toEntity(new DictType(null, request.code(), request.name(),
+        DictTypeEntity po = toEntity(DictType.of(null, request.code(), request.name(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         po.setId(null);
         dictTypeMapper.insert(po);
@@ -49,7 +49,7 @@ public class DictTypeServiceImpl implements DictTypeService {
     public void update(Long id, DictTypeRequest request) {
         DictType existing = findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.DICT_TYPE_NOT_FOUND));
-        DictTypeEntity po = toEntity(new DictType(id, request.code(), request.name(),
+        DictTypeEntity po = toEntity(DictType.of(id, request.code(), request.name(),
                 request.status() == null ? existing.getStatus() : request.status(), request.remark()));
         dictTypeMapper.updateById(po);
     }

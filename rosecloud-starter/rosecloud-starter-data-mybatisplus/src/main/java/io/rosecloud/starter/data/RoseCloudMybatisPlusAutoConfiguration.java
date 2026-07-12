@@ -5,10 +5,10 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 import java.util.List;
@@ -22,17 +22,18 @@ import java.util.List;
  */
 @AutoConfiguration
 @ConditionalOnClass(MybatisPlusInterceptor.class)
+@EnableConfigurationProperties(RoseCloudDataProperties.class)
 public class RoseCloudMybatisPlusAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MybatisPlusInterceptor.class)
     public MybatisPlusInterceptor mybatisPlusInterceptor(List<InnerInterceptor> innerInterceptors,
-            @Value("${rosecloud.data.db-type:MYSQL}") String dbType) {
+            RoseCloudDataProperties dataProperties) {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         for (InnerInterceptor inner : innerInterceptors) {
             interceptor.addInnerInterceptor(inner);
         }
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.getDbType(dbType)));
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.getDbType(dataProperties.getDbType())));
         return interceptor;
     }
 

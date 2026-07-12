@@ -80,7 +80,7 @@ public class DeptServiceImpl implements DeptService {
         long parentId = request.parentId() == null ? 0L : request.parentId();
         int sort = request.sort() == null ? 0 : request.sort();
         int status = request.status() == null ? 1 : request.status();
-        return new Dept(id, parentId, request.name(), sort, status, request.leader(), request.phone());
+        return Dept.of(id, parentId, request.name(), sort, status, request.leader(), request.phone());
     }
 
     private Dept toDomain(DeptEntity po) {

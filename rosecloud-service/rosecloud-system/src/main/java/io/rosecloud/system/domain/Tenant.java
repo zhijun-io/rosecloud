@@ -8,9 +8,15 @@ import io.rosecloud.common.core.model.HasStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Objects;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /** Domain view of a tenant. ORM-free; the persistence layer maps to/from {@code sys_tenant}. */
+@Getter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class Tenant extends BaseDataWithAdditionalInfo implements HasAdditionalInfo, HasName, HasStatus<TenantStatus> {
 
     private final String id;
@@ -56,66 +62,5 @@ public final class Tenant extends BaseDataWithAdditionalInfo implements HasAddit
         this.createBy = createBy;
         this.updateTime = updateTime;
         this.updateBy = updateBy;
-    }
-
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public TenantStatus getStatus() { return status; }
-    public String getContactUser() { return contactUser; }
-    public String getContactPhone() { return contactPhone; }
-    public LocalDate getExpireTime() { return expireTime; }
-    public String getRemark() { return remark; }
-    public String getTenantProfileId() { return tenantProfileId; }
-    public LocalDateTime getCreateTime() { return createTime; }
-    public Long getCreateBy() { return createBy; }
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public Long getUpdateBy() { return updateBy; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Tenant tenant)) {
-            return false;
-        }
-        return Objects.equals(id, tenant.id)
-                && Objects.equals(name, tenant.name)
-                && status == tenant.status
-                && Objects.equals(contactUser, tenant.contactUser)
-                && Objects.equals(contactPhone, tenant.contactPhone)
-                && Objects.equals(expireTime, tenant.expireTime)
-                && Objects.equals(remark, tenant.remark)
-                && Objects.equals(tenantProfileId, tenant.tenantProfileId)
-                && Objects.equals(getAdditionalInfo(), tenant.getAdditionalInfo())
-                && Objects.equals(createTime, tenant.createTime)
-                && Objects.equals(createBy, tenant.createBy)
-                && Objects.equals(updateTime, tenant.updateTime)
-                && Objects.equals(updateBy, tenant.updateBy);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, status, contactUser, contactPhone, expireTime, remark, tenantProfileId,
-                getAdditionalInfo(), createTime, createBy, updateTime, updateBy);
-    }
-
-    @Override
-    public String toString() {
-        return "Tenant[" +
-                "id=" + id +
-                ", name=" + name +
-                ", status=" + status +
-                ", contactUser=" + contactUser +
-                ", contactPhone=" + contactPhone +
-                ", expireTime=" + expireTime +
-                ", remark=" + remark +
-                ", tenantProfileId=" + tenantProfileId +
-                ", additionalInfo=" + getAdditionalInfo() +
-                ", createTime=" + createTime +
-                ", createBy=" + createBy +
-                ", updateTime=" + updateTime +
-                ", updateBy=" + updateBy +
-                ']';
     }
 }

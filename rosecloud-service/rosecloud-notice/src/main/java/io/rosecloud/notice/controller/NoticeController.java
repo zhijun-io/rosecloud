@@ -7,6 +7,7 @@ import io.rosecloud.api.notice.NoticePublishRequest;
 import io.rosecloud.notice.domain.Notice;
 import io.rosecloud.notice.service.NoticeService;
 import io.rosecloud.notice.service.dto.MyNotice;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,14 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(ServiceMetadata.API_PREFIX + "/notice/notices")
 public class NoticeController {
 
     private final NoticeService noticeService;
-
-    public NoticeController(NoticeService noticeService) {
-        this.noticeService = noticeService;
-    }
 
     @PreAuthorize("hasAuthority('system:notice:publish')")
     @PostMapping

@@ -6,6 +6,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /**
  * MyBatis-Plus persistent entity for {@code sys_login_session}.
  * Confined to infrastructure; domain code uses {@link io.rosecloud.common.security.model.LoginSession}.
@@ -15,6 +19,9 @@ import java.time.LocalDateTime;
  * fast revocation lookups and may be shared across multiple session rows.
  */
 @TableName("sys_login_session")
+@Getter
+@Setter
+@NoArgsConstructor
 public class LoginSessionEntity {
 
     @TableId(value = "id", type = IdType.INPUT)
@@ -27,31 +34,4 @@ public class LoginSessionEntity {
     private String userAgent;
     private LocalDateTime loginAt;
     private LocalDateTime expireAt;
-
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
-
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getNickname() { return nickname; }
-    public void setNickname(String nickname) { this.nickname = nickname; }
-
-    public String getClientIp() { return clientIp; }
-    public void setClientIp(String clientIp) { this.clientIp = clientIp; }
-
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-
-    public LocalDateTime getLoginAt() { return loginAt; }
-    public void setLoginAt(LocalDateTime loginAt) { this.loginAt = loginAt; }
-
-    public LocalDateTime getExpireAt() { return expireAt; }
-    public void setExpireAt(LocalDateTime expireAt) { this.expireAt = expireAt; }
 }

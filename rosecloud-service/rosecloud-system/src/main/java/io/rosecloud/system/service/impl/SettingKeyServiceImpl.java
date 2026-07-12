@@ -10,7 +10,6 @@ import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.SettingKeyEntity;
 import io.rosecloud.system.persistence.SettingKeyMapper;
-import io.rosecloud.system.persistence.SystemSettingEntity;
 import io.rosecloud.system.persistence.SystemSettingMapper;
 import io.rosecloud.system.persistence.UserSettingEntity;
 import io.rosecloud.system.persistence.UserSettingMapper;
