@@ -10,6 +10,7 @@ import io.rosecloud.system.persistence.RoleEntity;
 import io.rosecloud.system.persistence.RoleMapper;
 import io.rosecloud.system.persistence.TenantEntity;
 import io.rosecloud.system.persistence.TenantMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.Optional;
  * authentication flow instead of being stored on the tenant record.
  */
 @Component
+@RequiredArgsConstructor
 public class TenantProvisioner {
 
     /** Platform-level role granted to each tenant's first admin on open. */
@@ -32,14 +34,6 @@ public class TenantProvisioner {
     private final RoleMapper roleMapper;
     private final UserService userService;
     private final UserActivationService userActivationService;
-
-    public TenantProvisioner(TenantMapper tenantMapper, RoleMapper roleMapper,
-                             UserService userService, UserActivationService userActivationService) {
-        this.tenantMapper = tenantMapper;
-        this.roleMapper = roleMapper;
-        this.userService = userService;
-        this.userActivationService = userActivationService;
-    }
 
     @Async("tenantProvisioningExecutor")
     @Transactional
