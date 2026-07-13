@@ -1,11 +1,11 @@
 package io.rosecloud.starter.security.auth.rest;
 import lombok.RequiredArgsConstructor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
@@ -27,9 +27,8 @@ import java.util.UUID;
 public class RestAwareAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenFactory tokenFactory;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectMapper objectMapper;
     private final LoginTenantResolver loginTenantResolver;
     private final long refreshTokenExpirationSeconds;
     private final boolean tokenBindingEnabled;
@@ -54,7 +53,7 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
         Instant now = Instant.now();
         long expiresInSeconds = tokenFactory.getAccessTokenExpirationSeconds();
         Instant expireAt = now.plusSeconds(refreshTokenExpirationSeconds);
-        sessionStore.save(new LoginSession(
+        loginSessionApi.save(new LoginSession(
                 sessionId, token, tokenPair.refreshToken(), securityUser.getUserId(), securityUser.getUsername(),
                 securityUser.getNickname(), ip, truncate(userAgent, 512), now, expireAt, deviceId));
 
@@ -62,7 +61,7 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
 
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), ApiResponse.ok(tokenPair));
+            JacksonUtil.getObjectMapper().writeValue(response.getWriter(), ApiResponse.ok(tokenPair));
     }
 
     private static String truncate(String s, int max) {

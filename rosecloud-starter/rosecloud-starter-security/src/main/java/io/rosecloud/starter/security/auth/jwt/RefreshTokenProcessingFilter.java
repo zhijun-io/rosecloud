@@ -1,5 +1,6 @@
  package io.rosecloud.starter.security.auth.jwt;
  
+import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.util.DeviceFingerprint;
@@ -23,15 +24,15 @@ import java.io.IOException;
 
 public class RefreshTokenProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
+    private static final String PROCESSING_URL = ServiceMetadata.API_PREFIX + "/auth/refresh";
     private static final String RAW_REFRESH_ATTR = "io.rosecloud.raw-refresh-token";
 
     private final AuthenticationSuccessHandler successHandler;
     private final AuthenticationFailureHandler failureHandler;
 
-    public RefreshTokenProcessingFilter(String defaultProcessUrl,
-                                        AuthenticationSuccessHandler successHandler,
+    public RefreshTokenProcessingFilter(AuthenticationSuccessHandler successHandler,
                                         AuthenticationFailureHandler failureHandler) {
-        super(defaultProcessUrl);
+        super(PROCESSING_URL);
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
     }

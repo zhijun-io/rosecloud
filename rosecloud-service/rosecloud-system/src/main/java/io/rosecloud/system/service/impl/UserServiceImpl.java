@@ -17,7 +17,7 @@ import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.User;
@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService, UserApi {
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final MenuMapper menuMapper;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
     private final CredentialApi credentialApi;
     // ==================== helper ====================
 
@@ -175,7 +175,7 @@ public class UserServiceImpl implements UserService, UserApi {
         }
         // Roles/permissions are cached in the JWT; revoke the user's sessions so the next
         // request is forced to re-authenticate with the updated authority set.
-        sessionStore.revokeByUserId(userId);
+        loginSessionApi.revokeByUserId(userId);
     }
 
     @Override

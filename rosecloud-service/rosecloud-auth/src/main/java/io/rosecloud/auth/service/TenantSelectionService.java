@@ -13,7 +13,6 @@ import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.config.SecurityProperties;
@@ -37,7 +36,7 @@ public class TenantSelectionService implements LoginTenantResolver {
 
     private final UserTenantApi userTenantApi;
     private final StringRedisTemplate redisTemplate;
-    private final SessionStore sessionStore;
+    private final LoginSessionService loginSessionService;
     private final JwtTokenFactory tokenFactory;
     private final SecurityProperties securityProperties;
     private final TenantLookupApi tenantLookupApi;
@@ -62,7 +61,7 @@ public class TenantSelectionService implements LoginTenantResolver {
         rememberTenant(securityUser.getUserId(), resolvedTenantId);
         JwtPair tokenPair = tokenFactory.createTokenPair(securityUser, resolvedTenantId);
         Instant now = Instant.now();
-        sessionStore.save(new LoginSession(
+        loginSessionService.save(new LoginSession(
                 java.util.UUID.randomUUID().toString(),
                 tokenPair.accessToken(),
                 tokenPair.refreshToken(),
@@ -73,7 +72,7 @@ public class TenantSelectionService implements LoginTenantResolver {
                 truncate(userAgent, 512),
                 now,
                 now.plusSeconds(securityProperties.getRefreshTokenExpirationSeconds())));
-        sessionStore.revoke(currentToken);
+        loginSessionService.revoke(currentToken);
         recordAudit("switch-tenant", "切换活动租户至 " + resolvedTenantId,
                 securityUser.getUsername());
         return tokenPair;
@@ -188,7 +187,7 @@ public class TenantSelectionService implements LoginTenantResolver {
                 .withImpersonation(true);
         JwtPair tokenPair = tokenFactory.createTokenPair(impersonatedUser, normalizedTarget);
         Instant now = Instant.now();
-        sessionStore.save(new LoginSession(
+        loginSessionService.save(new LoginSession(
                 java.util.UUID.randomUUID().toString(),
                 tokenPair.accessToken(),
                 tokenPair.refreshToken(),
@@ -200,7 +199,7 @@ public class TenantSelectionService implements LoginTenantResolver {
                 now,
                 now.plusSeconds(securityProperties.getRefreshTokenExpirationSeconds())));
         if (currentToken != null && !currentToken.isBlank()) {
-            sessionStore.revoke(currentToken);
+            loginSessionService.revoke(currentToken);
         }
         recordAudit("impersonate", "平台管理员代入租户 " + normalizedTarget,
                 impersonatedUser.getUsername());

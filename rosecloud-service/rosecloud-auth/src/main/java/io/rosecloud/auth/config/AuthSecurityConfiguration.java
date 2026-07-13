@@ -23,9 +23,10 @@ import java.util.function.Consumer;
  * Provides functional-interface beans that bridge the security starter's event-driven
  * callbacks to auth-local services.
  *
- * <p>Login/logout session persistence is handled by {@link io.rosecloud.common.security.session.SessionStore}
- * through the provided implementation; login-log recording and the combined {@code UserDetailsService}
- * use auth-owned services directly (no cross-service call for the auth service's own data).
+ * <p>Login/logout session persistence is handled by {@code LoginSessionServiceImpl}
+ * (database-backed via {@code LoginSessionMapper}); login-log recording and the combined
+ * {@code UserDetailsService} use auth-owned services directly (no cross-service call for
+ * the auth service's own data).
  */
 @Configuration
 public class AuthSecurityConfiguration {

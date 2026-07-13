@@ -6,7 +6,7 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
@@ -30,14 +30,14 @@ class JwtAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
         when(tenantLookupApi.findTenantStatus("TENANT1"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "DISABLED")));
 
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                tokenFactory, sessionStore, tenantLookupApi);
+                tokenFactory, loginSessionApi, tenantLookupApi);
 
         assertThrows(BizException.class,
                 () -> provider.authenticate(new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken()))));
@@ -48,14 +48,14 @@ class JwtAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
         when(tenantLookupApi.findTenantStatus("TENANT1"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "ENABLED")));
 
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                tokenFactory, sessionStore, tenantLookupApi);
+                tokenFactory, loginSessionApi, tenantLookupApi);
 
         JwtAuthenticationToken auth = (JwtAuthenticationToken) provider.authenticate(
                 new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken())));
@@ -69,14 +69,14 @@ class JwtAuthenticationProviderTest {
             JwtTokenFactory tokenFactory = newFactory();
             SecurityUser user = user("TENANT1");
             JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-            SessionStore sessionStore = mock(SessionStore.class);
-            when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+            LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+            when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
             TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
             when(tenantLookupApi.findTenantStatus("TENANT1"))
                     .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", status)));
 
             JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                    tokenFactory, sessionStore, tenantLookupApi);
+                    tokenFactory, loginSessionApi, tenantLookupApi);
 
             assertThrows(BizException.class,
                     () -> provider.authenticate(new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken()))));
@@ -88,14 +88,14 @@ class JwtAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
         when(tenantLookupApi.findTenantStatus("TENANT1"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "EXPIRED")));
 
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                tokenFactory, sessionStore, tenantLookupApi);
+                tokenFactory, loginSessionApi, tenantLookupApi);
 
         JwtAuthenticationToken auth = (JwtAuthenticationToken) provider.authenticate(
                 new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken())));
@@ -108,11 +108,11 @@ class JwtAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
 
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                tokenFactory, sessionStore, null);
+                tokenFactory, loginSessionApi, null);
 
         JwtAuthenticationToken auth = (JwtAuthenticationToken) provider.authenticate(
                 new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken())));
@@ -127,14 +127,14 @@ class JwtAuthenticationProviderTest {
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, "alice@example.com"),
                 List.of(new SimpleGrantedAuthority("ROLE_admin"), new SimpleGrantedAuthority("system:user:list")));
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.accessToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.accessToken())).thenReturn(false);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
         when(tenantLookupApi.findTenantStatus("TENANT1"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "ENABLED")));
 
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(
-                tokenFactory, sessionStore, tenantLookupApi);
+                tokenFactory, loginSessionApi, tenantLookupApi);
 
         JwtAuthenticationToken auth = (JwtAuthenticationToken) provider.authenticate(
                 new JwtAuthenticationToken(new RawAccessJwtToken(pair.accessToken())));

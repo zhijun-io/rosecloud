@@ -1,5 +1,6 @@
 package io.rosecloud.starter.security.auth.rest;
 
+import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.security.exception.AuthMethodNotSupportedException;
 import io.rosecloud.common.security.model.UserPrincipal;
@@ -21,13 +22,14 @@ import java.io.IOException;
 
 public class RestLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
+    private static final String PROCESSING_URL = ServiceMetadata.API_PREFIX + "/auth/login";
+
     private final AuthenticationSuccessHandler successHandler;
     private final AuthenticationFailureHandler failureHandler;
 
-    public RestLoginProcessingFilter(String defaultProcessUrl,
-                                     AuthenticationSuccessHandler successHandler,
+    public RestLoginProcessingFilter(AuthenticationSuccessHandler successHandler,
                                      AuthenticationFailureHandler failureHandler) {
-        super(defaultProcessUrl);
+        super(PROCESSING_URL);
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
     }

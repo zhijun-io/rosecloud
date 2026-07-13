@@ -5,7 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.BruteForceProtection;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
@@ -22,7 +22,7 @@ import java.util.Locale;
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
     private final UserDetailsService userDetailsService;
     private final TenantLookupApi tenantLookupApi;
     private final BruteForceProtection bruteForce;
@@ -38,7 +38,7 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
         // H3: throttle refresh attempts per account, mirroring the login provider.
         bruteForce.assertNotLocked(subject);
         try {
-            if (sessionStore.isRevoked(rawAccessToken.token())) {
+            if (loginSessionApi.isRevoked(rawAccessToken.token())) {
                 throw new BadCredentialsException("Refresh token is revoked");
             }
 
@@ -49,7 +49,7 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
 
             // Refresh-token rotation: revoke the session bound to the presented (old) refresh
             // token so it cannot be reused after a new token pair is minted by the success handler.
-            sessionStore.revoke(rawAccessToken.token());
+            loginSessionApi.revoke(rawAccessToken.token());
 
             // Preserve the active tenant carried by the refresh token so the refreshed access
             // token keeps the same tenant scope (no implicit switch on refresh).

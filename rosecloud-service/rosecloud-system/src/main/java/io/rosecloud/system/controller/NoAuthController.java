@@ -10,7 +10,7 @@ import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.security.token.TokenFactory;
 import io.rosecloud.system.service.UserActivationService;
@@ -35,7 +35,7 @@ public class NoAuthController {
     private final UserActivationService userActivationService;
     private final UserService userService;
     private final TokenFactory tokenFactory;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
     private final LoginLogApi loginLogApi;
     @GetMapping("/activate")
     public ApiResponse<UserActivationInfo> check(@RequestParam("activateToken") String activateToken) {
@@ -53,7 +53,7 @@ public class NoAuthController {
         String userAgent = http.getHeader(HttpHeaders.USER_AGENT);
         Instant now = Instant.now();
         Instant expireAt = now.plusSeconds(tokenFactory.getAccessTokenExpirationSeconds());
-        sessionStore.save(new LoginSession(
+        loginSessionApi.save(new LoginSession(
                 UUID.randomUUID().toString(),
                 tokenPair.accessToken(),
                 tokenPair.refreshToken(),

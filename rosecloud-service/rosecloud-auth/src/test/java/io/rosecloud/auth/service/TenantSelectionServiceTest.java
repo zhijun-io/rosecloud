@@ -8,7 +8,6 @@ import io.rosecloud.auth.service.dto.TenantSelectionResponse;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.config.SecurityProperties;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
@@ -41,7 +40,7 @@ class TenantSelectionServiceTest {
     @Mock
     ValueOperations<String, String> valueOperations;
     @Mock
-    SessionStore sessionStore;
+    LoginSessionService loginSessionService;
     @Mock
     JwtTokenFactory tokenFactory;
     @Mock
@@ -53,7 +52,7 @@ class TenantSelectionServiceTest {
         SecurityProperties properties = new SecurityProperties();
         properties.setRefreshTokenExpirationSeconds(86400);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        return new TenantSelectionService(userTenantApi, redisTemplate, sessionStore, tokenFactory, properties, tenantLookupApi, auditLogApi);
+        return new TenantSelectionService(userTenantApi, redisTemplate, loginSessionService, tokenFactory, properties, tenantLookupApi, auditLogApi);
     }
 
     @Test
@@ -96,8 +95,8 @@ class TenantSelectionServiceTest {
         JwtPair pair = service().switchTenant(user, "old-token", "TENANT2", "127.0.0.1", "JUnit");
 
         assertEquals("access-2", pair.accessToken());
-        verify(sessionStore).save(any(io.rosecloud.common.security.model.LoginSession.class));
-        verify(sessionStore).revoke("old-token");
+        verify(loginSessionService).save(any(io.rosecloud.common.security.model.LoginSession.class));
+        verify(loginSessionService).revoke("old-token");
         verify(valueOperations).set(eq("auth:last-tenant:1"), eq("TENANT2"), any(Duration.class));
     }
 
@@ -123,8 +122,8 @@ class TenantSelectionServiceTest {
         JwtPair pair = service().impersonate(admin, "admin-token", "tenant-b", "10.0.0.1", "AdminUI");
 
         assertEquals("imp-access", pair.accessToken());
-        verify(sessionStore).save(any(io.rosecloud.common.security.model.LoginSession.class));
-        verify(sessionStore).revoke("admin-token");
+        verify(loginSessionService).save(any(io.rosecloud.common.security.model.LoginSession.class));
+        verify(loginSessionService).revoke("admin-token");
     }
 
     @Test
@@ -138,7 +137,7 @@ class TenantSelectionServiceTest {
         JwtPair pair = service().impersonate(admin, "admin-token", "tenant-c", "10.0.0.1", "AdminUI");
 
         assertEquals("imp-access-c", pair.accessToken());
-        verify(sessionStore).save(any(io.rosecloud.common.security.model.LoginSession.class));
+        verify(loginSessionService).save(any(io.rosecloud.common.security.model.LoginSession.class));
     }
 
     @Test

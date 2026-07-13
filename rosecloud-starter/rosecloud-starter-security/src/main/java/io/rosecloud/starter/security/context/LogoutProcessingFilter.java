@@ -1,10 +1,10 @@
  package io.rosecloud.starter.security.context;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,17 +26,14 @@ public class LogoutProcessingFilter extends OncePerRequestFilter {
 
     private final RequestMatcher matcher;
     private final BearerTokenExtractor tokenExtractor;
-    private final SessionStore sessionStore;
-    private final ObjectMapper objectMapper;
+    private final LoginSessionApi loginSessionApi;
 
     public LogoutProcessingFilter(BearerTokenExtractor tokenExtractor,
-                                  SessionStore sessionStore,
-                                  ObjectMapper objectMapper) {
+                                  LoginSessionApi loginSessionApi) {
         this.matcher = PathPatternRequestMatcher.pathPattern(HttpMethod.POST,
                 ServiceMetadata.API_PREFIX + "/auth/logout");
         this.tokenExtractor = tokenExtractor;
-        this.sessionStore = sessionStore;
-        this.objectMapper = objectMapper;
+        this.loginSessionApi = loginSessionApi;
     }
 
      @Override
@@ -49,7 +46,7 @@ public class LogoutProcessingFilter extends OncePerRequestFilter {
 
         try {
             String token = tokenExtractor.extract(request);
-            sessionStore.revoke(token);
+            loginSessionApi.revoke(token);
         } catch (Exception ex) {
             log.debug("Logout token parse/revoke failed; clearing context anyway", ex);
         }
@@ -57,6 +54,6 @@ public class LogoutProcessingFilter extends OncePerRequestFilter {
          SecurityContextHolder.clearContext();
          response.setStatus(HttpServletResponse.SC_OK);
          response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-         objectMapper.writeValue(response.getWriter(), ApiResponse.ok());
+          JacksonUtil.getObjectMapper().writeValue(response.getWriter(), ApiResponse.ok());
      }
  }

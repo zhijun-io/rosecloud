@@ -8,7 +8,6 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.credential.AuthCredential;
 import io.rosecloud.common.security.credential.PasswordPolicyValidator;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
-import io.rosecloud.common.security.session.SessionStore;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +26,7 @@ public class CredentialService {
 
     private final AuthCredentialMapper credentialMapper;
     private final PasswordEncoder passwordEncoder;
-    private final SessionStore sessionStore;
+    private final LoginSessionService loginSessionService;
     public Optional<AuthCredential> findByUserId(Long userId) {
         return Optional.ofNullable(credentialMapper.selectOne(byUserId(userId))).map(this::toModel);
     }
@@ -60,7 +59,7 @@ public class CredentialService {
         }
         PasswordPolicyValidator.validateChange(currentPassword, newPassword);
         setPassword(userId, newPassword);
-        sessionStore.revokeByUserId(userId);
+        loginSessionService.revokeByUserId(userId);
     }
 
     private AuthCredential toModel(CredentialEntity entity) {

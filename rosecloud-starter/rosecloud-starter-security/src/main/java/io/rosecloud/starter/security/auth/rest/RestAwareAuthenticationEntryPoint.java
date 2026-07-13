@@ -1,7 +1,7 @@
 package io.rosecloud.starter.security.auth.rest;
 import lombok.RequiredArgsConstructor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class RestAwareAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper;
+
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException {
@@ -27,6 +27,6 @@ public class RestAwareAuthenticationEntryPoint implements AuthenticationEntryPoi
         response.setStatus(errorCode.httpStatus());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), ApiResponse.failure(errorCode.code(), errorCode.message()));
+        JacksonUtil.getObjectMapper().writeValue(response.getWriter(), ApiResponse.failure(errorCode.code(), errorCode.message()));
     }
 }

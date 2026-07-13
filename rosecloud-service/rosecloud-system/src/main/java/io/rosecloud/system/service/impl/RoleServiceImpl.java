@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+
 import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -9,7 +10,7 @@ import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
@@ -39,7 +40,8 @@ public class RoleServiceImpl implements RoleService {
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final UserRoleMapper userRoleMapper;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
+
     private static SecurityUser currentSecurityUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()
@@ -101,9 +103,9 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         for (Long userId : userRoleMapper.selectList(
-                new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getRoleId, roleId))
+                        new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getRoleId, roleId))
                 .stream().map(UserRoleEntity::getUserId).toList()) {
-            sessionStore.revokeByUserId(userId);
+            loginSessionApi.revokeByUserId(userId);
         }
     }
 

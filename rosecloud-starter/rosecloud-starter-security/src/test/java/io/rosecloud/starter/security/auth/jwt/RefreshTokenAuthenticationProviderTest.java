@@ -6,7 +6,7 @@ import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
@@ -31,8 +31,8 @@ class RefreshTokenAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.refreshToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.refreshToken())).thenReturn(false);
         UserDetailsService userDetailsService = mock(UserDetailsService.class);
         when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
@@ -40,7 +40,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "DISABLED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
+                tokenFactory, loginSessionApi, userDetailsService, tenantLookupApi, newBruteForce());
 
         assertThrows(BizException.class,
                 () -> provider.authenticate(new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken()))));
@@ -51,8 +51,8 @@ class RefreshTokenAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.refreshToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.refreshToken())).thenReturn(false);
         UserDetailsService userDetailsService = mock(UserDetailsService.class);
         when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
@@ -60,7 +60,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "ENABLED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
+                tokenFactory, loginSessionApi, userDetailsService, tenantLookupApi, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));
@@ -74,8 +74,8 @@ class RefreshTokenAuthenticationProviderTest {
             JwtTokenFactory tokenFactory = newFactory();
             SecurityUser user = user("TENANT1");
             JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-            SessionStore sessionStore = mock(SessionStore.class);
-            when(sessionStore.isRevoked(pair.refreshToken())).thenReturn(false);
+            LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+            when(loginSessionApi.isRevoked(pair.refreshToken())).thenReturn(false);
             UserDetailsService userDetailsService = mock(UserDetailsService.class);
             when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
             TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
@@ -83,7 +83,7 @@ class RefreshTokenAuthenticationProviderTest {
                     .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", status)));
 
             RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                    tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
+                    tokenFactory, loginSessionApi, userDetailsService, tenantLookupApi, newBruteForce());
 
             assertThrows(BizException.class,
                     () -> provider.authenticate(new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken()))));
@@ -95,8 +95,8 @@ class RefreshTokenAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.refreshToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.refreshToken())).thenReturn(false);
         UserDetailsService userDetailsService = mock(UserDetailsService.class);
         when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
         TenantLookupApi tenantLookupApi = mock(TenantLookupApi.class);
@@ -104,7 +104,7 @@ class RefreshTokenAuthenticationProviderTest {
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT1", "EXPIRED")));
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, tenantLookupApi, newBruteForce());
+                tokenFactory, loginSessionApi, userDetailsService, tenantLookupApi, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));
@@ -117,13 +117,13 @@ class RefreshTokenAuthenticationProviderTest {
         JwtTokenFactory tokenFactory = newFactory();
         SecurityUser user = user("TENANT1");
         JwtPair pair = tokenFactory.createTokenPair(user, "TENANT1");
-        SessionStore sessionStore = mock(SessionStore.class);
-        when(sessionStore.isRevoked(pair.refreshToken())).thenReturn(false);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
+        when(loginSessionApi.isRevoked(pair.refreshToken())).thenReturn(false);
         UserDetailsService userDetailsService = mock(UserDetailsService.class);
         when(userDetailsService.loadUserByUsername("alice@example.com")).thenReturn(user);
 
         RefreshTokenAuthenticationProvider provider = new RefreshTokenAuthenticationProvider(
-                tokenFactory, sessionStore, userDetailsService, null, newBruteForce());
+                tokenFactory, loginSessionApi, userDetailsService, null, newBruteForce());
 
         RefreshAuthenticationToken auth = (RefreshAuthenticationToken) provider.authenticate(
                 new RefreshAuthenticationToken(new RawAccessJwtToken(pair.refreshToken())));

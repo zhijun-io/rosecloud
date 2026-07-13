@@ -9,7 +9,7 @@ import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.RawAccessJwtToken;
 import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -22,7 +22,7 @@ import java.util.Locale;
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
-    private final SessionStore sessionStore;
+    private final LoginSessionApi loginSessionApi;
     private final TenantLookupApi tenantLookupApi;
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -32,7 +32,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         Jws<Claims> jws = tokenFactory.parseAccessToken(rawAccessToken.token());
         Claims claims = jws.getPayload();
 
-        if (sessionStore.isRevoked(rawAccessToken.token())) {
+        if (loginSessionApi.isRevoked(rawAccessToken.token())) {
             throw new JwtExpiredTokenException("Token is outdated");
         }
 

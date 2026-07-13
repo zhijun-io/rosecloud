@@ -1,7 +1,7 @@
 package io.rosecloud.starter.security.auth.rest;
 import lombok.RequiredArgsConstructor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
@@ -25,7 +25,6 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
     private static final Logger log = LoggerFactory.getLogger(RestAwareAuthenticationFailureHandler.class);
 
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectMapper objectMapper;
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException e) throws IOException {
@@ -46,7 +45,7 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
         response.setStatus(errorCode.httpStatus());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(),
+        JacksonUtil.getObjectMapper().writeValue(response.getWriter(),
                 ApiResponse.failure(errorCode.code(), errorCode.message()));
     }
 }

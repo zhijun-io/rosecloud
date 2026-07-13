@@ -21,7 +21,7 @@ class RestAwareAuthenticationFailureHandlerTest {
     @Test
     void writesGenericApiResponseOnAuthenticationException() throws Exception {
         ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
-        RestAwareAuthenticationFailureHandler handler = new RestAwareAuthenticationFailureHandler(publisher, objectMapper);
+        RestAwareAuthenticationFailureHandler handler = new RestAwareAuthenticationFailureHandler(publisher);
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
 
         assertResponse(handler, request, new BadCredentialsException("bad credentials"));

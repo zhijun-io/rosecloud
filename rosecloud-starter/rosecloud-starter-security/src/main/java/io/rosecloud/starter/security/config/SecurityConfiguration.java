@@ -1,11 +1,10 @@
 package io.rosecloud.starter.security.config;
 import lombok.RequiredArgsConstructor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.starter.security.web.TenantWriteGuardFilter;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.auth.BruteForceProtection;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
@@ -19,10 +18,6 @@ import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationFailureHan
 import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationSuccessHandler;
 import io.rosecloud.starter.security.auth.rest.RestLoginProcessingFilter;
 import io.rosecloud.starter.security.context.LogoutProcessingFilter;
-import io.rosecloud.api.session.SessionFeignApi;
-import io.rosecloud.starter.security.session.FeignSessionStore;
-import io.rosecloud.starter.security.session.InMemorySessionStore;
-import io.rosecloud.starter.security.session.RedisSessionStore;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -63,7 +58,6 @@ public class SecurityConfiguration {
     public static final String TOKEN_BASED_AUTH_ENTRY_POINT = ServiceMetadata.API_PREFIX + "/**";
 
     private final SecurityProperties properties;
-    private final ObjectMapper objectMapper;
     private final ObjectProvider<TenantLookupApi> tenantLookupApiProvider;
     @Bean
     public SecurityFilterChain filterChain(
@@ -106,41 +100,11 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Session store used for JWT revocation lookups.
-     *
-     * <p>Precedence: when a {@link SessionApi} Feign client is available the store is backed by
-     * auth's {@link FeignSessionStore}, so revocation is enforced centrally in auth (the single
-     * authoritative session owner per the IAM boundary) and propagates to every service without a
-     * shared Redis. When Feign is not enabled for the session API it falls back to a shared
-     * {@link RedisSessionStore} (if Redis is on the classpath) or an in-process
-     * {@link InMemorySessionStore} (single-instance / tests only).
+     * Session/revocation handling is owned by auth and exposed through {@link LoginSessionApi}
+     * (in {@code rosecloud-api}). The auth service provides a database-backed implementation
+     * ({@code LoginSessionServiceImpl}); other services consume the Feign client
+     * ({@code LoginSessionFeignApi}). No Redis or in-process session store is wired here.
      */
-    @Configuration(proxyBeanMethods = false)
-    static class SessionStoreConfiguration {
-
-        private static final org.slf4j.Logger log =
-                org.slf4j.LoggerFactory.getLogger(SessionStoreConfiguration.class);
-
-        @Bean
-        @ConditionalOnMissingBean(SessionStore.class)
-        public SessionStore sessionStore(ObjectProvider<SessionFeignApi> sessionApi,
-                                        ObjectProvider<StringRedisTemplate> redisTemplate) {
-            SessionFeignApi api = sessionApi.getIfAvailable();
-            if (api != null) {
-                log.info("Using FeignSessionStore (sessions owned by auth). Revocation is enforced "
-                        + "centrally in auth; isRevoked adds one Feign round-trip per request.");
-                return new FeignSessionStore(api);
-            }
-            StringRedisTemplate template = redisTemplate.getIfAvailable();
-            if (template != null) {
-                return new RedisSessionStore(template);
-            }
-            log.warn("No SessionApi Feign client and no Redis — using InMemorySessionStore. Revocation is "
-                    + "local-only and lost on restart; do not use in multi-service deployments.");
-            return new InMemorySessionStore();
-        }
-    }
-
     @Bean
     public JwtTokenFactory jwtTokenFactory() {
         return new JwtTokenFactory(properties);
@@ -154,26 +118,27 @@ public class SecurityConfiguration {
 
     @Bean
     public RestAwareAuthenticationSuccessHandler restAwareAuthenticationSuccessHandler(
-            JwtTokenFactory jwtTokenFactory, SessionStore sessionStore, ApplicationEventPublisher eventPublisher,
+            JwtTokenFactory jwtTokenFactory, LoginSessionApi loginSessionApi,
+            ApplicationEventPublisher eventPublisher,
             ObjectProvider<LoginTenantResolver> loginTenantResolver) {
-        return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, sessionStore, eventPublisher,
-                objectMapper, loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds(),
+        return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, loginSessionApi, eventPublisher,
+                loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds(),
                 properties.getTokenBinding().isEnabled());
     }
 
     @Bean
     public RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler(ApplicationEventPublisher eventPublisher) {
-        return new RestAwareAuthenticationFailureHandler(eventPublisher, objectMapper);
+        return new RestAwareAuthenticationFailureHandler(eventPublisher);
     }
 
     @Bean
     public RestAwareAuthenticationEntryPoint restAwareAuthenticationEntryPoint() {
-        return new RestAwareAuthenticationEntryPoint(objectMapper);
+        return new RestAwareAuthenticationEntryPoint();
     }
 
     @Bean
     public RestAwareAccessDeniedHandler restAwareAccessDeniedHandler() {
-        return new RestAwareAccessDeniedHandler(objectMapper);
+        return new RestAwareAccessDeniedHandler();
     }
 
     @Bean
@@ -191,20 +156,20 @@ public class SecurityConfiguration {
     @Bean
     public JwtAuthenticationProvider jwtAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory,
-            SessionStore sessionStore,
+            LoginSessionApi loginSessionApi,
             ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
-        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore,
+        return new JwtAuthenticationProvider(jwtTokenFactory, loginSessionApi,
                 tenantLookupApiProvider.getIfAvailable());
     }
 
     @Bean
     public RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory,
-            SessionStore sessionStore,
+            LoginSessionApi loginSessionApi,
             UserDetailsService userDetailsService,
             ObjectProvider<TenantLookupApi> tenantLookupApiProvider,
             BruteForceProtection bruteForceProtection) {
-        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService,
+        return new RefreshTokenAuthenticationProvider(jwtTokenFactory, loginSessionApi, userDetailsService,
                 tenantLookupApiProvider.getIfAvailable(), bruteForceProtection);
     }
 
@@ -225,7 +190,6 @@ public class SecurityConfiguration {
             RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
             AuthenticationManager authenticationManager) {
         RestLoginProcessingFilter filter = new RestLoginProcessingFilter(
-                LOGIN_ENTRY_POINT,
                 restAwareAuthenticationSuccessHandler,
                 restAwareAuthenticationFailureHandler);
         filter.setAuthenticationManager(authenticationManager);
@@ -238,7 +202,6 @@ public class SecurityConfiguration {
             RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler,
             AuthenticationManager authenticationManager) {
         RefreshTokenProcessingFilter filter = new RefreshTokenProcessingFilter(
-                REFRESH_ENTRY_POINT,
                 restAwareAuthenticationSuccessHandler,
                 restAwareAuthenticationFailureHandler);
         filter.setAuthenticationManager(authenticationManager);
@@ -266,8 +229,8 @@ public class SecurityConfiguration {
 
     @Bean
     public LogoutProcessingFilter logoutProcessingFilter(
-            SessionStore sessionStore) {
-        return new LogoutProcessingFilter(new BearerTokenExtractor(), sessionStore, objectMapper);
+            LoginSessionApi loginSessionApi) {
+        return new LogoutProcessingFilter(new BearerTokenExtractor(), loginSessionApi);
     }
 
     private CorsConfigurationSource corsConfigurationSource() {

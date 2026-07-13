@@ -1,10 +1,9 @@
 package io.rosecloud.starter.security.auth.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.common.security.session.SessionStore;
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.auth.LoginTenantResolver;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
@@ -31,7 +30,7 @@ class RestAwareAuthenticationSuccessHandlerTest {
     @Test
     void loginUsesResolvedTenantWhenAvailable() throws Exception {
         JwtTokenFactory tokenFactory = mock(JwtTokenFactory.class);
-        SessionStore sessionStore = mock(SessionStore.class);
+        LoginSessionApi loginSessionApi = mock(LoginSessionApi.class);
         ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         LoginTenantResolver tenantResolver = mock(LoginTenantResolver.class);
         when(tenantResolver.resolveInitialTenant(any())).thenReturn("TENANT2");
@@ -39,7 +38,7 @@ class RestAwareAuthenticationSuccessHandlerTest {
         when(tokenFactory.getAccessTokenExpirationSeconds()).thenReturn(3600L);
 
         RestAwareAuthenticationSuccessHandler handler = new RestAwareAuthenticationSuccessHandler(
-                tokenFactory, sessionStore, eventPublisher, new ObjectMapper(), tenantResolver, 86400L, false);
+                tokenFactory, loginSessionApi, eventPublisher, tenantResolver, 86400L, false);
 
         SecurityUser securityUser = new SecurityUser(1L, "alice@example.com", "Alice", "hash", true, "TENANT1",
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, "alice@example.com"), List.of());
@@ -54,7 +53,7 @@ class RestAwareAuthenticationSuccessHandlerTest {
         handler.onAuthenticationSuccess(request, response, authentication);
 
         verify(tokenFactory).createTokenPair(any(), eq("TENANT2"), any());
-        verify(sessionStore).save(any(LoginSession.class));
+        verify(loginSessionApi).save(any(LoginSession.class));
         assertEquals(200, response.getStatus());
     }
 }

@@ -1,15 +1,17 @@
 package io.rosecloud.auth.service;
 
+import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.common.security.model.LoginSession;
-import io.rosecloud.common.security.session.SessionStore;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Extended {@link SessionStore} with admin query methods.
+ * Auth-owned session service. Extends the cross-service {@link LoginSessionApi} contract and
+ * adds admin query methods. The implementation ({@code LoginSessionServiceImpl}) is database-backed
+ * only (no Redis) via {@code LoginSessionMapper}.
  */
-public interface LoginSessionService extends SessionStore {
+public interface LoginSessionService extends io.rosecloud.starter.security.session.LoginSessionApi {
 
     Optional<LoginSession> findBySessionId(String sessionId);
 
