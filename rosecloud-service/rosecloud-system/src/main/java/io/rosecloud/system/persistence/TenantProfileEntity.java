@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 import io.rosecloud.common.core.model.ToData;
 import io.rosecloud.common.core.model.ToEntity;
-import io.rosecloud.common.core.util.Json;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.domain.TenantProfileData;
 import lombok.AccessLevel;
@@ -52,8 +52,8 @@ public class TenantProfileEntity implements ToData<TenantProfile>, ToEntity<Tena
     @Override
     public TenantProfile toData() {
         JsonNode info = (additionalInfo == null || additionalInfo.isBlank())
-                ? Json.toTree(TenantProfileData.defaults())
-                : Json.readTree(additionalInfo);
+                ? JacksonUtil.valueToTree(TenantProfileData.defaults())
+                : JacksonUtil.toJsonNode(additionalInfo);
         return new TenantProfile(getId(), name, description, getIsDefault(),
                 info, createTime, createBy, updateTime, updateBy);
     }
@@ -63,7 +63,7 @@ public class TenantProfileEntity implements ToData<TenantProfile>, ToEntity<Tena
         setId(profile.getId());
         setName(profile.getName());
         setDescription(profile.getDescription());
-        setAdditionalInfo(Json.writeString(profile.getAdditionalInfo()));
+        setAdditionalInfo(JacksonUtil.writeString(profile.getAdditionalInfo()));
         setIsDefault(profile.isDefault());
         setCreateTime(profile.getCreateTime());
         setCreateBy(profile.getCreateBy());

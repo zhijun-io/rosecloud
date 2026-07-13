@@ -2,7 +2,7 @@ package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.rosecloud.common.core.model.ToData;
-import io.rosecloud.common.core.util.Json;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.starter.data.BaseEntity;
 import io.rosecloud.system.domain.User;
 
@@ -27,7 +27,7 @@ public class UserEntity extends BaseEntity implements ToData<User> {
     @Override
     public User toData() {
         return new User(getId(), loginName(), nickname, status, tenantId,
-                Json.readTree(additionalInfo), getCreateTime(), getCreateBy(), getUpdateTime(), getUpdateBy());
+                JacksonUtil.toJsonNode(additionalInfo), getCreateTime(), getCreateBy(), getUpdateTime(), getUpdateBy());
     }
 
     private String loginName() {

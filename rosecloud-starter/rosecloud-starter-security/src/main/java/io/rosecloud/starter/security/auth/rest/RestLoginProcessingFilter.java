@@ -1,6 +1,6 @@
 package io.rosecloud.starter.security.auth.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.common.security.exception.AuthMethodNotSupportedException;
 import io.rosecloud.common.security.model.UserPrincipal;
 import jakarta.servlet.FilterChain;
@@ -23,16 +23,13 @@ public class RestLoginProcessingFilter extends AbstractAuthenticationProcessingF
 
     private final AuthenticationSuccessHandler successHandler;
     private final AuthenticationFailureHandler failureHandler;
-    private final ObjectMapper objectMapper;
 
     public RestLoginProcessingFilter(String defaultProcessUrl,
                                      AuthenticationSuccessHandler successHandler,
-                                     AuthenticationFailureHandler failureHandler,
-                                     ObjectMapper objectMapper) {
+                                     AuthenticationFailureHandler failureHandler) {
         super(defaultProcessUrl);
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -44,7 +41,7 @@ public class RestLoginProcessingFilter extends AbstractAuthenticationProcessingF
 
         LoginRequest loginRequest;
         try {
-            loginRequest = objectMapper.readValue(request.getReader(), LoginRequest.class);
+            loginRequest = JacksonUtil.getObjectMapper().readValue(request.getReader(), LoginRequest.class);
         } catch (Exception e) {
             throw new AuthenticationServiceException("Invalid login request payload", e);
         }

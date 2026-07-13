@@ -19,6 +19,8 @@ import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationFailureHan
 import io.rosecloud.starter.security.auth.rest.RestAwareAuthenticationSuccessHandler;
 import io.rosecloud.starter.security.auth.rest.RestLoginProcessingFilter;
 import io.rosecloud.starter.security.context.LogoutProcessingFilter;
+import io.rosecloud.api.session.SessionFeignApi;
+import io.rosecloud.starter.security.session.FeignSessionStore;
 import io.rosecloud.starter.security.session.InMemorySessionStore;
 import io.rosecloud.starter.security.session.RedisSessionStore;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
@@ -104,14 +106,14 @@ public class SecurityConfiguration {
     }
 
     /**
-     * Session store used for JWT revocation lookups. When a {@link StringRedisTemplate}
-     * is available (Redis on the classpath and configured) a shared
-     * {@link RedisSessionStore} is used so that logout/revocation propagates across all
-     * services; otherwise it falls back to an in-process {@link InMemorySessionStore}.
+     * Session store used for JWT revocation lookups.
      *
-     * <p>Using an in-memory store in a multi-service deployment would make every service
-     * treat externally-issued tokens as revoked — so Redis is strongly preferred whenever
-     * present.
+     * <p>Precedence: when a {@link SessionApi} Feign client is available the store is backed by
+     * auth's {@link FeignSessionStore}, so revocation is enforced centrally in auth (the single
+     * authoritative session owner per the IAM boundary) and propagates to every service without a
+     * shared Redis. When Feign is not enabled for the session API it falls back to a shared
+     * {@link RedisSessionStore} (if Redis is on the classpath) or an in-process
+     * {@link InMemorySessionStore} (single-instance / tests only).
      */
     @Configuration(proxyBeanMethods = false)
     static class SessionStoreConfiguration {
@@ -121,25 +123,20 @@ public class SecurityConfiguration {
 
         @Bean
         @ConditionalOnMissingBean(SessionStore.class)
-        @ConditionalOnClass(StringRedisTemplate.class)
-        public SessionStore redisAwareSessionStore(ObjectProvider<StringRedisTemplate> redisTemplate) {
-            StringRedisTemplate template = redisTemplate.getIfAvailable();
-            if (template == null) {
-                log.warn("No StringRedisTemplate bean available — falling back to InMemorySessionStore. "
-                        + "Token VALIDITY no longer depends on a session record (so requests still authenticate), "
-                        + "but revocation (logout / refresh rotation / user-disable) will NOT propagate across "
-                        + "services and is lost on restart. Use a shared Redis in any multi-instance or "
-                        + "multi-service deployment.");
-                return new InMemorySessionStore();
+        public SessionStore sessionStore(ObjectProvider<SessionFeignApi> sessionApi,
+                                        ObjectProvider<StringRedisTemplate> redisTemplate) {
+            SessionFeignApi api = sessionApi.getIfAvailable();
+            if (api != null) {
+                log.info("Using FeignSessionStore (sessions owned by auth). Revocation is enforced "
+                        + "centrally in auth; isRevoked adds one Feign round-trip per request.");
+                return new FeignSessionStore(api);
             }
-            return new RedisSessionStore(template);
-        }
-
-        @Bean
-        @ConditionalOnMissingBean(SessionStore.class)
-        public SessionStore inMemorySessionStore() {
-            log.warn("No Redis on the classpath — using InMemorySessionStore. Revocation is local-only and "
-                    + "lost on restart; do not use in multi-service deployments.");
+            StringRedisTemplate template = redisTemplate.getIfAvailable();
+            if (template != null) {
+                return new RedisSessionStore(template);
+            }
+            log.warn("No SessionApi Feign client and no Redis — using InMemorySessionStore. Revocation is "
+                    + "local-only and lost on restart; do not use in multi-service deployments.");
             return new InMemorySessionStore();
         }
     }
@@ -230,8 +227,7 @@ public class SecurityConfiguration {
         RestLoginProcessingFilter filter = new RestLoginProcessingFilter(
                 LOGIN_ENTRY_POINT,
                 restAwareAuthenticationSuccessHandler,
-                restAwareAuthenticationFailureHandler,
-                objectMapper);
+                restAwareAuthenticationFailureHandler);
         filter.setAuthenticationManager(authenticationManager);
         return filter;
     }
@@ -244,8 +240,7 @@ public class SecurityConfiguration {
         RefreshTokenProcessingFilter filter = new RefreshTokenProcessingFilter(
                 REFRESH_ENTRY_POINT,
                 restAwareAuthenticationSuccessHandler,
-                restAwareAuthenticationFailureHandler,
-                objectMapper);
+                restAwareAuthenticationFailureHandler);
         filter.setAuthenticationManager(authenticationManager);
         return filter;
     }

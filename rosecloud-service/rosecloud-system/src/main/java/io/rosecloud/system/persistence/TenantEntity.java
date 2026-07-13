@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 import io.rosecloud.common.core.model.ToData;
 import io.rosecloud.common.core.model.ToEntity;
-import io.rosecloud.common.core.util.Json;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
 import lombok.Getter;
@@ -51,7 +51,7 @@ public class TenantEntity implements ToData<Tenant>, ToEntity<Tenant, TenantEnti
     @Override
     public Tenant toData() {
         return new Tenant(id, name, TenantStatus.resolve(status, expireTime), contactUser, contactPhone,
-                expireTime, remark, tenantProfileId, Json.readTree(extra),
+                expireTime, remark, tenantProfileId, JacksonUtil.toJsonNode(extra),
                 createTime, createBy, updateTime, updateBy);
     }
 
@@ -65,7 +65,7 @@ public class TenantEntity implements ToData<Tenant>, ToEntity<Tenant, TenantEnti
         setExpireTime(t.getExpireTime());
         setRemark(t.getRemark());
         setTenantProfileId(t.getTenantProfileId());
-        setExtra(Json.writeString(t.getAdditionalInfo()));
+        setExtra(JacksonUtil.writeString(t.getAdditionalInfo()));
         setCreateTime(t.getCreateTime());
         setCreateBy(t.getCreateBy());
         setUpdateTime(t.getUpdateTime());

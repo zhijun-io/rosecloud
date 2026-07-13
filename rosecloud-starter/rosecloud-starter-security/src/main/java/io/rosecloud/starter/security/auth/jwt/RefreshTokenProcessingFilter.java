@@ -1,6 +1,6 @@
  package io.rosecloud.starter.security.auth.jwt;
  
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.common.core.util.JacksonUtil;
 import io.rosecloud.starter.security.auth.RefreshAuthenticationToken;
 import io.rosecloud.starter.security.util.DeviceFingerprint;
 import io.rosecloud.common.security.exception.AuthMethodNotSupportedException;
@@ -27,16 +27,13 @@ public class RefreshTokenProcessingFilter extends AbstractAuthenticationProcessi
 
     private final AuthenticationSuccessHandler successHandler;
     private final AuthenticationFailureHandler failureHandler;
-    private final ObjectMapper objectMapper;
 
     public RefreshTokenProcessingFilter(String defaultProcessUrl,
                                         AuthenticationSuccessHandler successHandler,
-                                        AuthenticationFailureHandler failureHandler,
-                                        ObjectMapper objectMapper) {
+                                        AuthenticationFailureHandler failureHandler) {
         super(defaultProcessUrl);
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -48,7 +45,7 @@ public class RefreshTokenProcessingFilter extends AbstractAuthenticationProcessi
 
         RefreshTokenRequest refreshTokenRequest;
         try {
-            refreshTokenRequest = objectMapper.readValue(request.getReader(), RefreshTokenRequest.class);
+            refreshTokenRequest = JacksonUtil.getObjectMapper().readValue(request.getReader(), RefreshTokenRequest.class);
         } catch (Exception e) {
             throw new AuthenticationServiceException("Invalid refresh token request payload");
         }

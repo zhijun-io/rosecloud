@@ -19,7 +19,8 @@ public class SecurityProperties {
     // `/actuator/health/**` stays permitAll for infra probes but MUST sit behind a network
     // policy (do not expose the actuator publicly). Override via `rosecloud.security.public-paths`.
     private String[] publicPaths = {API_PREFIX + "/auth/login", API_PREFIX + "/auth/refresh", API_PREFIX + "/auth/logout",
-            API_PREFIX + "/noauth/**", API_PREFIX + "/public/**", "/actuator/health/**"};
+            API_PREFIX + "/auth/sessions/internal/**", API_PREFIX + "/noauth/**", API_PREFIX + "/public/**",
+            "/actuator/health/**"};
     private Cors cors = new Cors();
     // L3: single static shared secret for internal (machine-to-machine) calls. Constant-time
     // comparison is used on the verify side. There is no rotation and no per-service credential;

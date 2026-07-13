@@ -1,10 +1,9 @@
 package io.rosecloud.system.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.rosecloud.common.core.model.BaseDataWithAdditionalInfo;
 import io.rosecloud.common.core.model.HasAdditionalInfo;
+import io.rosecloud.common.core.util.JacksonUtil;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -19,10 +18,6 @@ import lombok.Getter;
  */
 @Getter
 public final class TenantProfile extends BaseDataWithAdditionalInfo implements HasAdditionalInfo {
-
-    // Module-aware mapper so Jackson modules (e.g. JavaTimeModule) registered on the
-    // classpath are picked up, instead of a bare ObjectMapper() that silently drops them.
-    private static final ObjectMapper MAPPER = JsonMapper.builder().findAndAddModules().build();
 
     private final String id;
     private final String name;
@@ -50,7 +45,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
 
     public TenantProfile(String id, String name, String description, boolean isDefault, JsonNode additionalInfo,
                          LocalDateTime createTime, Long createBy, LocalDateTime updateTime, Long updateBy) {
-        super(additionalInfo == null ? MAPPER.valueToTree(TenantProfileData.defaults()) : additionalInfo);
+        super(additionalInfo == null ? JacksonUtil.valueToTree(TenantProfileData.defaults()) : additionalInfo);
         this.id = id;
         this.name = name;
         this.description = description;
@@ -68,7 +63,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
         }
         JsonNode additionalInfo = getAdditionalInfo();
         if (additionalInfo != null) {
-            data = MAPPER.convertValue(additionalInfo, TenantProfileData.class);
+            data = JacksonUtil.convertValue(additionalInfo, TenantProfileData.class);
             profileData = data;
             return data;
         }
@@ -78,7 +73,7 @@ public final class TenantProfile extends BaseDataWithAdditionalInfo implements H
     public void setProfileData(TenantProfileData profileData) {
         TenantProfileData value = profileData == null ? TenantProfileData.defaults() : profileData;
         this.profileData = value;
-        setAdditionalInfo(MAPPER.valueToTree(value));
+        setAdditionalInfo(JacksonUtil.valueToTree(value));
     }
 
     @Override
