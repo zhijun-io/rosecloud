@@ -23,6 +23,7 @@
         <module>rosecloud-bom</module>
         <module>rosecloud-common</module>
         <module>rosecloud-api</module>
+        <module>rosecloud-notification</module>
         <module>rosecloud-starter</module>
         <module>rosecloud-starter-business</module>
         <module>rosecloud-service</module>

@@ -34,6 +34,11 @@
                 <artifactId>rosecloud-common-security</artifactId>
                 <version>${rosecloud.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.rosecloud</groupId>
+                <artifactId>rosecloud-notification</artifactId>
+                <version>${rosecloud.version}</version>
+            </dependency>
 
 
             <!-- api -->
