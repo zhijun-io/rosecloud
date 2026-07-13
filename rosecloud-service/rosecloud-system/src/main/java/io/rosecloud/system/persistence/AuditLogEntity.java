@@ -22,4 +22,8 @@ public class AuditLogEntity extends BaseEntity {
     private Long elapsedMillis;
     private Integer success;
     private String error;
+    private String entityType;
+    private String entityId;
+    private String ipAddress;
+    private String severity;
 }

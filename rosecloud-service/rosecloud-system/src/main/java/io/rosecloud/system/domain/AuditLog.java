@@ -23,4 +23,8 @@ public final class AuditLog implements HasId, HasTenantId {
     boolean success;
     String error;
     LocalDateTime createTime;
+    String entityType;
+    String entityId;
+    String ipAddress;
+    String severity;
 }
