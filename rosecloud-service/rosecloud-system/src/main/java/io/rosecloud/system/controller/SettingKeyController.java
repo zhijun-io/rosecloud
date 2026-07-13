@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/setting-keys")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/setting-keys")
 public class SettingKeyController {
 
     private final SettingKeyService settingKeyService;

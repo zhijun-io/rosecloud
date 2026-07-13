@@ -14,7 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/tenants")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/tenants")
 public class TenantController {
 
     private final TenantService tenantService;

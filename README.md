@@ -84,7 +84,7 @@ TOKEN=$(curl -s -X POST $BASE/api/auth/login -H 'Content-Type: application/json'
   -d '{"username":"admin","password":"admin123"}' \
   | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["accessToken"])')
   
-curl -s $BASE/api/system/depts/tree -H "Authorization: Bearer $TOKEN"   # 200 部门树
+curl -s $BASE/api/depts/tree -H "Authorization: Bearer $TOKEN"   # 200 部门树
 curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 ```
 

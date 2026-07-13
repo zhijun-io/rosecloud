@@ -32,7 +32,7 @@ import java.util.Optional;
  */
 @RestController
 @InternalApi
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/internal/user-tenants")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/internal/user-tenants")
 public class UserTenantController {
 
     private final UserMapper userMapper;

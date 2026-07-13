@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/tenant-profiles")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/tenant-profiles")
 public class TenantProfileController {
 
     private final TenantProfileService tenantProfileService;

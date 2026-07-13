@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Feign interface for remote audit log persistence. Called by the async listener
  * in services that have no local {@code AuditLogRepository} (e.g. notice in microservices
- * mode). The system service provides the REST endpoint at {@code /api/system/audit-logs}.
+ * mode). The system service provides the REST endpoint at {@code /api/audit-logs}.
  */
 public interface AuditLogApi {
 

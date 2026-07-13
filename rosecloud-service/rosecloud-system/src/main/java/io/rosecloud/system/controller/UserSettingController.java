@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/user-settings")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/user-settings")
 public class UserSettingController {
 
     private final UserSettingService userSettingService;

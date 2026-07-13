@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/audit-logs")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/audit-logs")
 public class AuditLogController {
 
     private final AuditLogService auditLogService;

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * System endpoints for login logs and Feign-facing login log recording.
  */
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/login-logs")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/login-logs")
 public class LoginLogController {
 
     private final LoginLogService loginLogService;

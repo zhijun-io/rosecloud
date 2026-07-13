@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/depts")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/depts")
 public class DeptController {
 
     private final DeptService deptService;

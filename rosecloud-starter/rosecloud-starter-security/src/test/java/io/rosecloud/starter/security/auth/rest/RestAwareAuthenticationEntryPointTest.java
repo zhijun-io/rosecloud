@@ -17,7 +17,7 @@ class RestAwareAuthenticationEntryPointTest {
     @Test
     void writesApiResponseForUnauthenticatedRequests() throws Exception {
         RestAwareAuthenticationEntryPoint entryPoint = new RestAwareAuthenticationEntryPoint(objectMapper);
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/system/users/me");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users/me");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         entryPoint.commence(request, response,

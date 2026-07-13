@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "rosecloud-system", contextId = "userTenantApi", path = "/api/system/internal/user-tenants")
+@FeignClient(name = "rosecloud-system", contextId = "userTenantApi", path = "/api/internal/user-tenants")
 public interface UserTenantFeignApi extends UserTenantApi {
 
     @Override

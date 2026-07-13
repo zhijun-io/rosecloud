@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/menus")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/menus")
 public class MenuController {
 
     private final MenuService menuService;

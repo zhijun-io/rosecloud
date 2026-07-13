@@ -17,7 +17,7 @@ class RestAwareAccessDeniedHandlerTest {
     @Test
     void writesApiResponseForForbiddenRequests() throws Exception {
         RestAwareAccessDeniedHandler handler = new RestAwareAccessDeniedHandler(objectMapper);
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/system/tenants");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/tenants");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         handler.handle(request, response, new AccessDeniedException("denied"));

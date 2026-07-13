@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/dict-data")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/dict-data")
 public class DictDataController {
 
     private final DictDataService dictDataService;

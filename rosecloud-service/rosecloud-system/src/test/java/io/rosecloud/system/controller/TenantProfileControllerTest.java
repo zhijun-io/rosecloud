@@ -48,7 +48,7 @@ class TenantProfileControllerTest {
     void createDelegatesToService() throws Exception {
         when(tenantProfileService.create(any(TenantProfileCreateRequest.class))).thenReturn("pro");
 
-        mockMvc.perform(post("/api/system/tenant-profiles")
+        mockMvc.perform(post("/api/tenant-profiles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"id":"pro","name":"Pro","description":"Production tier",
@@ -63,7 +63,7 @@ class TenantProfileControllerTest {
 
     @Test
     void updateDelegatesToService() throws Exception {
-        mockMvc.perform(put("/api/system/tenant-profiles/pro")
+        mockMvc.perform(put("/api/tenant-profiles/pro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Pro","description":"Production tier",
@@ -78,7 +78,7 @@ class TenantProfileControllerTest {
 
     @Test
     void deleteDelegatesToService() throws Exception {
-        mockMvc.perform(delete("/api/system/tenant-profiles/pro"))
+        mockMvc.perform(delete("/api/tenant-profiles/pro"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -87,7 +87,7 @@ class TenantProfileControllerTest {
 
     @Test
     void makeDefaultDelegatesToService() throws Exception {
-        mockMvc.perform(put("/api/system/tenant-profiles/pro/default"))
+        mockMvc.perform(put("/api/tenant-profiles/pro/default"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -100,7 +100,7 @@ class TenantProfileControllerTest {
                 new TenantProfileData("pro", 50, 20, 500, 120, List.of("mfa")));
         when(tenantProfileService.get("pro")).thenReturn(profile);
 
-        mockMvc.perform(get("/api/system/tenant-profiles/pro"))
+        mockMvc.perform(get("/api/tenant-profiles/pro"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("pro"))
                 .andExpect(jsonPath("$.data.profileData.packageCode").value("pro"));
@@ -117,7 +117,7 @@ class TenantProfileControllerTest {
                         .put("maxRequestsPerMinute", 60));
         when(tenantProfileService.getDefault()).thenReturn(profile);
 
-        mockMvc.perform(get("/api/system/tenant-profiles/default"))
+        mockMvc.perform(get("/api/tenant-profiles/default"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("default"));
     }
@@ -128,7 +128,7 @@ class TenantProfileControllerTest {
                 TenantProfileData.defaults());
         when(tenantProfileService.list()).thenReturn(List.of(profile));
 
-        mockMvc.perform(get("/api/system/tenant-profiles"))
+        mockMvc.perform(get("/api/tenant-profiles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].id").value("default"));

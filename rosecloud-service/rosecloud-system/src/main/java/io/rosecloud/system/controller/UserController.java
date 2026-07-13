@@ -22,7 +22,7 @@ import java.util.List;
  * System user endpoints and Feign-facing auth hooks.
  */
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/users")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/users")
 public class UserController {
 
     private final UserService userService;

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/roles")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/roles")
 public class RoleController {
 
     private final RoleService roleService;

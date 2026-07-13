@@ -5,7 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "rosecloud-system", contextId = "tenantLookupApi", path = "/api/system/internal/tenants")
+@FeignClient(name = "rosecloud-system", contextId = "tenantLookupApi", path = "/api/internal/tenants")
 public interface TenantLookupFeignApi extends TenantLookupApi {
 
     @Override

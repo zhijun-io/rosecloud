@@ -55,7 +55,7 @@ class TenantControllerTest {
     void createDelegatesToTenantService() throws Exception {
         when(tenantService.create(any(TenantCreateRequest.class))).thenReturn("TENANT1");
 
-        mockMvc.perform(post("/api/system/tenants")
+        mockMvc.perform(post("/api/tenants")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                                 {"tenantId":"tenant1","name":"Acme","contactUser":"Owner","contactPhone":"13800000000",
@@ -71,7 +71,7 @@ class TenantControllerTest {
 
     @Test
     void updateDelegatesToTenantService() throws Exception {
-        mockMvc.perform(put("/api/system/tenants/TENANT1")
+        mockMvc.perform(put("/api/tenants/TENANT1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Acme","contactUser":"Owner","contactPhone":"13800000000",
@@ -85,7 +85,7 @@ class TenantControllerTest {
 
     @Test
     void deleteDelegatesToTenantService() throws Exception {
-        mockMvc.perform(delete("/api/system/tenants/TENANT1"))
+        mockMvc.perform(delete("/api/tenants/TENANT1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -99,7 +99,7 @@ class TenantControllerTest {
                 new ObjectMapper().valueToTree(new TenantProfileData("pro", 10, 5, 100, 60, List.of())));
         when(tenantService.get("TENANT1")).thenReturn(tenant);
 
-        mockMvc.perform(get("/api/system/tenants/TENANT1"))
+        mockMvc.perform(get("/api/tenants/TENANT1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value("TENANT1"))
                 .andExpect(jsonPath("$.data.tenantProfileId").value("profile-1"));
@@ -109,7 +109,7 @@ class TenantControllerTest {
     void pageReturnsTenantPage() throws Exception {
         when(tenantService.page(1, 10, null)).thenReturn(PageResult.of(List.of(), 0, 1, 10));
 
-        mockMvc.perform(get("/api/system/tenants"))
+        mockMvc.perform(get("/api/tenants"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0))
                 .andExpect(jsonPath("$.data.records").isArray());
@@ -119,7 +119,7 @@ class TenantControllerTest {
     void openDelegatesToTenantService() throws Exception {
         when(tenantService.open("TENANT1")).thenReturn("TENANT1");
 
-        mockMvc.perform(post("/api/system/tenants/TENANT1/open"))
+        mockMvc.perform(post("/api/tenants/TENANT1/open"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").value("TENANT1"));
 

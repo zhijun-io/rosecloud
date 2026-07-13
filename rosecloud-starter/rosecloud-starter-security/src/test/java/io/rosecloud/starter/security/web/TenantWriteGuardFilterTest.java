@@ -48,7 +48,7 @@ class TenantWriteGuardFilterTest {
 
     @Test
     void safeMethodsPassThrough() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/system/users/me");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/users/me");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilterInternal(request, response, filterChain);
@@ -64,7 +64,7 @@ class TenantWriteGuardFilterTest {
                 .withImpersonation(true);
         SecurityContextHolder.getContext().setAuthentication(new AuthStub(impersonatedUser));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/system/tenants/TENANT1/disable");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tenants/TENANT1/disable");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilterInternal(request, response, filterChain);
@@ -84,7 +84,7 @@ class TenantWriteGuardFilterTest {
         when(tenantLookupApi.findTenantStatus("TENANT2"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT2", "EXPIRED")));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/system/users");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/users");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilterInternal(request, response, filterChain);
@@ -104,7 +104,7 @@ class TenantWriteGuardFilterTest {
         when(tenantLookupApi.findTenantStatus("TENANT3"))
                 .thenReturn(ApiResponse.ok(new TenantStatusView("TENANT3", "ENABLED")));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/system/tenants/TENANT3");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/tenants/TENANT3");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilterInternal(request, response, filterChain);

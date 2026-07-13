@@ -1,5 +1,6 @@
 package io.rosecloud.system.controller;
 
+import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.api.user.TenantStatusView;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -13,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @InternalApi
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/internal/tenants")
-public class TenantInternalController {
+@RequestMapping(ServiceMetadata.API_PREFIX + "/internal/tenants")
+public class TenantInternalController implements TenantLookupApi {
 
     private final TenantService tenantService;
 

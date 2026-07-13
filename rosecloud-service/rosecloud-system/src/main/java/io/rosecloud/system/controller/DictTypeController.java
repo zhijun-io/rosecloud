@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ServiceMetadata.API_PREFIX + "/system/dict-types")
+@RequestMapping(ServiceMetadata.API_PREFIX + "/dict-types")
 public class DictTypeController {
 
     private final DictTypeService dictTypeService;

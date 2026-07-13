@@ -21,7 +21,7 @@ spring:
         username: ${NACOS_USERNAME:}
         password: ${NACOS_PASSWORD:}
         metadata:
-          gateway.path: /api/system/**,/api/noauth/**
+          gateway.path: /api/users/**,/api/tenants/**,/api/depts/**,/api/roles/**,/api/menus/**,/api/dict-types/**,/api/dict-data/**,/api/audit-logs/**,/api/login-logs/**,/api/tenant-profiles/**,/api/system-settings/**,/api/user-settings/**,/api/setting-keys/**,/api/internal/**,/api/noauth/**
 
 server:
   port: 9110
@@ -36,7 +36,7 @@ rosecloud:
       - /api/auth/logout
       - /api/noauth/**
       - /api/public/**
-      - /api/system/users/auth/**
+      - /api/users/auth/**
       - /actuator/health/**
       - /error
 

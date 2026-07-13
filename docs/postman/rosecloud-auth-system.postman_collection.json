@@ -429,7 +429,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -478,7 +478,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -519,7 +519,7 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -564,7 +564,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users?page=1&size=10",
+              "raw": "{{baseUrl}}/api/users?page=1&size=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -613,7 +613,7 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/system/users?page=1&size=10",
+              "raw": "{{baseUrl}}/api/users?page=1&size=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -664,7 +664,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/{{currentUserId}}",
+              "raw": "{{baseUrl}}/api/users/{{currentUserId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -710,7 +710,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/999999999999",
+              "raw": "{{baseUrl}}/api/users/999999999999",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -857,7 +857,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -981,7 +981,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/system/users/me",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
