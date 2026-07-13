@@ -75,7 +75,7 @@ class TenantProfileServiceImplTest {
         when(tenantProfileMapper.selectById("pro")).thenReturn(null);
 
         String id = service().create(new TenantProfileCreateRequest("pro", "Pro", "Production tier",
-                new TenantProfileData("pro", 50, 20, 500, 120, List.of("mfa"))));
+                new TenantProfileData("pro", 50, 20, 500, 120, 60, 0L, 80, 90, List.of("mfa"))));
 
         assertEquals("pro", id);
         verify(tenantProfileMapper).insert(any(TenantProfileEntity.class));

@@ -13,10 +13,14 @@ import io.rosecloud.common.core.model.PageQuery;
 import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
+import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
-import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
+import io.rosecloud.starter.data.EntityCacheNames;
+import io.rosecloud.starter.data.PagedResults;
+import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.starter.security.session.LoginSessionApi;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
@@ -46,6 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -59,6 +64,12 @@ public class UserServiceImpl implements UserService, UserApi {
     private final MenuMapper menuMapper;
     private final LoginSessionApi loginSessionApi;
     private final CredentialApi credentialApi;
+
+    // ==== 缓存 ====
+    private final EntityCache<String, SecurityUser> userSecurityCache;
+    private final EntityCache<Long, List<String>> userPermsCache;
+    private final EntityEventPublisher eventPublisher;
+
     // ==================== helper ====================
 
     private static SecurityUser currentSecurityUser() {
@@ -83,9 +94,9 @@ public class UserServiceImpl implements UserService, UserApi {
         }
         User user = new User(null, request.username(), request.nickname(), 1, targetTenant, null);
         Long userId = insert(user);
-        // Password policy + hashing happen in auth; the credential write is best-effort and,
-        // on failure, rolls back the user insert (this method is transactional).
         credentialApi.setPassword(userId, new CredentialSetRequest(request.password()));
+
+        eventPublisher.publish(EntityChangedEvent.created("user", userId, targetTenant, user));
         return userId;
     }
 
@@ -109,7 +120,10 @@ public class UserServiceImpl implements UserService, UserApi {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
         User user = new User(null, username, nickname, 0, TenantIdSupport.requireValid(tenantId), null);
-        return insert(user);
+        Long userId = insert(user);
+
+        eventPublisher.publish(EntityChangedEvent.created("user", userId, tenantId, user));
+        return userId;
     }
 
     @Override
@@ -131,15 +145,23 @@ public class UserServiceImpl implements UserService, UserApi {
 
     @Override
     public User get(Long id) {
-        return findById(id).orElse(null);
+        return findById(id)
+                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
     }
 
     @AuditLog(action = "user-delete", description = "删除用户")
     @Override
     @Transactional
     public void delete(Long id) {
-        userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getUserId, id));
-        userMapper.deleteById(id);
+        findById(id).ifPresent(user -> {
+            userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getUserId, id));
+            userMapper.deleteById(id);
+
+            userPermsCache.evict(id);
+            userSecurityCache.evict(user.getUsername());
+            eventPublisher.publish(EntityChangedEvent.deleted("user", id,
+                    TenantContextHolder.getTenantId(), user));
+        });
     }
 
     @Override
@@ -152,7 +174,6 @@ public class UserServiceImpl implements UserService, UserApi {
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         SecurityUser securityUser = currentSecurityUser();
-        // Current-password verification and policy enforcement live in auth (the credential owner).
         credentialApi.changePassword(securityUser.getUserId(),
                 new CredentialChangeRequest(request.currentPassword(), request.newPassword()));
     }
@@ -161,9 +182,8 @@ public class UserServiceImpl implements UserService, UserApi {
     @Override
     @Transactional
     public void assignRoles(Long userId, List<Long> roleIds) {
-        if (findById(userId).isEmpty()) {
-            throw new BizException(SystemErrorCode.USER_NOT_FOUND);
-        }
+        User user = findById(userId)
+                .orElseThrow(() -> new BizException(SystemErrorCode.USER_NOT_FOUND));
         userRoleMapper.delete(new LambdaQueryWrapper<UserRoleEntity>().eq(UserRoleEntity::getUserId, userId));
         if (roleIds != null) {
             for (Long roleId : roleIds) {
@@ -173,9 +193,14 @@ public class UserServiceImpl implements UserService, UserApi {
                 userRoleMapper.insert(po);
             }
         }
-        // Roles/permissions are cached in the JWT; revoke the user's sessions so the next
-        // request is forced to re-authenticate with the updated authority set.
+        // 清除该用户的权限缓存和安全缓存，使得下次请求重新加载。
+        userPermsCache.evict(userId);
+        userSecurityCache.evict(user.getUsername());
+        // 吊销该用户的所有登录态，强制下次请求获取最新 JWT。
         loginSessionApi.revokeByUserId(userId);
+
+        eventPublisher.publish(EntityChangedEvent.updated("user", userId,
+                TenantContextHolder.getTenantId(), null, null));
     }
 
     @Override
@@ -240,7 +265,16 @@ public class UserServiceImpl implements UserService, UserApi {
         return Optional.ofNullable(userMapper.selectById(id)).map(UserEntity::toData);
     }
 
+    /**
+     * 加载用户安全信息。优先从二级缓存获取，未命中时构建并回填。
+     * 缓存键为 loginName（邮箱/手机号），因该查询需 join 约 5 张表，
+     * 在登录频繁时收益显著。
+     */
     private Optional<SecurityUser> loadByUsernameInternal(String username) {
+        SecurityUser cached = userSecurityCache.get(username);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
         UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
                 .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
                         .or()
@@ -258,11 +292,13 @@ public class UserServiceImpl implements UserService, UserApi {
         }
 
         UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po));
-        // The password is owned by auth; never returned to the auth service over Feign.
-        return Optional.of(new SecurityUser(
+        SecurityUser securityUser = new SecurityUser(
                 po.getId(), loginName(po), loginName(po), null,
                 po.getStatus() != null && po.getStatus() == 1,
-                po.getTenantId(), principal, authorities));
+                po.getTenantId(), principal, authorities);
+
+        userSecurityCache.put(loginName(po), securityUser);
+        return Optional.of(securityUser);
     }
 
     private List<String> loadRoleCodes(Long userId) {
@@ -278,13 +314,14 @@ public class UserServiceImpl implements UserService, UserApi {
     }
 
     /**
-     * Aggregates the caller's fine-grained permission codes: the union of
-     * non-null {@code sys_menu.perms} reachable through the user's roles. The
-     * resulting set is embedded into the JWT at login so endpoint-level
-     * {@code @PreAuthorize("hasAuthority('system:user:add')")} rules can be
-     * enforced statelessly without re-querying the menu tree on every request.
+     * 聚合用户的权限 code。结果缓存于 userPermsCache，失效时机包括：
+     * 角色分配变更、菜单权限变更。
      */
     private List<String> loadPerms(Long userId) {
+        List<String> cached = userPermsCache.get(userId);
+        if (cached != null) {
+            return cached;
+        }
         List<Long> roleIds = findRoleIdsByUserId(userId);
         if (roleIds.isEmpty()) {
             return List.of();
@@ -295,14 +332,16 @@ public class UserServiceImpl implements UserService, UserApi {
         if (menuIds.isEmpty()) {
             return List.of();
         }
-        return menuMapper.selectList(
+        List<String> perms = menuMapper.selectList(
                         new LambdaQueryWrapper<MenuEntity>().in(MenuEntity::getId, menuIds))
                 .stream()
                 .map(MenuEntity::getPerms)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .filter(p -> !p.isBlank())
                 .distinct()
                 .toList();
+        userPermsCache.put(userId, perms);
+        return perms;
     }
 
     private List<String> findRoleCodesByUserId(Long userId) {

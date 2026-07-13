@@ -96,7 +96,7 @@ class TenantControllerTest {
     void getReturnsTenantData() throws Exception {
         Tenant tenant = new Tenant("TENANT1", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", "profile-1",
-                new ObjectMapper().valueToTree(new TenantProfileData("pro", 10, 5, 100, 60, List.of())));
+                new ObjectMapper().valueToTree(new TenantProfileData("pro", 10, 5, 100, 60, 60, 0L, 80, 90, List.of())));
         when(tenantService.get("TENANT1")).thenReturn(tenant);
 
         mockMvc.perform(get("/api/tenants/TENANT1"))

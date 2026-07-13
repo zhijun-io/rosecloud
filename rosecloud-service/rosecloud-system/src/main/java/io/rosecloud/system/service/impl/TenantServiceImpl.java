@@ -11,6 +11,10 @@ import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.starter.data.PagedResults;
+import io.rosecloud.starter.data.EntityCacheNames;
+import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.event.EntityEventPublisher;
+import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
@@ -25,6 +29,7 @@ import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import io.rosecloud.system.support.TenantIdSupport;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -37,11 +42,16 @@ public class TenantServiceImpl implements TenantService {
     private final TenantMapper tenantMapper;
     private final TenantProfileMapper tenantProfileMapper;
     private final TenantProvisioner tenantProvisioner;
+    private final EntityCache<String, Tenant> tenantCache;
+    private final EntityEventPublisher eventPublisher;
+
     @AuditLog(action = "tenant-create", description = "创建租户")
     @Override
     public String create(TenantCreateRequest request) {
         String id = persistTenant(request);
         open(id);
+        eventPublisher.publish(EntityChangedEvent.created(
+                EntityCacheNames.TENANT, id, id, null));
         return id;
     }
 
@@ -66,14 +76,24 @@ public class TenantServiceImpl implements TenantService {
                 .set(TenantEntity::getRemark, updated.getRemark())
                 .set(TenantEntity::getTenantProfileId, updated.getTenantProfileId())
                 .set(TenantEntity::getExtra, writeJson(updated.getAdditionalInfo())));
+        tenantCache.evict(tenantId);
+        eventPublisher.publish(EntityChangedEvent.updated(
+                EntityCacheNames.TENANT, tenantId, tenantId, tenant, updated));
     }
 
     @AuditLog(action = "tenant-delete", description = "删除租户")
+    @Transactional
     @Override
     public void delete(String id) {
         String tenantId = requireTenantId(id);
-        load(tenantId);
+        Tenant tenant = load(tenantId);
+        // Cascade-delete all tenant-scoped resources before removing the tenant record.
+        // 借鉴 ThingsBoard TenantServiceImpl.deleteTenant() 的级联清理顺序。
+        tenantProvisioner.deprovision(tenantId);
         tenantMapper.deleteById(tenantId);
+        tenantCache.evict(tenantId);
+        eventPublisher.publish(EntityChangedEvent.deleted(
+                EntityCacheNames.TENANT, tenantId, tenantId, tenant));
     }
 
     @Override
@@ -105,6 +125,9 @@ public class TenantServiceImpl implements TenantService {
                 .eq(TenantEntity::getId, tenantId)
                 .set(TenantEntity::getStatus,
                         tenant.getStatus().transitionTo(TenantStatus.DISABLED).code()));
+        tenantCache.evict(tenantId);
+        eventPublisher.publish(EntityChangedEvent.updated(
+                EntityCacheNames.TENANT, tenantId, tenantId, tenant, null));
     }
 
     @AuditLog(action = "tenant-enable", description = "启用租户")
@@ -119,6 +142,9 @@ public class TenantServiceImpl implements TenantService {
                 .eq(TenantEntity::getId, tenantId)
                 .set(TenantEntity::getStatus,
                         tenant.getStatus().transitionTo(TenantStatus.ENABLED).code()));
+        tenantCache.evict(tenantId);
+        eventPublisher.publish(EntityChangedEvent.updated(
+                EntityCacheNames.TENANT, tenantId, tenantId, tenant, null));
     }
 
     @Override
@@ -148,7 +174,15 @@ public class TenantServiceImpl implements TenantService {
     }
 
     private Optional<Tenant> findById(String id) {
-        return Optional.ofNullable(tenantMapper.selectById(id)).map(TenantEntity::toData);
+        Tenant cached = tenantCache.get(id);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        return Optional.ofNullable(tenantMapper.selectById(id)).map(po -> {
+            Tenant t = po.toData();
+            tenantCache.put(id, t);
+            return t;
+        });
     }
 
     private String persistTenant(TenantCreateRequest request) {

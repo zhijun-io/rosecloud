@@ -7,8 +7,12 @@ import io.rosecloud.common.core.model.PageQuery;
 import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
+import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.EntityCacheNames;
 import io.rosecloud.starter.data.PagedResults;
+import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.DictData;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.DictDataEntity;
@@ -25,6 +29,9 @@ import java.util.Optional;
 public class DictDataServiceImpl implements DictDataService {
 
     private final DictDataMapper dictDataMapper;
+    private final EntityCache<String, List<DictData>> dictDataByCodeCache;
+    private final EntityEventPublisher eventPublisher;
+
     @AuditLog(action = "dict-data-create", description = "创建字典项")
     @Override
     public Long create(DictDataRequest request) {
@@ -33,6 +40,9 @@ public class DictDataServiceImpl implements DictDataService {
                 request.status() == null ? 1 : request.status(), request.remark()));
         po.setId(null);
         dictDataMapper.insert(po);
+        dictDataByCodeCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.created(
+                EntityCacheNames.DICT_DATA_BY_CODE, po.getId(), null, null));
         return po.getId();
     }
 
@@ -44,12 +54,18 @@ public class DictDataServiceImpl implements DictDataService {
                 request.sort() == null ? 0 : request.sort(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         dictDataMapper.updateById(po);
+        dictDataByCodeCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.updated(
+                EntityCacheNames.DICT_DATA_BY_CODE, id, null, null, null));
     }
 
     @AuditLog(action = "dict-data-delete", description = "删除字典项")
     @Override
     public void delete(Long id) {
         dictDataMapper.deleteById(id);
+        dictDataByCodeCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.deleted(
+                EntityCacheNames.DICT_DATA_BY_CODE, id, null, null));
     }
 
     @Override
@@ -60,10 +76,13 @@ public class DictDataServiceImpl implements DictDataService {
 
     @Override
     public List<DictData> listByCode(String dictCode) {
-        return dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
-                        .eq(DictDataEntity::getDictCode, dictCode)
-                        .eq(DictDataEntity::getStatus, 1)
-                        .orderByAsc(DictDataEntity::getSort)).stream().map(DictDataEntity::toData).toList();
+        return dictDataByCodeCache.getOrLoad(dictCode, () ->
+                dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                                .eq(DictDataEntity::getDictCode, dictCode)
+                                .eq(DictDataEntity::getStatus, 1)
+                                .orderByAsc(DictDataEntity::getSort))
+                        .stream().map(DictDataEntity::toData).toList()
+        );
     }
 
     @Override

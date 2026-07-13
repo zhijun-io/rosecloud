@@ -1,6 +1,9 @@
 package io.rosecloud.system.service.impl;
 
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.common.core.event.EntityChangedEvent;
+import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -28,7 +31,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,9 +55,13 @@ class TenantServiceImplTest {
     TenantProfileMapper tenantProfileMapper;
     @Mock
     TenantProvisioner tenantProvisioner;
+    @Mock
+    EntityCache<String, Tenant> tenantCache;
+    @Mock
+    EntityEventPublisher eventPublisher;
 
     private TenantServiceImpl service() {
-        return new TenantServiceImpl(tenantMapper, tenantProfileMapper, tenantProvisioner);
+        return new TenantServiceImpl(tenantMapper, tenantProfileMapper, tenantProvisioner, tenantCache, eventPublisher);
     }
 
     @Test

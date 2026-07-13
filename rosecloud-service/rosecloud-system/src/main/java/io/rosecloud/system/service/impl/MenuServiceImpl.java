@@ -3,7 +3,11 @@ import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.EntityCacheNames;
+import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Menu;
 import io.rosecloud.system.domain.MenuType;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -35,12 +39,19 @@ public class MenuServiceImpl implements MenuService {
     private final MenuMapper menuMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final UserRoleMapper userRoleMapper;
+    private final EntityCache<Long, Menu> menuCache;
+    private final EntityCache<String, List<Menu>> menuListCache;
+    private final EntityEventPublisher eventPublisher;
+
     @AuditLog(action = "menu-create", description = "创建菜单")
     @Override
     public Long create(MenuRequest request) {
         MenuEntity po = new MenuEntity().toEntity(toMenu(null, request));
         po.setId(null);
         menuMapper.insert(po);
+        menuListCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.created(
+                EntityCacheNames.MENU, po.getId(), null, null));
         return po.getId();
     }
 
@@ -49,6 +60,10 @@ public class MenuServiceImpl implements MenuService {
     public void update(Long id, MenuRequest request) {
         findById(id).orElseThrow(() -> new BizException(SystemErrorCode.MENU_NOT_FOUND));
         menuMapper.updateById(new MenuEntity().toEntity(toMenu(id, request)));
+        menuCache.evict(id);
+        menuListCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.updated(
+                EntityCacheNames.MENU, id, null, null, null));
     }
 
     @AuditLog(action = "menu-delete", description = "删除菜单")
@@ -60,13 +75,19 @@ public class MenuServiceImpl implements MenuService {
         }
         roleMenuMapper.delete(new LambdaQueryWrapper<RoleMenuEntity>().eq(RoleMenuEntity::getMenuId, id));
         menuMapper.deleteById(id);
+        menuCache.evict(id);
+        menuListCache.evictAll();
+        eventPublisher.publish(EntityChangedEvent.deleted(
+                EntityCacheNames.MENU, id, null, null));
     }
 
     @Override
     public List<Menu> list() {
-        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
-                        .orderByAsc(MenuEntity::getSort))
-                .stream().map(MenuEntity::toData).toList();
+        return menuListCache.getOrLoad("__all__", () ->
+                menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                                .orderByAsc(MenuEntity::getSort))
+                        .stream().map(MenuEntity::toData).toList()
+        );
     }
 
     @Override
@@ -101,23 +122,37 @@ public class MenuServiceImpl implements MenuService {
     }
 
     private Optional<Menu> findById(Long id) {
-        return Optional.ofNullable(menuMapper.selectById(id)).map(MenuEntity::toData);
+        Menu cached = menuCache.get(id);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        return Optional.ofNullable(menuMapper.selectById(id)).map(po -> {
+            Menu m = po.toData();
+            menuCache.put(id, m);
+            return m;
+        });
     }
 
     private List<Menu> findByRoleIds(Collection<Long> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return List.of();
         }
-        List<RoleMenuEntity> links = roleMenuMapper.selectList(
-                new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds));
-        if (links.isEmpty()) {
-            return List.of();
-        }
-        List<Long> menuIds = links.stream().map(RoleMenuEntity::getMenuId).distinct().toList();
-        return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
-                        .in(MenuEntity::getId, menuIds)
-                        .orderByAsc(MenuEntity::getSort))
-                .stream().map(MenuEntity::toData).toList();
+        String cacheKey = roleIds.stream()
+                .map(String::valueOf)
+                .sorted()
+                .collect(Collectors.joining(","));
+        return menuListCache.getOrLoad(cacheKey, () -> {
+            List<RoleMenuEntity> links = roleMenuMapper.selectList(
+                    new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds));
+            if (links.isEmpty()) {
+                return List.of();
+            }
+            List<Long> menuIds = links.stream().map(RoleMenuEntity::getMenuId).distinct().toList();
+            return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
+                            .in(MenuEntity::getId, menuIds)
+                            .orderByAsc(MenuEntity::getSort))
+                    .stream().map(MenuEntity::toData).toList();
+        });
     }
 
     private Menu toMenu(Long id, MenuRequest request) {

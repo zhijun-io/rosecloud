@@ -10,6 +10,9 @@ import io.rosecloud.system.persistence.RoleEntity;
 import io.rosecloud.system.persistence.RoleMapper;
 import io.rosecloud.system.persistence.TenantEntity;
 import io.rosecloud.system.persistence.TenantMapper;
+import io.rosecloud.system.persistence.UserCredentialMapper;
+import io.rosecloud.system.persistence.UserMapper;
+import io.rosecloud.system.persistence.UserRoleMapper;
 import io.rosecloud.system.persistence.TenantProfileEntity;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -50,9 +53,16 @@ class TenantProvisionerTest {
     UserService userService;
     @Mock
     UserActivationService userActivationService;
+    @Mock
+    UserMapper userMapper;
+    @Mock
+    UserRoleMapper userRoleMapper;
+    @Mock
+    UserCredentialMapper userCredentialMapper;
 
     private TenantProvisioner service() {
-        return new TenantProvisioner(tenantMapper, roleMapper, userService, userActivationService);
+        return new TenantProvisioner(tenantMapper, roleMapper, userService, userActivationService,
+                userMapper, userRoleMapper, userCredentialMapper);
     }
 
     @Test

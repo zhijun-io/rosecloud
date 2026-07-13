@@ -7,8 +7,10 @@ import io.rosecloud.auth.persistence.AuthCredentialMapper;
 import io.rosecloud.auth.persistence.CredentialEntity;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.credential.AuthCredential;
+import io.rosecloud.common.security.credential.CredentialsChangedEvent;
 import io.rosecloud.common.security.credential.PasswordPolicyValidator;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,13 +30,16 @@ public class CredentialService {
     private final AuthCredentialMapper credentialMapper;
     private final PasswordEncoder passwordEncoder;
     private final LoginSessionService loginSessionService;
+    private final PasswordPolicyValidator passwordPolicyValidator;
+    private final ApplicationEventPublisher eventPublisher;
+
     public Optional<AuthCredential> findByUserId(Long userId) {
         return Optional.ofNullable(credentialMapper.selectOne(byUserId(userId))).map(this::toModel);
     }
 
      @Transactional(rollbackFor = Exception.class)
      public void setPassword(Long userId, String rawPassword) {
-        PasswordPolicyValidator.validate(rawPassword);
+        passwordPolicyValidator.validate(rawPassword);
         String hash = passwordEncoder.encode(rawPassword);
         CredentialEntity existing = credentialMapper.selectOne(byUserId(userId));
         if (existing == null) {
@@ -50,6 +55,7 @@ public class CredentialService {
             existing.setAuthStatus(1);
             credentialMapper.updateById(existing);
         }
+        eventPublisher.publishEvent(new CredentialsChangedEvent(userId));
     }
 
      @Transactional(rollbackFor = Exception.class)
@@ -60,9 +66,8 @@ public class CredentialService {
                 || !passwordEncoder.matches(currentPassword, credential.passwordHash())) {
             throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
         }
-        PasswordPolicyValidator.validateChange(currentPassword, newPassword);
+        passwordPolicyValidator.validateChange(currentPassword, newPassword);
         setPassword(userId, newPassword);
-        loginSessionService.revokeByUserId(userId);
     }
 
     private AuthCredential toModel(CredentialEntity entity) {

@@ -97,7 +97,7 @@ class TenantProfileControllerTest {
     @Test
     void getReturnsProfileData() throws Exception {
         TenantProfile profile = new TenantProfile("pro", "Pro", "Production tier",
-                new TenantProfileData("pro", 50, 20, 500, 120, List.of("mfa")));
+                new TenantProfileData("pro", 50, 20, 500, 120, 60, 0L, 80, 90, List.of("mfa")));
         when(tenantProfileService.get("pro")).thenReturn(profile);
 
         mockMvc.perform(get("/api/tenant-profiles/pro"))
