@@ -44,6 +44,19 @@ public class TenantSelectionController {
                 securityUser, currentToken, tenantId, clientIp, userAgent));
     }
 
+    @PreAuthorize("hasAuthority('system:tenant:impersonate')")
+    @PostMapping("/{tenantId}/impersonate")
+    public ApiResponse<JwtPair> impersonate(@PathVariable String tenantId,
+                                             Authentication authentication,
+                                             HttpServletRequest request) {
+        SecurityUser securityUser = currentUser(authentication);
+        String currentToken = tokenExtractor.extract(request);
+        String clientIp = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        return ApiResponse.ok(tenantSelectionService.impersonate(
+                securityUser, currentToken, tenantId, clientIp, userAgent));
+    }
+
     private static SecurityUser currentUser(Authentication authentication) {
         return (SecurityUser) authentication.getPrincipal();
     }

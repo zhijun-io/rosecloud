@@ -36,6 +36,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     private static final String TENANT = "tenant";
     private static final String AUDIENCE = "aud";
     private static final String FINGERPRINT = "fp";
+    private static final String IMPERSONATION = "imp";
 
     /** Minimum secret length (bytes) recommended for HS512 (512 bits). */
     private static final int MIN_SECRET_BYTES = 64;
@@ -79,6 +80,10 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
                 .add(ENABLED, securityUser.isEnabled())
                 .add(TENANT, activeTenantId);
 
+        if (securityUser.isImpersonation()) {
+            claims.add(IMPERSONATION, true);
+        }
+
         if (securityUser.getNickname() != null) {
             claims.add(NICKNAME, securityUser.getNickname());
         }
@@ -114,6 +119,10 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
                 .add(USER_ID, securityUser.getUserId())
                 .add(TOKEN_TYPE, "refresh")
                 .add(TENANT, activeTenantId);
+
+        if (securityUser.isImpersonation()) {
+            claims.add(IMPERSONATION, true);
+        }
 
         withAudienceAndFingerprint(claims, deviceFingerprint);
 

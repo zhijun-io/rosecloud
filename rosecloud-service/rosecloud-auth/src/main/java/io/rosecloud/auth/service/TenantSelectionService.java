@@ -2,6 +2,10 @@ package io.rosecloud.auth.service;
 
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.api.user.UserTenantApi;
+import io.rosecloud.api.audit.AuditLogApi;
+import io.rosecloud.api.audit.AuditLogRequest;
+import io.rosecloud.api.user.TenantLookupApi;
+import io.rosecloud.api.user.TenantStatusView;
 import io.rosecloud.auth.service.dto.TenantSelectionResponse;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -34,17 +38,21 @@ public class TenantSelectionService implements LoginTenantResolver {
     private final SessionStore sessionStore;
     private final JwtTokenFactory tokenFactory;
     private final SecurityProperties securityProperties;
+    private final TenantLookupApi tenantLookupApi;
+    private final AuditLogApi auditLogApi;
 
     public TenantSelectionService(UserTenantApi userTenantApi,
                                   StringRedisTemplate redisTemplate,
                                   SessionStore sessionStore,
                                   JwtTokenFactory tokenFactory,
-                                  SecurityProperties securityProperties) {
+                                  SecurityProperties securityProperties, TenantLookupApi tenantLookupApi, AuditLogApi auditLogApi) {
         this.userTenantApi = userTenantApi;
         this.redisTemplate = redisTemplate;
         this.sessionStore = sessionStore;
         this.tokenFactory = tokenFactory;
         this.securityProperties = securityProperties;
+        this.tenantLookupApi = tenantLookupApi;
+        this.auditLogApi = auditLogApi;
     }
 
     public TenantSelectionResponse getSelection(SecurityUser securityUser) {
@@ -79,6 +87,8 @@ public class TenantSelectionService implements LoginTenantResolver {
                 now,
                 now.plusSeconds(securityProperties.getRefreshTokenExpirationSeconds())));
         sessionStore.revoke(currentToken);
+        recordAudit("switch-tenant", "切换活动租户至 " + resolvedTenantId,
+                securityUser.getUsername());
         return tokenPair;
     }
 
@@ -158,4 +168,67 @@ public class TenantSelectionService implements LoginTenantResolver {
     private static String truncate(String value, int max) {
         return value != null && value.length() > max ? value.substring(0, max) : value;
     }
+
+    /**
+     * Creates an impersonation session for a platform admin entering a target
+     * tenant in read-only mode. The impersonation token carries the
+     * {@code impersonation} flag so downstream filters block writes.
+     *
+     * <p>Only platform admins (users belonging to the system tenant) may
+     * impersonate. Only {@code ENABLED} or {@code EXPIRED} (停用) tenants
+     * may be entered; {@code PENDING} and {@code DISABLED} are rejected.
+     */
+    public JwtPair impersonate(SecurityUser securityUser, String currentToken,
+                               String targetTenantId, String clientIp, String userAgent) {
+        String normalizedTarget = normalizeTenantId(targetTenantId);
+        if (!SYSTEM_TENANT_ID.equals(normalizeTenantId(securityUser.getTenantId()))) {
+            throw new BizException(SecurityErrorCode.FORBIDDEN);
+        }
+        if (tenantLookupApi == null) {
+            throw new BizException(SecurityErrorCode.TENANT_UNAVAILABLE);
+        }
+        ApiResponse<TenantStatusView> statusResponse = tenantLookupApi.findTenantStatus(normalizedTarget);
+        if (statusResponse == null || !statusResponse.success() || statusResponse.data() == null) {
+            throw new BizException(SecurityErrorCode.TENANT_UNAVAILABLE);
+        }
+        String status = statusResponse.data().tenantStatus();
+        boolean allowed = "ENABLED".equalsIgnoreCase(status) || "EXPIRED".equalsIgnoreCase(status);
+        if (!allowed) {
+            throw new BizException(SecurityErrorCode.TENANT_UNAVAILABLE);
+        }
+        SecurityUser impersonatedUser = securityUser
+                .withTenantId(normalizedTarget)
+                .withImpersonation(true);
+        JwtPair tokenPair = tokenFactory.createTokenPair(impersonatedUser, normalizedTarget);
+        Instant now = Instant.now();
+        sessionStore.save(new LoginSession(
+                java.util.UUID.randomUUID().toString(),
+                tokenPair.accessToken(),
+                tokenPair.refreshToken(),
+                impersonatedUser.getUserId(),
+                impersonatedUser.getUsername(),
+                impersonatedUser.getNickname(),
+                clientIp,
+                truncate(userAgent, 512),
+                now,
+                now.plusSeconds(securityProperties.getRefreshTokenExpirationSeconds())));
+        if (currentToken != null && !currentToken.isBlank()) {
+            sessionStore.revoke(currentToken);
+        }
+        recordAudit("impersonate", "平台管理员代入租户 " + normalizedTarget,
+                impersonatedUser.getUsername());
+        return tokenPair;
+    }
+
+    private void recordAudit(String action, String description, String principal) {
+        try {
+            auditLogApi.save(new AuditLogRequest(
+                    action, description, principal,
+                    null, null, 0L, true, null,
+                    java.time.LocalDateTime.now()));
+        } catch (Exception ignored) {
+            // best-effort: audit failure must not break the operation
+        }
+    }
+
 }

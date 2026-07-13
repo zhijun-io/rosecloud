@@ -52,6 +52,15 @@ public class TenantWriteGuardFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Impersonation sessions are strictly read-only.
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()
+                && auth.getPrincipal() instanceof SecurityUser securityUser
+                && securityUser.isImpersonation()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Impersonation session is read-only");
+            return;
+        }
+
         String tenantId = resolveTenantId();
         if (tenantId == null || TenantContextHolder.SYSTEM_TENANT_ID.equals(tenantId)) {
             filterChain.doFilter(request, response);

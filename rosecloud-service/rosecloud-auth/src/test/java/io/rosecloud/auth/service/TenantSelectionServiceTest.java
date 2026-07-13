@@ -2,6 +2,8 @@ package io.rosecloud.auth.service;
 
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.api.user.UserTenantApi;
+import io.rosecloud.api.user.TenantLookupApi;
+import io.rosecloud.api.audit.AuditLogApi;
 import io.rosecloud.auth.service.dto.TenantSelectionResponse;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.model.SecurityUser;
@@ -41,12 +43,16 @@ class TenantSelectionServiceTest {
     SessionStore sessionStore;
     @Mock
     JwtTokenFactory tokenFactory;
+    @Mock
+    TenantLookupApi tenantLookupApi;
+    @Mock
+    AuditLogApi auditLogApi;
 
     private TenantSelectionService service() {
         SecurityProperties properties = new SecurityProperties();
         properties.setRefreshTokenExpirationSeconds(86400);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        return new TenantSelectionService(userTenantApi, redisTemplate, sessionStore, tokenFactory, properties);
+        return new TenantSelectionService(userTenantApi, redisTemplate, sessionStore, tokenFactory, properties, tenantLookupApi, auditLogApi);
     }
 
     @Test

@@ -34,6 +34,7 @@ public class SecurityUser implements UserDetails {
     private final String tenantId;
     private final UserPrincipal userPrincipal;
     private final List<String> authorityStrings;
+    private boolean impersonation;
 
     // Lazily instantiated wrapper view — not serialized.
     private transient volatile Collection<GrantedAuthority> authoritiesView;
@@ -53,9 +54,20 @@ public class SecurityUser implements UserDetails {
         this.enabled = enabled;
         this.tenantId = tenantId;
         this.userPrincipal = userPrincipal;
+        this.impersonation = false;
         this.authorityStrings = authorities != null
                 ? authorities.stream().map(GrantedAuthority::getAuthority).toList()
                 : List.of();
+    }
+
+    /**
+     * Full constructor including impersonation flag.
+     */
+    public SecurityUser(Long userId, String username, String nickname, String password,
+                        boolean enabled, String tenantId, UserPrincipal userPrincipal,
+                        Collection<GrantedAuthority> authorities, boolean impersonation) {
+        this(userId, username, nickname, password, enabled, tenantId, userPrincipal, authorities);
+        this.impersonation = impersonation;
     }
 
     /**
@@ -141,6 +153,23 @@ public class SecurityUser implements UserDetails {
 
     public String getTenantId() {
         return tenantId;
+    }
+
+    /**
+     * Whether this authentication is an impersonation session.
+     * Platform admin impersonation tokens carry this flag set to true.
+     */
+    public boolean isImpersonation() {
+        return impersonation;
+    }
+
+    /**
+     * Returns a copy marked as an impersonation session.
+     * Used when a platform admin enters a target tenant in read-only mode.
+     */
+    public SecurityUser withImpersonation(boolean impersonation) {
+        return new SecurityUser(userId, username, nickname, password, enabled,
+                tenantId, userPrincipal, getAuthorities(), impersonation);
     }
 
     /**

@@ -57,6 +57,12 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         }
         TenantStatusChecks.requireEnabled(tokenTenant, tenantLookupApi);
         SecurityUser effectiveUser = securityUser.withTenantId(tokenTenant);
+
+        // Apply impersonation flag from the token claim.
+        Boolean impersonationClaim = claims.get("imp", Boolean.class);
+        if (Boolean.TRUE.equals(impersonationClaim)) {
+            effectiveUser = effectiveUser.withImpersonation(true);
+        }
         return new JwtAuthenticationToken(effectiveUser);
     }
 
