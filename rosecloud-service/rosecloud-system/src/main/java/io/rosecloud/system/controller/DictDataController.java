@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageQuery;
@@ -20,16 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/dict-data")
 public class DictDataController {
 
     private final DictDataService dictDataService;
-
-    public DictDataController(DictDataService dictDataService) {
-        this.dictDataService = dictDataService;
-    }
-
     @PreAuthorize("hasAuthority('system:dict:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody DictDataRequest request) {

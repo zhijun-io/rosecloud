@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -27,19 +28,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Service
 public class MenuServiceImpl implements MenuService {
 
     private final MenuMapper menuMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final UserRoleMapper userRoleMapper;
-
-    public MenuServiceImpl(MenuMapper menuMapper, RoleMenuMapper roleMenuMapper, UserRoleMapper userRoleMapper) {
-        this.menuMapper = menuMapper;
-        this.roleMenuMapper = roleMenuMapper;
-        this.userRoleMapper = userRoleMapper;
-    }
-
     @AuditLog(action = "menu-create", description = "创建菜单")
     @Override
     public Long create(MenuRequest request) {

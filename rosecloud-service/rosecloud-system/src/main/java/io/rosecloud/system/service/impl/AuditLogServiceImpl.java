@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.audit.AuditLogApi;
 import io.rosecloud.api.audit.AuditLogRequest;
@@ -14,15 +15,11 @@ import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import org.springframework.stereotype.Service;
 
 /** Audit-log application service. Delegates persistence to {@link AuditLogRepository}. */
+@RequiredArgsConstructor
 @Service
 public class AuditLogServiceImpl implements AuditLogService, AuditLogApi {
 
     private final AuditLogRepository auditLogRepository;
-
-    public AuditLogServiceImpl(AuditLogRepository auditLogRepository) {
-        this.auditLogRepository = auditLogRepository;
-    }
-
     @Override
     public AuditLog get(Long id) {
         AuditLog auditLog = auditLogRepository.findById(id);

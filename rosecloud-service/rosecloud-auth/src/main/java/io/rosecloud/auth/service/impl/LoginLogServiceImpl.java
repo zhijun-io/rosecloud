@@ -1,4 +1,5 @@
 package io.rosecloud.auth.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.log.LoginLogApi;
@@ -17,16 +18,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@RequiredArgsConstructor
 @Primary
 @Service
 public class LoginLogServiceImpl implements LoginLogService, LoginLogApi {
 
     private final LoginLogMapper loginLogMapper;
-
-    public LoginLogServiceImpl(LoginLogMapper loginLogMapper) {
-        this.loginLogMapper = loginLogMapper;
-    }
-
     @Override
     public void record(LoginLogRequest request) {
         LoginLogEntity po = new LoginLogEntity();

@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -27,21 +28,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class SettingKeyServiceImpl implements SettingKeyService {
 
     private final SettingKeyMapper settingKeyMapper;
     private final SystemSettingMapper systemSettingMapper;
     private final UserSettingMapper userSettingMapper;
-
-    public SettingKeyServiceImpl(SettingKeyMapper settingKeyMapper,
-                                SystemSettingMapper systemSettingMapper,
-                                UserSettingMapper userSettingMapper) {
-        this.settingKeyMapper = settingKeyMapper;
-        this.systemSettingMapper = systemSettingMapper;
-        this.userSettingMapper = userSettingMapper;
-    }
-
     @AuditLog(action = "setting-key-create", description = "创建配置键")
     @Override
     public String create(SettingKeyCreateRequest request) {

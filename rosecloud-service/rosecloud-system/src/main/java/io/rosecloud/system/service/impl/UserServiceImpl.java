@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService, UserApi {
 
@@ -57,19 +59,6 @@ public class UserServiceImpl implements UserService, UserApi {
     private final MenuMapper menuMapper;
     private final SessionStore sessionStore;
     private final CredentialApi credentialApi;
-
-    public UserServiceImpl(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper,
-                           RoleMenuMapper roleMenuMapper, MenuMapper menuMapper,
-                           SessionStore sessionStore, CredentialApi credentialApi) {
-        this.userMapper = userMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.roleMapper = roleMapper;
-        this.roleMenuMapper = roleMenuMapper;
-        this.menuMapper = menuMapper;
-        this.sessionStore = sessionStore;
-        this.credentialApi = credentialApi;
-    }
-
     // ==================== helper ====================
 
     private static SecurityUser currentSecurityUser() {

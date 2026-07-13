@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -12,16 +13,12 @@ import io.rosecloud.starter.security.annotation.InternalApi;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/audit-logs")
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
-
-    public AuditLogController(AuditLogService auditLogService) {
-        this.auditLogService = auditLogService;
-    }
-
     @PreAuthorize("hasAuthority('system:auditlog:list')")
     @GetMapping("/{id}")
     public ApiResponse<AuditLog> get(@PathVariable Long id) {

@@ -1,4 +1,5 @@
 package io.rosecloud.auth.service;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.auth.persistence.AuthCredentialMapper;
@@ -20,20 +21,13 @@ import java.util.Optional;
  * sessions after a password change so a previously valid token cannot be reused. The system
  * service reaches this only through the credential API.
  */
+@RequiredArgsConstructor
 @Service
 public class CredentialService {
 
     private final AuthCredentialMapper credentialMapper;
     private final PasswordEncoder passwordEncoder;
     private final SessionStore sessionStore;
-
-    public CredentialService(AuthCredentialMapper credentialMapper, PasswordEncoder passwordEncoder,
-                             SessionStore sessionStore) {
-        this.credentialMapper = credentialMapper;
-        this.passwordEncoder = passwordEncoder;
-        this.sessionStore = sessionStore;
-    }
-
     public Optional<AuthCredential> findByUserId(Long userId) {
         return Optional.ofNullable(credentialMapper.selectOne(byUserId(userId))).map(this::toModel);
     }

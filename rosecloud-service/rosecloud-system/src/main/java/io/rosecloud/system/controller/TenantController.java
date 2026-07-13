@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageQuery;
@@ -13,18 +14,13 @@ import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/tenants")
 public class TenantController {
 
     private final TenantService tenantService;
     private final AuditLogService auditLogService;
-
-    public TenantController(TenantService tenantService, AuditLogService auditLogService) {
-        this.tenantService = tenantService;
-        this.auditLogService = auditLogService;
-    }
-
     @PreAuthorize("hasAuthority('system:tenant:add')")
     @PostMapping
     public ApiResponse<String> create(@Valid @RequestBody TenantCreateRequest request) {

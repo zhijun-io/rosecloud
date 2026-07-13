@@ -3,6 +3,7 @@
 > 状态：基于 spec `docs/sdd/2026-07-13-auth-iam-core-spec.md`（v1.0）批复
 > 推进顺序：A → B → C → D（用户确认）
 > 切片原则：每片可独立编译、独立测试、可回滚；测试先行。
+> 进度：**A 完成 / B 完成 / C 完成 / D 待做**。
 
 ## Slice A —— 会话持久化 + 审计增强（项3 + 项4，低风险、独立）
 
@@ -43,10 +44,18 @@ Slice A 验证：`./mvnw -o -pl rosecloud-service/rosecloud-auth -am test`（单
 - 新增 `auth` 凭证写 API（Feign `CredentialApi`），供 system 调用。
 - 验收：AC-1、AC-2、AC-3。
 
-## Slice C —— 授权集中（项6）
+## Slice C —— 授权集中（项6）【已完成】
 
 - `UserDetailsService` 组合实现中经 `UserApi` 拉取权限，烘焙进 JWT claims（`JwtTokenFactory` 已支持 authorities）；session 缓存权限。
 - 验收：AC-7。
+
+### C 实现记录
+- `JwtTokenFactory.createAccessJwtToken`：新增 `authorities` claim（`securityUser.getAuthorityStrings()`，空则不写），登录时把来自 system 的角色/权限烘焙进访问令牌。
+- `JwtAuthenticationProvider.authenticate`：改为**直接从签名 claims 重建 `SecurityUser`**（含 `authorities`），移除每请求经 `userDetailsService.loadUserByUsername` 回查 system 的逻辑；tenant 状态校验（`TenantLookupApi`）仍保留（属租户治理，非用户鉴权回查）。新增 `JwtAuthenticationProviderTest.reconstructsAuthoritiesFromTokenClaims` 验证令牌中的权限在请求时被还原。
+- `JwtAuthenticationProvider` 构造器移除 `UserDetailsService` 依赖；`SecurityConfiguration` 同步调整。`RefreshTokenAuthenticationProvider` 仍保留 `userDetailsService`（刷新为低频路径，刷新后新令牌自带 `authorities`）。
+- 说明：权限一致性机制沿用既有 `sessionStore.revokeByUserId`（角色/状态变更即吊销会话，下次请求强制重新登录取得新令牌）。`LoginSession`/Redis 会话记录未冗余存储 authorities——令牌本身即为鉴权载体，符合"缓存于 session（令牌）"的意图。
+- 关联遗留编译修复（分页/`ToData` 重构在 working tree 中未完全收口，顺带补齐以保证 reactor 可编译）：`PagedResults` 恢复带 mapper 的 `page` 重载；`TenantStatus` 补 `import java.time.LocalDate`；`AuditLogRepositoryImpl` 补 `import java.util.Optional`；`TenantProfileEntity` 补 `import com.fasterxml.jackson.databind.JsonNode`；`MenuServiceImpl`/`LoginLogServiceImpl`(auth) 的 `this::toDomain` 改为 `Entity::toData`；system 各 `CredentialApi` 调用点用 `CredentialSetRequest`/`CredentialChangeRequest` 包裹；`LoginSessionControllerTest` 改用 `PageQuery`/`PagedData`。
+- 验证：`./mvnw -o test-compile`（全 reactor）BUILD SUCCESS；`rosecloud-starter-security` 测试 30 全过（含新增 authorities 还原用例）；auth `LoginSession*` 6 过、system `UserActivationServiceImplTest` 5 过。
 
 ## Slice D —— 自助服务（项7，无注册）
 

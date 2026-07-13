@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageQuery;
@@ -21,16 +22,12 @@ import java.util.List;
 /**
  * System user endpoints and Feign-facing auth hooks.
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/users")
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
-
     @PreAuthorize("hasAuthority('system:user:add')")
     @PostMapping
     public ApiResponse<Long> create(@Valid @RequestBody UserCreateRequest request) {

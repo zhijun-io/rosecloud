@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.api.user.TenantStatusView;
@@ -12,17 +13,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @InternalApi
 @RequestMapping(ServiceMetadata.API_PREFIX + "/internal/tenants")
 public class TenantInternalController implements TenantLookupApi {
 
     private final TenantService tenantService;
-
-    public TenantInternalController(TenantService tenantService) {
-        this.tenantService = tenantService;
-    }
-
     @GetMapping("/{tenantId}")
     public ApiResponse<TenantStatusView> findTenantStatus(@PathVariable String tenantId) {
         Tenant tenant = tenantService.get(tenantId);

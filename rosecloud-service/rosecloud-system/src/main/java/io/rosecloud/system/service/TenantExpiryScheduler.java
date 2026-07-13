@@ -1,4 +1,5 @@
 package io.rosecloud.system.service;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.rosecloud.system.domain.TenantStatus;
@@ -23,17 +24,13 @@ import java.time.LocalDate;
  * mutating operations even before this scheduler runs — but the scheduler closes
  * the gap between in-memory resolution and persistent state.
  */
+@RequiredArgsConstructor
 @Component
 public class TenantExpiryScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TenantExpiryScheduler.class);
 
     private final TenantMapper tenantMapper;
-
-    public TenantExpiryScheduler(TenantMapper tenantMapper) {
-        this.tenantMapper = tenantMapper;
-    }
-
     /**
      * Runs every hour at the top of the minute. Scans for tenants whose
      * {@code expireTime} is before today and whose status is still

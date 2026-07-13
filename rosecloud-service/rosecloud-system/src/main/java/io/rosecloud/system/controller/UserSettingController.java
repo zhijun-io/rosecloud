@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -16,16 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/user-settings")
 public class UserSettingController {
 
     private final UserSettingService userSettingService;
-
-    public UserSettingController(UserSettingService userSettingService) {
-        this.userSettingService = userSettingService;
-    }
-
     @PreAuthorize("isAuthenticated()")
     @GetMapping
     public ApiResponse<List<UserSetting>> listMine() {

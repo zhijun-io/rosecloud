@@ -1,4 +1,5 @@
 package io.rosecloud.starter.tenant;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.starter.tenant.async.TenantContextTaskDecorator;
 import io.rosecloud.starter.tenant.core.MultiTenantType;
@@ -28,6 +29,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * Tenant context is propagated across {@code @Async} boundaries via a
  * {@link ThreadPoolTaskExecutor} task decorator.
  */
+@RequiredArgsConstructor
 @AutoConfiguration
 @EnableConfigurationProperties(TenantProperties.class)
 public class TenantAutoConfiguration {
@@ -35,11 +37,6 @@ public class TenantAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(TenantAutoConfiguration.class);
 
     private final TenantProperties tenantProperties;
-
-    public TenantAutoConfiguration(TenantProperties tenantProperties) {
-        this.tenantProperties = tenantProperties;
-    }
-
     /** Default order of Spring Security's {@code FilterChainProxy} servlet registration. */
     private static final int SECURITY_FILTER_CHAIN_ORDER = -100;
 

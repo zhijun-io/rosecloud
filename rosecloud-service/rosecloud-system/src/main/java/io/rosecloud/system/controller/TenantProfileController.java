@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -18,16 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/tenant-profiles")
 public class TenantProfileController {
 
     private final TenantProfileService tenantProfileService;
-
-    public TenantProfileController(TenantProfileService tenantProfileService) {
-        this.tenantProfileService = tenantProfileService;
-    }
-
     @PreAuthorize("hasAuthority('system:tenant-profile:add')")
     @PostMapping
     public ApiResponse<String> create(@RequestBody TenantProfileCreateRequest request) {

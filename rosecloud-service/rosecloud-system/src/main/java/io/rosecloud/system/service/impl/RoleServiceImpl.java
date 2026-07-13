@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class RoleServiceImpl implements RoleService {
 
@@ -38,15 +40,6 @@ public class RoleServiceImpl implements RoleService {
     private final RoleMenuMapper roleMenuMapper;
     private final UserRoleMapper userRoleMapper;
     private final SessionStore sessionStore;
-
-    public RoleServiceImpl(RoleMapper roleMapper, RoleMenuMapper roleMenuMapper,
-                           UserRoleMapper userRoleMapper, SessionStore sessionStore) {
-        this.roleMapper = roleMapper;
-        this.roleMenuMapper = roleMenuMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.sessionStore = sessionStore;
-    }
-
     private static SecurityUser currentSecurityUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()

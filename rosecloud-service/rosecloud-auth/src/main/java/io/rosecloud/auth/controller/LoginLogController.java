@@ -1,4 +1,5 @@
 package io.rosecloud.auth.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -19,16 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Auth-owned login audit log: recorded internally (auth reports on login), listed by admins.
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/auth/login-logs")
 public class LoginLogController {
 
     private final LoginLogService loginLogService;
-
-    public LoginLogController(LoginLogService loginLogService) {
-        this.loginLogService = loginLogService;
-    }
-
     @PreAuthorize("hasAuthority('system:loginlog:list')")
     @GetMapping
     public ApiResponse<PagedData<LoginLog>> page(TimePageQuery pageQuery,

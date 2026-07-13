@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/noauth")
 public class NoAuthController {
@@ -35,19 +37,6 @@ public class NoAuthController {
     private final TokenFactory tokenFactory;
     private final SessionStore sessionStore;
     private final LoginLogApi loginLogApi;
-
-    public NoAuthController(UserActivationService userActivationService,
-                            UserService userService,
-                            TokenFactory tokenFactory,
-                            SessionStore sessionStore,
-                            LoginLogApi loginLogApi) {
-        this.userActivationService = userActivationService;
-        this.userService = userService;
-        this.tokenFactory = tokenFactory;
-        this.sessionStore = sessionStore;
-        this.loginLogApi = loginLogApi;
-    }
-
     @GetMapping("/activate")
     public ApiResponse<UserActivationInfo> check(@RequestParam("activateToken") String activateToken) {
         return ApiResponse.ok(userActivationService.check(activateToken));

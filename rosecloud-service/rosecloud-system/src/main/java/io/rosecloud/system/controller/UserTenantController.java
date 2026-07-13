@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.user.TenantAccessCandidate;
@@ -27,6 +28,7 @@ import java.util.Optional;
  * Guarded by {@code @InternalApi} on the consumer contract; reachable only from inside the
  * platform. Never exposed to external clients.
  */
+@RequiredArgsConstructor
 @RestController
 @InternalApi
 @RequestMapping(ServiceMetadata.API_PREFIX + "/internal/user-tenants")
@@ -35,14 +37,6 @@ public class UserTenantController {
     private final UserMapper userMapper;
     private final UserTenantMapper userTenantMapper;
     private final TenantService tenantService;
-
-    public UserTenantController(UserMapper userMapper, UserTenantMapper userTenantMapper,
-                                TenantService tenantService) {
-        this.userMapper = userMapper;
-        this.userTenantMapper = userTenantMapper;
-        this.tenantService = tenantService;
-    }
-
     @GetMapping("/{userId}/tenants")
     public ApiResponse<List<String>> listTenantIds(@PathVariable Long userId) {
         return ApiResponse.ok(resolveAccessibleTenantIds(userId));

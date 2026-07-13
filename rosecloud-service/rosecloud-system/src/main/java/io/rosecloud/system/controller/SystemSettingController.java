@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -16,16 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/system-settings")
 public class SystemSettingController {
 
     private final SystemSettingService systemSettingService;
-
-    public SystemSettingController(SystemSettingService systemSettingService) {
-        this.systemSettingService = systemSettingService;
-    }
-
     @PreAuthorize("hasAuthority('system:setting:list')")
     @GetMapping
     public ApiResponse<List<SystemSetting>> list() {

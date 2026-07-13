@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageQuery;
@@ -18,16 +19,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/setting-keys")
 public class SettingKeyController {
 
     private final SettingKeyService settingKeyService;
-
-    public SettingKeyController(SettingKeyService settingKeyService) {
-        this.settingKeyService = settingKeyService;
-    }
-
     @PreAuthorize("hasAuthority('system:setting-key:add')")
     @PostMapping
     public ApiResponse<String> create(@RequestBody SettingKeyCreateRequest request) {

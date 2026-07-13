@@ -1,4 +1,5 @@
 package io.rosecloud.auth.service;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.api.user.UserTenantApi;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class TenantSelectionService implements LoginTenantResolver {
 
@@ -40,21 +42,6 @@ public class TenantSelectionService implements LoginTenantResolver {
     private final SecurityProperties securityProperties;
     private final TenantLookupApi tenantLookupApi;
     private final AuditLogApi auditLogApi;
-
-    public TenantSelectionService(UserTenantApi userTenantApi,
-                                  StringRedisTemplate redisTemplate,
-                                  SessionStore sessionStore,
-                                  JwtTokenFactory tokenFactory,
-                                  SecurityProperties securityProperties, TenantLookupApi tenantLookupApi, AuditLogApi auditLogApi) {
-        this.userTenantApi = userTenantApi;
-        this.redisTemplate = redisTemplate;
-        this.sessionStore = sessionStore;
-        this.tokenFactory = tokenFactory;
-        this.securityProperties = securityProperties;
-        this.tenantLookupApi = tenantLookupApi;
-        this.auditLogApi = auditLogApi;
-    }
-
     public TenantSelectionResponse getSelection(SecurityUser securityUser) {
         String rememberedTenantId = loadRememberedTenant(securityUser.getUserId()).orElse(null);
         List<TenantAccessCandidate> switchableTenants = loadSwitchableTenants(securityUser);

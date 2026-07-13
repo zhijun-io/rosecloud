@@ -1,4 +1,5 @@
 package io.rosecloud.system.persistence;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.audit.AuditLogRequest;
@@ -17,15 +18,11 @@ import java.util.Optional;
 import java.util.Optional;
 
 /** Default {@link AuditLogRepository} backed by MyBatis-Plus. */
+@RequiredArgsConstructor
 @Repository
 public class AuditLogRepositoryImpl implements AuditLogRepository {
 
     private final AuditLogMapper auditLogMapper;
-
-    public AuditLogRepositoryImpl(AuditLogMapper auditLogMapper) {
-        this.auditLogMapper = auditLogMapper;
-    }
-
     @Override
     public void save(AuditLogRequest request) {
         AuditLogEntity po = new AuditLogEntity();

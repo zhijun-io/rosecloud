@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -17,15 +18,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Service
 public class DeptServiceImpl implements DeptService {
 
     private final DeptMapper deptMapper;
-
-    public DeptServiceImpl(DeptMapper deptMapper) {
-        this.deptMapper = deptMapper;
-    }
-
     @AuditLog(action = "dept-create", description = "创建部门")
     @Override
     public Long create(DeptRequest request) {

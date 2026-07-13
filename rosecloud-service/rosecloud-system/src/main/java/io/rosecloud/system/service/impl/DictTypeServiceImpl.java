@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -22,17 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class DictTypeServiceImpl implements DictTypeService {
 
     private final DictTypeMapper dictTypeMapper;
     private final DictDataMapper dictDataMapper;
-
-    public DictTypeServiceImpl(DictTypeMapper dictTypeMapper, DictDataMapper dictDataMapper) {
-        this.dictTypeMapper = dictTypeMapper;
-        this.dictDataMapper = dictDataMapper;
-    }
-
     @AuditLog(action = "dict-type-create", description = "创建字典类型")
     @Override
     public Long create(DictTypeRequest request) {

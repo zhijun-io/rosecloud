@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.PageQuery;
@@ -18,16 +19,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/dict-types")
 public class DictTypeController {
 
     private final DictTypeService dictTypeService;
-
-    public DictTypeController(DictTypeService dictTypeService) {
-        this.dictTypeService = dictTypeService;
-    }
-
     @PreAuthorize("hasAuthority('system:dict:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody DictTypeRequest request) {

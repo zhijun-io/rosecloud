@@ -1,4 +1,5 @@
 package io.rosecloud.system.controller;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -18,16 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/depts")
 public class DeptController {
 
     private final DeptService deptService;
-
-    public DeptController(DeptService deptService) {
-        this.deptService = deptService;
-    }
-
     @PreAuthorize("hasAuthority('system:dept:add')")
     @PostMapping
     public ApiResponse<Long> create(@RequestBody DeptRequest request) {

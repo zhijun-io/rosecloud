@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -18,17 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class TenantProfileServiceImpl implements TenantProfileService {
 
     private final TenantProfileMapper tenantProfileMapper;
     private final TenantMapper tenantMapper;
-
-    public TenantProfileServiceImpl(TenantProfileMapper tenantProfileMapper, TenantMapper tenantMapper) {
-        this.tenantProfileMapper = tenantProfileMapper;
-        this.tenantMapper = tenantMapper;
-    }
-
     @Transactional
     @Override
     public String create(TenantProfileCreateRequest request) {

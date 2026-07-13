@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -29,20 +30,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class TenantServiceImpl implements TenantService {
 
     private final TenantMapper tenantMapper;
     private final TenantProfileMapper tenantProfileMapper;
     private final TenantProvisioner tenantProvisioner;
-
-    public TenantServiceImpl(TenantMapper tenantMapper, TenantProfileMapper tenantProfileMapper,
-                             TenantProvisioner tenantProvisioner) {
-        this.tenantMapper = tenantMapper;
-        this.tenantProfileMapper = tenantProfileMapper;
-        this.tenantProvisioner = tenantProvisioner;
-    }
-
     @AuditLog(action = "tenant-create", description = "创建租户")
     @Override
     public String create(TenantCreateRequest request) {

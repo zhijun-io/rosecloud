@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.config;
+import lombok.RequiredArgsConstructor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.user.TenantLookupApi;
@@ -48,6 +49,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -61,14 +63,6 @@ public class SecurityConfiguration {
     private final SecurityProperties properties;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<TenantLookupApi> tenantLookupApiProvider;
-
-    public SecurityConfiguration(SecurityProperties properties, ObjectMapper objectMapper,
-                                 ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
-        this.properties = properties;
-        this.objectMapper = objectMapper;
-        this.tenantLookupApiProvider = tenantLookupApiProvider;
-    }
-
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,

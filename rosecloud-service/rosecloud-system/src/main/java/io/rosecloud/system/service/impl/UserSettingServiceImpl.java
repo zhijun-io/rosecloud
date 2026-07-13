@@ -1,4 +1,5 @@
 package io.rosecloud.system.service.impl;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -21,18 +22,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class UserSettingServiceImpl implements UserSettingService {
 
     private final UserSettingMapper userSettingMapper;
     private final SettingKeyMapper settingKeyMapper;
-
-    public UserSettingServiceImpl(UserSettingMapper userSettingMapper,
-                                 SettingKeyMapper settingKeyMapper) {
-        this.userSettingMapper = userSettingMapper;
-        this.settingKeyMapper = settingKeyMapper;
-    }
-
     @Override
     public List<UserSetting> listMine() {
         return userSettingMapper.selectList(new LambdaQueryWrapper<UserSettingEntity>()
