@@ -1,4 +1,5 @@
 package io.rosecloud.common.core.model;
+import lombok.RequiredArgsConstructor;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -11,6 +12,7 @@ import java.util.List;
  * Page result envelope, modeled on ThingsBoard's {@code PageData<T>}. Uses {@code hasNext}
  * so large tables can avoid a {@code COUNT(*)} when a cursor-style walk is enough.
  */
+@RequiredArgsConstructor
 @ToString
 @EqualsAndHashCode
 public class PagedData<T> implements Serializable {
@@ -23,14 +25,6 @@ public class PagedData<T> implements Serializable {
     private final int totalPages;
     private final long totalElements;
     private final boolean hasNext;
-
-    public PagedData(List<T> data, int totalPages, long totalElements, boolean hasNext) {
-        this.data = data;
-        this.totalPages = totalPages;
-        this.totalElements = totalElements;
-        this.hasNext = hasNext;
-    }
-
     @SuppressWarnings("unchecked")
     public static <T> PagedData<T> empty() {
         return (PagedData<T>) EMPTY;

@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.rest;
+import lombok.RequiredArgsConstructor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -18,19 +19,13 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+@RequiredArgsConstructor
 public class RestAwareAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RestAwareAuthenticationFailureHandler.class);
 
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
-
-    public RestAwareAuthenticationFailureHandler(ApplicationEventPublisher eventPublisher,
-                                                 ObjectMapper objectMapper) {
-        this.eventPublisher = eventPublisher;
-        this.objectMapper = objectMapper;
-    }
-
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException e) throws IOException {

@@ -14,6 +14,7 @@ import io.rosecloud.system.persistence.TenantMapper;
 import io.rosecloud.system.service.UserActivationService;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.service.dto.UserActivationInfo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class UserActivationServiceImpl implements UserActivationService {
 
     private static final long DEFAULT_VERSION = 1L;
@@ -34,8 +36,7 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final UserCredentialMapper userCredentialMapper;
     private final TenantMapper tenantMapper;
     private final CredentialApi credentialApi;
-    private final long activationTtlHours;
-    private final long resendCooldownSeconds;
+    private final UserActivationProperties properties;
     private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
 
     // Global (per-instance) resend ceiling as a first line of defence against email bombing
@@ -46,17 +47,6 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final Object globalLock = new Object();
     private Instant globalWindowStart = Instant.EPOCH;
     private int globalResendCount = 0;
-
-    public UserActivationServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
-                                      TenantMapper tenantMapper, CredentialApi credentialApi,
-                                      UserActivationProperties properties) {
-        this.userMapper = userMapper;
-        this.userCredentialMapper = userCredentialMapper;
-        this.tenantMapper = tenantMapper;
-        this.credentialApi = credentialApi;
-        this.activationTtlHours = properties.getActivationTtlHours();
-        this.resendCooldownSeconds = properties.getResendCooldownSeconds();
-    }
 
     @Override
     public UserActivationInfo check(String activateToken) {
@@ -98,13 +88,13 @@ public class UserActivationServiceImpl implements UserActivationService {
         }
         Instant now = Instant.now();
         Instant last = lastResendAt.get(username);
-        if (last != null && Duration.between(last, now).toSeconds() < resendCooldownSeconds) {
+        if (last != null && Duration.between(last, now).toSeconds() < properties.getResendCooldownSeconds()) {
             // Within the cooldown window: ignore the request without re-sending, mitigating email bombing.
             return;
         }
         lastResendAt.put(username, now);
         LocalDateTime sendTime = LocalDateTime.now();
-        LocalDateTime expireTime = sendTime.plusHours(activationTtlHours);
+        LocalDateTime expireTime = sendTime.plusHours(properties.getActivationTtlHours());
         String token = generateToken();
         long nextVersion = info.version() == null ? DEFAULT_VERSION : info.version() + 1;
         saveActivationToken(info.userId(), token, expireTime, sendTime, nextVersion);

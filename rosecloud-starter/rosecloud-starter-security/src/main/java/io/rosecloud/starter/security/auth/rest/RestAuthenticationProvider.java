@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.rest;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.starter.security.auth.BruteForceProtection;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.Assert;
 
+@RequiredArgsConstructor
 public class RestAuthenticationProvider implements AuthenticationProvider {
 
     private static final String BAD_CREDENTIALS = "用户名或密码错误";
@@ -19,15 +21,6 @@ public class RestAuthenticationProvider implements AuthenticationProvider {
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final BruteForceProtection bruteForce;
-
-    public RestAuthenticationProvider(UserDetailsService userDetailsService,
-                                      PasswordEncoder passwordEncoder,
-                                      BruteForceProtection bruteForce) {
-        this.userDetailsService = userDetailsService;
-        this.passwordEncoder = passwordEncoder;
-        this.bruteForce = bruteForce;
-    }
-
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         Assert.notNull(authentication, "No authentication data provided");

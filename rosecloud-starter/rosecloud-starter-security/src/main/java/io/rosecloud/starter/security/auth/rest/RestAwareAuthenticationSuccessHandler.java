@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.rest;
+import lombok.RequiredArgsConstructor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.security.event.LoginSucceededEvent;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 public class RestAwareAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenFactory tokenFactory;
@@ -31,23 +33,6 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
     private final LoginTenantResolver loginTenantResolver;
     private final long refreshTokenExpirationSeconds;
     private final boolean tokenBindingEnabled;
-
-    public RestAwareAuthenticationSuccessHandler(JwtTokenFactory tokenFactory,
-                                                  SessionStore sessionStore,
-                                                  ApplicationEventPublisher eventPublisher,
-                                                  ObjectMapper objectMapper,
-                                                  LoginTenantResolver loginTenantResolver,
-                                                  long refreshTokenExpirationSeconds,
-                                                  boolean tokenBindingEnabled) {
-        this.tokenFactory = tokenFactory;
-        this.sessionStore = sessionStore;
-        this.eventPublisher = eventPublisher;
-        this.objectMapper = objectMapper;
-        this.loginTenantResolver = loginTenantResolver;
-        this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
-        this.tokenBindingEnabled = tokenBindingEnabled;
-    }
-
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {

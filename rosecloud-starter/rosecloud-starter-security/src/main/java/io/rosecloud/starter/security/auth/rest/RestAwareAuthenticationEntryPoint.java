@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.rest;
+import lombok.RequiredArgsConstructor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -12,14 +13,10 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+@RequiredArgsConstructor
 public class RestAwareAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
-
-    public RestAwareAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException {

@@ -1,4 +1,5 @@
 package io.rosecloud.starter.audit;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.security.model.SecurityUser;
@@ -21,17 +22,13 @@ import java.time.LocalDateTime;
  * Around-advises {@link AuditLog} methods, timing them and publishing an
  * {@link AuditLogRequest} regardless of outcome.
  */
+@RequiredArgsConstructor
 @Aspect
 public class AuditLogAspect {
 
     private static final ExpressionParser SPEL = new SpelExpressionParser();
 
     private final ApplicationEventPublisher publisher;
-
-    public AuditLogAspect(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
-    }
-
     @Around("@annotation(auditLog)")
     public Object around(ProceedingJoinPoint pjp, AuditLog auditLog) throws Throwable {
         long start = System.currentTimeMillis();

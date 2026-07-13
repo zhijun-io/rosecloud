@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.web;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.user.TenantLookupApi;
 import io.rosecloud.api.user.TenantStatusView;
@@ -30,6 +31,7 @@ import java.util.Set;
  * {@link SecurityUser} principal (e.g. internal {@code ROLE_INTERNAL} machine calls,
  * unauthenticated traffic) fall through to the normal security chain.
  */
+@RequiredArgsConstructor
 public class TenantWriteGuardFilter extends OncePerRequestFilter {
 
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
@@ -38,12 +40,6 @@ public class TenantWriteGuardFilter extends OncePerRequestFilter {
 
     private final ObjectProvider<TenantLookupApi> tenantLookupApiProvider;
     private final boolean failClosed;
-
-    public TenantWriteGuardFilter(ObjectProvider<TenantLookupApi> tenantLookupApiProvider, boolean failClosed) {
-        this.tenantLookupApiProvider = tenantLookupApiProvider;
-        this.failClosed = failClosed;
-    }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

@@ -1,4 +1,5 @@
 package io.rosecloud.starter.audit;
+import lombok.RequiredArgsConstructor;
 
 import io.rosecloud.api.audit.AuditLogRequest;
 import org.slf4j.Logger;
@@ -8,15 +9,11 @@ import org.springframework.scheduling.annotation.Async;
 
 import java.util.function.Consumer;
 
+@RequiredArgsConstructor
 public class AuditLogListener {
     private static final Logger log = LoggerFactory.getLogger(AuditLogListener.class);
 
     private final Consumer<AuditLogRequest> consumer;
-
-    public AuditLogListener(Consumer<AuditLogRequest> consumer) {
-        this.consumer = consumer;
-    }
-
     @Async("auditLogExecutor")
     @EventListener(AuditLogRequest.class)
     public void saveLog(AuditLogRequest event) {

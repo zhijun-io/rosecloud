@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.jwt;
+import lombok.RequiredArgsConstructor;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -17,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.Locale;
 
+@RequiredArgsConstructor
 public class RefreshTokenAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
@@ -24,19 +26,6 @@ public class RefreshTokenAuthenticationProvider implements AuthenticationProvide
     private final UserDetailsService userDetailsService;
     private final TenantLookupApi tenantLookupApi;
     private final BruteForceProtection bruteForce;
-
-    public RefreshTokenAuthenticationProvider(JwtTokenFactory tokenFactory,
-                                              SessionStore sessionStore,
-                                              UserDetailsService userDetailsService,
-                                              TenantLookupApi tenantLookupApi,
-                                              BruteForceProtection bruteForce) {
-        this.tokenFactory = tokenFactory;
-        this.sessionStore = sessionStore;
-        this.userDetailsService = userDetailsService;
-        this.tenantLookupApi = tenantLookupApi;
-        this.bruteForce = bruteForce;
-    }
-
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         RawAccessJwtToken rawAccessToken = (RawAccessJwtToken) authentication.getCredentials();

@@ -1,4 +1,5 @@
 package io.rosecloud.starter.tenant.mybatis;
+import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import io.rosecloud.starter.tenant.core.MultiTenantType;
@@ -14,14 +15,10 @@ import net.sf.jsqlparser.expression.StringValue;
  * Tables without a {@code tenant_id} column must be listed in
  * {@code rosecloud.tenant.ignore-tables}.
  */
+@RequiredArgsConstructor
 public class RoseCloudTenantLineHandler implements TenantLineHandler {
 
     private final TenantProperties properties;
-
-    public RoseCloudTenantLineHandler(TenantProperties properties) {
-        this.properties = properties;
-    }
-
     @Override
     public Expression getTenantId() {
         if (properties.getType() == MultiTenantType.NONE) {

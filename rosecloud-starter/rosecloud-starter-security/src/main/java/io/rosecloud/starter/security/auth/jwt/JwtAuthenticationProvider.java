@@ -1,4 +1,5 @@
 package io.rosecloud.starter.security.auth.jwt;
+import lombok.RequiredArgsConstructor;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -17,19 +18,12 @@ import org.springframework.security.core.AuthenticationException;
 import java.util.List;
 import java.util.Locale;
 
+@RequiredArgsConstructor
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
     private final TenantLookupApi tenantLookupApi;
-
-    public JwtAuthenticationProvider(JwtTokenFactory tokenFactory, SessionStore sessionStore,
-                                     TenantLookupApi tenantLookupApi) {
-        this.tokenFactory = tokenFactory;
-        this.sessionStore = sessionStore;
-        this.tenantLookupApi = tenantLookupApi;
-    }
-
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         RawAccessJwtToken rawAccessToken = (RawAccessJwtToken) authentication.getCredentials();
