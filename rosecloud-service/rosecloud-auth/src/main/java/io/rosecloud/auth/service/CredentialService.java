@@ -1,4 +1,5 @@
 package io.rosecloud.auth.service;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -31,7 +32,8 @@ public class CredentialService {
         return Optional.ofNullable(credentialMapper.selectOne(byUserId(userId))).map(this::toModel);
     }
 
-    public void setPassword(Long userId, String rawPassword) {
+     @Transactional(rollbackFor = Exception.class)
+     public void setPassword(Long userId, String rawPassword) {
         PasswordPolicyValidator.validate(rawPassword);
         String hash = passwordEncoder.encode(rawPassword);
         CredentialEntity existing = credentialMapper.selectOne(byUserId(userId));
@@ -50,7 +52,8 @@ public class CredentialService {
         }
     }
 
-    public void changePassword(Long userId, String currentPassword, String newPassword) {
+     @Transactional(rollbackFor = Exception.class)
+     public void changePassword(Long userId, String currentPassword, String newPassword) {
         AuthCredential credential = findByUserId(userId)
                 .orElseThrow(() -> new BizException(SecurityErrorCode.BAD_CREDENTIALS));
         if (credential.passwordHash() == null

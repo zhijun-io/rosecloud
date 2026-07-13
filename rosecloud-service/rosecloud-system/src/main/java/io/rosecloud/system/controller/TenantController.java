@@ -6,7 +6,6 @@ import io.rosecloud.common.core.model.PageQuery;
 import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.Tenant;
-import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
 
     private final TenantService tenantService;
-    private final AuditLogService auditLogService;
     @PreAuthorize("hasAuthority('system:tenant:add')")
     @PostMapping
     public ApiResponse<String> create(@Valid @RequestBody TenantCreateRequest request) {

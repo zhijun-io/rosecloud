@@ -1,4 +1,4 @@
-package io.rosecloud.api.user;
+package io.rosecloud.common.security.user;
 
 public record TenantStatusView(
         String tenantId,

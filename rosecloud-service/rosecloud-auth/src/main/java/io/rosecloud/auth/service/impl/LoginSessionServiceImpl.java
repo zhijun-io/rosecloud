@@ -1,4 +1,5 @@
 package io.rosecloud.auth.service.impl;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.auth.persistence.LoginSessionEntity;
@@ -31,23 +32,27 @@ public class LoginSessionServiceImpl implements LoginSessionService {
     private int maxConcurrentSessions;
 
     @Override
-    public void save(LoginSession session) {
+     @Transactional(rollbackFor = Exception.class)
+     public void save(LoginSession session) {
         enforceConcurrentLimit(session.userId());
         persistToDb(session);
     }
 
     @Override
-    public void revoke(String token) {
+     @Transactional(rollbackFor = Exception.class)
+     public void revoke(String token) {
         markRevokedByTokenInDb(token);
     }
 
     @Override
-    public void revokeBySessionId(String sessionId) {
+     @Transactional(rollbackFor = Exception.class)
+     public void revokeBySessionId(String sessionId) {
         markRevokedBySessionIdInDb(sessionId);
     }
 
     @Override
-    public void revokeByUserId(Long userId) {
+     @Transactional(rollbackFor = Exception.class)
+     public void revokeByUserId(Long userId) {
         markRevokedByUserIdInDb(userId);
     }
 

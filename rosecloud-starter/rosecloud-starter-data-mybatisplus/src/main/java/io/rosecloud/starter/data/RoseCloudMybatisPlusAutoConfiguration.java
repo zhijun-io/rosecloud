@@ -22,19 +22,17 @@ import java.util.List;
  */
 @AutoConfiguration
 @ConditionalOnClass(MybatisPlusInterceptor.class)
-@EnableConfigurationProperties(RoseCloudDataProperties.class)
 public class RoseCloudMybatisPlusAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(MybatisPlusInterceptor.class)
-    public MybatisPlusInterceptor mybatisPlusInterceptor(List<InnerInterceptor> innerInterceptors,
-            RoseCloudDataProperties dataProperties) {
+    public MybatisPlusInterceptor mybatisPlusInterceptor(List<InnerInterceptor> innerInterceptors) {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         for (InnerInterceptor inner : innerInterceptors) {
             interceptor.addInnerInterceptor(inner);
         }
-        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.getDbType(dataProperties.getDbType()));
-        pagination.setMaxLimit(dataProperties.getMaxPageSize());
+        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.MYSQL);
+        pagination.setMaxLimit(100L);
         interceptor.addInnerInterceptor(pagination);
         return interceptor;
     }

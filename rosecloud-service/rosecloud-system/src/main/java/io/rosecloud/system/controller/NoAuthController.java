@@ -1,22 +1,15 @@
 package io.rosecloud.system.controller;
 import lombok.RequiredArgsConstructor;
 
-import io.rosecloud.api.log.LoginLogApi;
-import io.rosecloud.api.log.LoginLogRequest;
-import io.rosecloud.system.service.dto.ActivationConfirmRequest;
-import io.rosecloud.system.service.dto.ActivationResendRequest;
-import io.rosecloud.system.service.dto.UserActivationInfo;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.common.security.model.LoginSession;
-import io.rosecloud.common.security.model.SecurityUser;
-import io.rosecloud.starter.security.session.LoginSessionApi;
-import io.rosecloud.common.security.token.JwtPair;
-import io.rosecloud.common.security.token.TokenFactory;
-import io.rosecloud.system.service.UserActivationService;
-import io.rosecloud.system.service.UserService;
+import io.rosecloud.starter.security.util.SecurityUtils;
+import io.rosecloud.system.service.NoAuthService;
+import io.rosecloud.system.service.dto.ActivationConfirmRequest;
+import io.rosecloud.system.service.dto.ActivationResendRequest;
+import io.rosecloud.system.service.dto.ActivationResult;
+import io.rosecloud.system.service.dto.UserActivationInfo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,74 +17,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(ServiceMetadata.API_PREFIX + "/noauth")
 public class NoAuthController {
 
-    private final UserActivationService userActivationService;
-    private final UserService userService;
-    private final TokenFactory tokenFactory;
-    private final LoginSessionApi loginSessionApi;
-    private final LoginLogApi loginLogApi;
+    private final NoAuthService noAuthService;
+
     @GetMapping("/activate")
     public ApiResponse<UserActivationInfo> check(@RequestParam("activateToken") String activateToken) {
-        return ApiResponse.ok(userActivationService.check(activateToken));
+        return ApiResponse.ok(noAuthService.check(activateToken));
     }
 
     @PostMapping("/activate")
-    public ApiResponse<LoginTokenPairResponse> activate(@RequestBody ActivationConfirmRequest request,
-                                                        HttpServletRequest http) {
-        UserActivationInfo info = userActivationService.confirm(request.activateToken(), request.password());
-        SecurityUser securityUser = userService.loadByUsername(info.username());
-        JwtPair tokenPair = tokenFactory.createTokenPair(securityUser);
-
-        String ip = resolveIp(http);
-        String userAgent = http.getHeader(HttpHeaders.USER_AGENT);
-        Instant now = Instant.now();
-        Instant expireAt = now.plusSeconds(tokenFactory.getAccessTokenExpirationSeconds());
-        loginSessionApi.save(new LoginSession(
-                UUID.randomUUID().toString(),
-                tokenPair.accessToken(),
-                tokenPair.refreshToken(),
-                securityUser.getUserId(),
-                securityUser.getUsername(),
-                securityUser.getNickname(),
-                ip,
-                truncate(userAgent, 512),
-                now,
-                expireAt));
-        loginLogApi.record(new LoginLogRequest(securityUser.getUsername(), true, null, ip, truncate(userAgent, 512)));
-
-        LoginTokenPairResponse tokenResponse = new LoginTokenPairResponse(
-                tokenPair.accessToken(),
-                tokenPair.refreshToken(),
-                tokenFactory.getAccessTokenExpirationSeconds());
-
-        return ApiResponse.ok(tokenResponse);
+    public ApiResponse<ActivationResult> activate(@RequestBody ActivationConfirmRequest request,
+                                                  HttpServletRequest http) {
+        String ip = SecurityUtils.getClientIp(http);
+        String userAgent = SecurityUtils.getUserAgent(http);
+        ActivationResult result = noAuthService.activate(request.activateToken(), request.password(), ip, userAgent);
+        return ApiResponse.ok(result);
     }
 
     @PostMapping("/activate/resend")
     public ApiResponse<Void> resend(@RequestBody ActivationResendRequest request) {
-        userActivationService.resend(request.username());
+        noAuthService.resend(request.username());
         return ApiResponse.ok();
-    }
-
-    private static String resolveIp(HttpServletRequest request) {
-        String xf = request.getHeader("X-Forwarded-For");
-        if (xf != null && !xf.isBlank()) {
-            return xf.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
-
-    private static String truncate(String value, int max) {
-        return value != null && value.length() > max ? value.substring(0, max) : value;
-    }
-
-    private record LoginTokenPairResponse(String token, String refreshToken, long expiresIn) {
     }
 }

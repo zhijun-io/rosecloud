@@ -1,7 +1,7 @@
 package io.rosecloud.starter.security.config;
 import lombok.RequiredArgsConstructor;
 
-import io.rosecloud.api.user.TenantLookupApi;
+ import io.rosecloud.common.security.user.TenantLookupApi;
 import io.rosecloud.starter.security.web.TenantWriteGuardFilter;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.starter.security.session.LoginSessionApi;
@@ -20,8 +20,10 @@ import io.rosecloud.starter.security.auth.rest.RestLoginProcessingFilter;
 import io.rosecloud.starter.security.context.LogoutProcessingFilter;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+ import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+ import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -116,20 +118,22 @@ public class SecurityConfiguration {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public RestAwareAuthenticationSuccessHandler restAwareAuthenticationSuccessHandler(
-            JwtTokenFactory jwtTokenFactory, LoginSessionApi loginSessionApi,
-            ApplicationEventPublisher eventPublisher,
-            ObjectProvider<LoginTenantResolver> loginTenantResolver) {
-        return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, loginSessionApi, eventPublisher,
-                loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds(),
-                properties.getTokenBinding().isEnabled());
-    }
+     @Bean
+     @ConditionalOnMissingBean(AuthenticationSuccessHandler.class)
+     public AuthenticationSuccessHandler restAwareAuthenticationSuccessHandler(
+             JwtTokenFactory jwtTokenFactory, LoginSessionApi loginSessionApi,
+             ApplicationEventPublisher eventPublisher,
+             ObjectProvider<LoginTenantResolver> loginTenantResolver) {
+         return new RestAwareAuthenticationSuccessHandler(jwtTokenFactory, loginSessionApi, eventPublisher,
+                 loginTenantResolver.getIfAvailable(), properties.getRefreshTokenExpirationSeconds(),
+                 properties.getTokenBinding().isEnabled());
+     }
 
-    @Bean
-    public RestAwareAuthenticationFailureHandler restAwareAuthenticationFailureHandler(ApplicationEventPublisher eventPublisher) {
-        return new RestAwareAuthenticationFailureHandler(eventPublisher);
-    }
+     @Bean
+     @ConditionalOnMissingBean(AuthenticationFailureHandler.class)
+     public AuthenticationFailureHandler restAwareAuthenticationFailureHandler(ApplicationEventPublisher eventPublisher) {
+         return new RestAwareAuthenticationFailureHandler(eventPublisher);
+     }
 
     @Bean
     public RestAwareAuthenticationEntryPoint restAwareAuthenticationEntryPoint() {

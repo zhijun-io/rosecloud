@@ -1,7 +1,7 @@
-package io.rosecloud.system.controller;
+package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.rosecloud.common.core.model.ApiResponse;
+import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.persistence.UserEntity;
@@ -16,14 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UserTenantControllerTest {
+class UserTenantServiceImplTest {
 
     @Mock
     UserMapper userMapper;
@@ -50,10 +49,9 @@ class UserTenantControllerTest {
         when(tenantService.get("TENANT1")).thenReturn(tenant("TENANT1", "Tenant 1", TenantStatus.ENABLED));
         when(tenantService.get("TENANT2")).thenReturn(tenant("TENANT2", "Tenant 2", TenantStatus.DISABLED));
 
-        UserTenantController controller =
-                new UserTenantController(userMapper, userTenantMapper, tenantService);
+        UserTenantServiceImpl service = new UserTenantServiceImpl(userMapper, userTenantMapper, tenantService);
 
-        var response = controller.listTenantCandidates(1L).data();
+        List<TenantAccessCandidate> response = service.listTenantCandidates(1L);
 
         assertEquals(2, response.size());
         assertEquals("TENANT1", response.get(0).tenantId());

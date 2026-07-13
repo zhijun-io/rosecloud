@@ -7,6 +7,7 @@ import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.JwtPair;
 import io.rosecloud.starter.security.token.BearerTokenExtractor;
+import io.rosecloud.starter.security.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TenantSelectionController {
 
     private final TenantSelectionService tenantSelectionService;
-    private final BearerTokenExtractor tokenExtractor = new BearerTokenExtractor();
+     private final BearerTokenExtractor tokenExtractor;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -38,8 +39,8 @@ public class TenantSelectionController {
                                              HttpServletRequest request) {
         SecurityUser securityUser = currentUser(authentication);
         String currentToken = tokenExtractor.extract(request);
-        String clientIp = request.getRemoteAddr();
-        String userAgent = request.getHeader("User-Agent");
+         String clientIp = SecurityUtils.getClientIp(request);
+         String userAgent = SecurityUtils.getUserAgent(request);
         return ApiResponse.ok(tenantSelectionService.switchTenant(
                 securityUser, currentToken, tenantId, clientIp, userAgent));
     }
@@ -51,8 +52,8 @@ public class TenantSelectionController {
                                              HttpServletRequest request) {
         SecurityUser securityUser = currentUser(authentication);
         String currentToken = tokenExtractor.extract(request);
-        String clientIp = request.getRemoteAddr();
-        String userAgent = request.getHeader("User-Agent");
+         String clientIp = SecurityUtils.getClientIp(request);
+         String userAgent = SecurityUtils.getUserAgent(request);
         return ApiResponse.ok(tenantSelectionService.impersonate(
                 securityUser, currentToken, tenantId, clientIp, userAgent));
     }

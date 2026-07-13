@@ -1,8 +1,8 @@
 package io.rosecloud.starter.security.web;
 import lombok.RequiredArgsConstructor;
 
-import io.rosecloud.api.user.TenantLookupApi;
-import io.rosecloud.api.user.TenantStatusView;
+ import io.rosecloud.common.security.user.TenantLookupApi;
+ import io.rosecloud.common.security.user.TenantStatusView;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;

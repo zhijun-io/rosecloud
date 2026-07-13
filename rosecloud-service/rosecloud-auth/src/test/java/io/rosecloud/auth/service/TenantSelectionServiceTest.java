@@ -2,7 +2,7 @@ package io.rosecloud.auth.service;
 
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.api.user.UserTenantApi;
-import io.rosecloud.api.user.TenantLookupApi;
+import io.rosecloud.common.security.user.TenantLookupApi;
 import io.rosecloud.api.audit.AuditLogApi;
 import io.rosecloud.auth.service.dto.TenantSelectionResponse;
 import io.rosecloud.common.core.model.ApiResponse;
@@ -115,7 +115,7 @@ class TenantSelectionServiceTest {
     void impersonateCreatesTokenForEnabledTenant() {
         SecurityUser admin = systemAdmin();
         when(tenantLookupApi.findTenantStatus("TENANT-B")).thenReturn(ApiResponse.ok(
-                new io.rosecloud.api.user.TenantStatusView("TENANT-B", "ENABLED")));
+                new io.rosecloud.common.security.user.TenantStatusView("TENANT-B", "ENABLED")));
         when(tokenFactory.createTokenPair(any(SecurityUser.class), eq("TENANT-B")))
                 .thenReturn(new JwtPair("imp-access", "imp-refresh"));
 
@@ -130,7 +130,7 @@ class TenantSelectionServiceTest {
     void impersonateCreatesTokenForExpiredTenant() {
         SecurityUser admin = systemAdmin();
         when(tenantLookupApi.findTenantStatus("TENANT-C")).thenReturn(ApiResponse.ok(
-                new io.rosecloud.api.user.TenantStatusView("TENANT-C", "EXPIRED")));
+                new io.rosecloud.common.security.user.TenantStatusView("TENANT-C", "EXPIRED")));
         when(tokenFactory.createTokenPair(any(SecurityUser.class), eq("TENANT-C")))
                 .thenReturn(new JwtPair("imp-access-c", "imp-refresh-c"));
 
@@ -144,7 +144,7 @@ class TenantSelectionServiceTest {
     void impersonateRejectsPendingTenant() {
         SecurityUser admin = systemAdmin();
         when(tenantLookupApi.findTenantStatus("TENANT-D")).thenReturn(ApiResponse.ok(
-                new io.rosecloud.api.user.TenantStatusView("TENANT-D", "PENDING")));
+                new io.rosecloud.common.security.user.TenantStatusView("TENANT-D", "PENDING")));
 
         assertThrows(io.rosecloud.common.core.error.BizException.class,
                 () -> service().impersonate(admin, "admin-token", "tenant-d", "10.0.0.1", "AdminUI"));
@@ -154,7 +154,7 @@ class TenantSelectionServiceTest {
     void impersonateRejectsDisabledTenant() {
         SecurityUser admin = systemAdmin();
         when(tenantLookupApi.findTenantStatus("TENANT-E")).thenReturn(ApiResponse.ok(
-                new io.rosecloud.api.user.TenantStatusView("TENANT-E", "DISABLED")));
+                new io.rosecloud.common.security.user.TenantStatusView("TENANT-E", "DISABLED")));
 
         assertThrows(io.rosecloud.common.core.error.BizException.class,
                 () -> service().impersonate(admin, "admin-token", "tenant-e", "10.0.0.1", "AdminUI"));

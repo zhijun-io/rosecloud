@@ -1,7 +1,7 @@
 package io.rosecloud.starter.security.auth.jwt;
 
-import io.rosecloud.api.user.TenantLookupApi;
-import io.rosecloud.api.user.TenantStatusView;
+ import io.rosecloud.common.security.user.TenantLookupApi;
+ import io.rosecloud.common.security.user.TenantStatusView;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
@@ -16,7 +16,7 @@ import io.rosecloud.starter.tenant.core.TenantContextHolder;
  *
  * <p>The lookup is skipped for the system tenant and when no
  * {@link TenantLookupApi} bean is available (non-auth services that do not
- * enable Feign scanning for {@code io.rosecloud.api}).
+ * enable Feign scanning for the API package).
  */
 final class TenantStatusChecks {
 

@@ -8,7 +8,6 @@ import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantProfileData;
 import io.rosecloud.system.domain.TenantStatus;
-import io.rosecloud.system.service.AuditLogService;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
@@ -42,13 +41,11 @@ class TenantControllerTest {
 
     @Mock
     TenantService tenantService;
-    @Mock
-    AuditLogService auditLogService;
 
     @BeforeEach
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
-        mockMvc = MockMvcBuilders.standaloneSetup(new TenantController(tenantService, auditLogService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TenantController(tenantService))
                 .setCustomArgumentResolvers(new PageQueryArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .build();

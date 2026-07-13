@@ -3,7 +3,7 @@ import lombok.RequiredArgsConstructor;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import io.rosecloud.api.user.TenantLookupApi;
+ import io.rosecloud.common.security.user.TenantLookupApi;
 import io.rosecloud.common.security.exception.JwtExpiredTokenException;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.token.RawAccessJwtToken;

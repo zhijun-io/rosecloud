@@ -1,4 +1,6 @@
 package io.rosecloud.auth.service.impl;
+import org.springframework.transaction.annotation.Transactional;
+
 import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -15,6 +17,7 @@ import io.rosecloud.common.core.model.TimePageQuery;
 import io.rosecloud.starter.data.PagedResults;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +27,9 @@ import java.time.LocalDateTime;
 public class LoginLogServiceImpl implements LoginLogService, LoginLogApi {
 
     private final LoginLogMapper loginLogMapper;
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void record(LoginLogRequest request) {
         LoginLogEntity po = new LoginLogEntity();
         po.setUsername(request.username());

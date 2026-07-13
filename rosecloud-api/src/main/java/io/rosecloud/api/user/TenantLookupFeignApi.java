@@ -1,6 +1,8 @@
 package io.rosecloud.api.user;
 
 import io.rosecloud.common.core.model.ApiResponse;
+import io.rosecloud.common.security.user.TenantLookupApi;
+import io.rosecloud.common.security.user.TenantStatusView;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
