@@ -11,6 +11,8 @@ import io.rosecloud.system.persistence.UserCredentialEntity;
 import io.rosecloud.system.persistence.UserCredentialMapper;
 import io.rosecloud.system.persistence.UserEntity;
 import io.rosecloud.system.persistence.UserMapper;
+import io.rosecloud.system.persistence.TenantEntity;
+import io.rosecloud.system.persistence.TenantMapper;
 import io.rosecloud.system.service.UserActivationService;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.service.dto.UserActivationInfo;
@@ -37,6 +39,7 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final UserCredentialMapper userCredentialMapper;
     private final PasswordEncoder passwordEncoder;
     private final NoticePublishApi noticePublishApi;
+    private final TenantMapper tenantMapper;
     private final long activationTtlHours;
     private final String activationLinkBaseUrl;
     private final long resendCooldownSeconds;
@@ -53,11 +56,12 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     public UserActivationServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
                                      PasswordEncoder passwordEncoder, NoticePublishApi noticePublishApi,
-                                     UserActivationProperties properties) {
+                                     TenantMapper tenantMapper, UserActivationProperties properties) {
         this.userMapper = userMapper;
         this.userCredentialMapper = userCredentialMapper;
         this.passwordEncoder = passwordEncoder;
         this.noticePublishApi = noticePublishApi;
+        this.tenantMapper = tenantMapper;
         this.activationTtlHours = properties.getActivationTtlHours();
         this.activationLinkBaseUrl = properties.getActivationLinkBaseUrl();
         this.resendCooldownSeconds = properties.getResendCooldownSeconds();
@@ -206,7 +210,32 @@ public class UserActivationServiceImpl implements UserActivationService {
         if (user != null) {
             user.setStatus(1);
             userMapper.updateById(user);
+            activateFirstAdminTenant(user);
         }
+    }
+
+    /**
+     * If the activated user is the first admin of a PENDING tenant, transition
+     * the tenant to ENABLED.  This satisfies the PRD requirement that a tenant
+     * stays PENDING until the first admin completes activation.
+     */
+    private void activateFirstAdminTenant(UserEntity user) {
+        String loginName = loginName(user);
+        if (loginName == null) {
+            return;
+        }
+        TenantEntity tenant = tenantMapper.selectById(user.getTenantId());
+        if (tenant == null || tenant.getAdminUsername() == null) {
+            return;
+        }
+        if (!tenant.getAdminUsername().equals(loginName)) {
+            return;
+        }
+        if (tenant.getStatus() == null || tenant.getStatus() != 0) {
+            return;
+        }
+        tenant.setStatus(1);
+        tenantMapper.updateById(tenant);
     }
 
     private void saveActivationToken(Long userId, String activateToken, LocalDateTime expireTime,

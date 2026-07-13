@@ -87,7 +87,6 @@ class TenantProvisionerTest {
         verify(userService).createWithoutPassword("admin", "admin", "TENANT2");
         verify(userService).assignRoles(88L, List.of(7L));
         verify(userActivationService).resend("admin");
-        verify(tenantMapper).update(any(), any());
         ArgumentCaptor<NoticePublishRequest> noticeCaptor = ArgumentCaptor.forClass(NoticePublishRequest.class);
         verify(noticePublishApi).publish(noticeCaptor.capture());
         assertEquals(NoticeTargetType.TENANT.code(), noticeCaptor.getValue().targetType());

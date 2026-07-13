@@ -65,9 +65,6 @@ public class TenantProvisioner {
         Long userId = userService.createWithoutPassword(adminUsername, adminUsername, tenantId);
         userService.assignRoles(userId, List.of(tenantAdminRole.getId()));
         userActivationService.resend(adminUsername);
-        tenantMapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
-                .eq(TenantEntity::getId, tenantId)
-                .set(TenantEntity::getStatus, TenantStatus.ENABLED.code()));
         publishTenantNotice(tenantId, "租户已开通", "租户已完成开通，首个管理员账号已初始化。");
     }
 
