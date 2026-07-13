@@ -1,11 +1,7 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.rosecloud.api.notice.NoticePublishApi;
-import io.rosecloud.api.notice.NoticePublishRequest;
-import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.UserCredentialEntity;
 import io.rosecloud.system.persistence.UserCredentialMapper;
@@ -24,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,10 +33,8 @@ public class UserActivationServiceImpl implements UserActivationService {
     private final UserMapper userMapper;
     private final UserCredentialMapper userCredentialMapper;
     private final PasswordEncoder passwordEncoder;
-    private final NoticePublishApi noticePublishApi;
     private final TenantMapper tenantMapper;
     private final long activationTtlHours;
-    private final String activationLinkBaseUrl;
     private final long resendCooldownSeconds;
     private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
 
@@ -55,15 +48,13 @@ public class UserActivationServiceImpl implements UserActivationService {
     private int globalResendCount = 0;
 
     public UserActivationServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
-                                     PasswordEncoder passwordEncoder, NoticePublishApi noticePublishApi,
+                                     PasswordEncoder passwordEncoder,
                                      TenantMapper tenantMapper, UserActivationProperties properties) {
         this.userMapper = userMapper;
         this.userCredentialMapper = userCredentialMapper;
         this.passwordEncoder = passwordEncoder;
-        this.noticePublishApi = noticePublishApi;
         this.tenantMapper = tenantMapper;
         this.activationTtlHours = properties.getActivationTtlHours();
-        this.activationLinkBaseUrl = properties.getActivationLinkBaseUrl();
         this.resendCooldownSeconds = properties.getResendCooldownSeconds();
     }
 
@@ -115,10 +106,6 @@ public class UserActivationServiceImpl implements UserActivationService {
         String token = generateToken();
         long nextVersion = info.version() == null ? DEFAULT_VERSION : info.version() + 1;
         saveActivationToken(info.userId(), token, expireTime, sendTime, nextVersion);
-        UserActivationInfo updated = findActivationByToken(token).orElse(null);
-        if (updated != null) {
-            publishActivationNotice(updated);
-        }
     }
 
     private String generateToken() {
@@ -138,29 +125,6 @@ public class UserActivationServiceImpl implements UserActivationService {
             globalResendCount++;
             return true;
         }
-    }
-
-    private void publishActivationNotice(UserActivationInfo info) {
-        String link = activationLink(info.activateToken());
-        String content = "请使用以下激活链接完成首次登录并设置密码：\n" + link;
-        try {
-            noticePublishApi.publish(new NoticePublishRequest("租户管理员激活", content,
-                    NoticeTargetType.USER.code(), null, null, info.username(),
-                    null, LocalDateTime.now(), null, null, false, 2 | 4, List.of()));
-        } catch (Exception ignored) {
-            // best effort: token generation and persistence are the source of truth
-        }
-    }
-
-    private String activationLink(String token) {
-        String path = ServiceMetadata.API_PREFIX + "/noauth/activate?activateToken=" + token;
-        if (activationLinkBaseUrl == null || activationLinkBaseUrl.isBlank()) {
-            return path;
-        }
-        String base = activationLinkBaseUrl.endsWith("/")
-                ? activationLinkBaseUrl.substring(0, activationLinkBaseUrl.length() - 1)
-                : activationLinkBaseUrl;
-        return base + path;
     }
 
     private Optional<UserActivationInfo> findActivationByToken(String activateToken) {

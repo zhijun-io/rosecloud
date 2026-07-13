@@ -1,8 +1,5 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.api.notice.NoticePublishApi;
-import io.rosecloud.api.notice.NoticePublishRequest;
-import io.rosecloud.api.notice.NoticeTargetType;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.domain.TenantStatus;
@@ -19,7 +16,6 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,18 +50,14 @@ class TenantProvisionerTest {
     UserService userService;
     @Mock
     UserActivationService userActivationService;
-    @Mock
-    NoticePublishApi noticePublishApi;
 
     private TenantProvisioner service() {
-        return new TenantProvisioner(tenantMapper, roleMapper, userService, userActivationService,
-                noticePublishApi);
+        return new TenantProvisioner(tenantMapper, roleMapper, userService, userActivationService);
     }
 
     @Test
     void provisionEnablesTenantWithoutAdminUsername() {
         when(tenantMapper.selectById("TENANT1")).thenReturn(withAdmin("TENANT1", " "));
-        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
         service().provision("TENANT1");
 
@@ -80,19 +72,12 @@ class TenantProvisionerTest {
         when(roleMapper.selectOne(any())).thenReturn(role(7L, "tenant-admin", "Tenant admin"));
         when(userService.createWithoutPassword("admin", "admin", "TENANT2")).thenReturn(88L);
         doNothing().when(userActivationService).resend("admin");
-        when(noticePublishApi.publish(any(NoticePublishRequest.class))).thenReturn(1L);
 
         service().provision("TENANT2");
 
         verify(userService).createWithoutPassword("admin", "admin", "TENANT2");
         verify(userService).assignRoles(88L, List.of(7L));
         verify(userActivationService).resend("admin");
-        ArgumentCaptor<NoticePublishRequest> noticeCaptor = ArgumentCaptor.forClass(NoticePublishRequest.class);
-        verify(noticePublishApi).publish(noticeCaptor.capture());
-        assertEquals(NoticeTargetType.TENANT.code(), noticeCaptor.getValue().targetType());
-        assertEquals("TENANT2", noticeCaptor.getValue().targetTenantId());
-        assertEquals(null, noticeCaptor.getValue().targetRoleCode());
-        assertEquals(null, noticeCaptor.getValue().targetUsername());
     }
 
     @Test

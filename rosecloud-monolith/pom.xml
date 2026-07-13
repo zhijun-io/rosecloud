@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>rosecloud-monolith</artifactId>
-    <description>Monolith entrypoint aggregating auth, system, notice, and shared starters.</description>
+    <description>Monolith entrypoint aggregating auth, system, and shared starters.</description>
 
     <dependencies>
         <dependency>
@@ -42,7 +42,7 @@
             <exclusions>
                 <!-- 单体单进程用 in-memory 令牌吊销，不继承 auth 的 Redis：避免引入
                      spring-data-commons 触发 OpenFeign 的 Jackson 3 模块加载冲突，且单体无需 Redis。
-                     auth/system/notice 保持 thin jar，单体这里直接依赖它们的普通 jar。 -->
+                     auth/system 保持 thin jar，单体这里直接依赖它们的普通 jar。 -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -52,11 +52,6 @@
         <dependency>
             <groupId>io.rosecloud</groupId>
             <artifactId>rosecloud-system</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.rosecloud</groupId>
-            <artifactId>rosecloud-notice</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

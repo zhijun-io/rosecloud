@@ -31,7 +31,6 @@ rosecloud
 ├── rosecloud-service
 │   ├── rosecloud-auth
 │   ├── rosecloud-gateway
-│   ├── rosecloud-notice
 │   └── rosecloud-system
 └── rosecloud-monolith
 ```
@@ -74,7 +73,7 @@ task build               # 全量构建（经 mvnw，跳过测试）
 ```bash
 task run:monolith        # 单体模式，单进程 :8080（无其他中间件依赖）
 # 或
-task run:microservice    # 微服务模式，网关 :8080 + auth :9090 / system :9110 / notice :9120
+task run:microservice    # 微服务模式，网关 :8080 + auth :9090 / system :9110
 ```
 
 验证登录（管理员 `admin` / `admin123`）：
@@ -112,7 +111,6 @@ curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN" # 200
 | rosecloud-gateway | 8080 |
 | rosecloud-auth | 9090 |
 | rosecloud-system | 9110 |
-| rosecloud-notice | 9120 |
 | rosecloud-monolith | 8080 |
 
 ## 本地基础设施

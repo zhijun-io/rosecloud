@@ -28,8 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.cloud.service-registry.auto-registration.enabled=false",
         "rosecloud.security.jwt.secret=wICxDnixZdbwEvLEPfL1ZR5SNVZnEouFKjQ/Mi5pMAkO+9zOA9eAiVf82sZ+xZpKgoy322rJWXKpcPy8UsALlQ==",
         "rosecloud.security.internal-token=UIW0QRgE96atD9YB1z4Xo9Dlar5fECsp",
-        "rosecloud.audit.enabled=true",
-        "rosecloud.notice.publish-check-ms=3600000"
+        "rosecloud.audit.enabled=true"
 })
 class MonolithContextLoadTest {
 
@@ -54,7 +53,6 @@ class MonolithContextLoadTest {
     void contextLoads() {
         assertThat(ctx).isNotNull();
         assertThat(ctx.getBean(io.rosecloud.system.service.UserService.class)).isNotNull();
-        assertThat(ctx.getBean(io.rosecloud.api.notice.NoticePublishApi.class)).isNotNull();
         assertThat(ctx.getBean(TenantLineInnerInterceptor.class)).isNotNull();
     }
 }

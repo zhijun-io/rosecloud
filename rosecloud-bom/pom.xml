@@ -83,14 +83,9 @@
             </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-system</artifactId>
-                <version>${rosecloud.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.rosecloud</groupId>
-                <artifactId>rosecloud-notice</artifactId>
-                <version>${rosecloud.version}</version>
-            </dependency>
+               <artifactId>rosecloud-system</artifactId>
+               <version>${rosecloud.version}</version>
+           </dependency>
             <dependency>
                 <groupId>io.rosecloud</groupId>
                 <artifactId>rosecloud-monolith</artifactId>

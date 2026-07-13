@@ -23,7 +23,7 @@ tasks:
 
   build:microservice:
     desc: 仅构建微服务模式所需模块（节省时间）
-    cmd: '{{.MVN}} -pl rosecloud-service/rosecloud-auth,rosecloud-service/rosecloud-system,rosecloud-service/rosecloud-notice,rosecloud-service/rosecloud-gateway -am install -DskipTests'
+    cmd: '{{.MVN}} -pl rosecloud-service/rosecloud-auth,rosecloud-service/rosecloud-system,rosecloud-service/rosecloud-gateway -am install -DskipTests'
 
   test:
     desc: 构建并运行测试

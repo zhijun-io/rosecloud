@@ -13,12 +13,11 @@
 
     <artifactId>rosecloud-service</artifactId>
     <packaging>pom</packaging>
-    <description>Aggregator for application services: gateway, auth, system, and notice.</description>
+    <description>Aggregator for application services: gateway, auth, and system.</description>
 
     <modules>
         <module>rosecloud-gateway</module>
         <module>rosecloud-auth</module>
         <module>rosecloud-system</module>
-        <module>rosecloud-notice</module>
     </modules>
 </project>

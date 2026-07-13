@@ -148,17 +148,11 @@ services:
     environment: { <<: *app-env }
     depends_on: [ mysql, nacos, redis ]
 
-  rosecloud-notice:
-    profiles: [ microservice ]
-    build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-notice/target/rosecloud-notice-0.1.0-SNAPSHOT-exec.jar } }
-    environment: { <<: *app-env }
-    depends_on: [ mysql, nacos, redis ]
-
   rosecloud-gateway:
     profiles: [ microservice ]
     build: { context: ., dockerfile: deploy/Dockerfile.service, args: { JAR_PATH: rosecloud-service/rosecloud-gateway/target/rosecloud-gateway-0.1.0-SNAPSHOT.jar } }
     environment: { <<: *app-env }
-    depends_on: [ mysql, nacos, redis, rosecloud-auth, rosecloud-system, rosecloud-notice ]
+    depends_on: [ mysql, nacos, redis, rosecloud-auth, rosecloud-system ]
     ports: [ "8080:8080" ]
 
   rosecloud-monolith:

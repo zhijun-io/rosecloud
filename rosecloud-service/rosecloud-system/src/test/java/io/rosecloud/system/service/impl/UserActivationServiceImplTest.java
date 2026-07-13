@@ -1,6 +1,5 @@
 package io.rosecloud.system.service.impl;
 
-import io.rosecloud.api.notice.NoticePublishApi;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -37,8 +36,6 @@ class UserActivationServiceImplTest {
     @Mock
     PasswordEncoder passwordEncoder;
     @Mock
-    NoticePublishApi noticePublishApi;
-    @Mock
     TenantMapper tenantMapper;
 
     private UserActivationProperties properties() {
@@ -51,7 +48,7 @@ class UserActivationServiceImplTest {
 
     private UserActivationServiceImpl service() {
         return new UserActivationServiceImpl(userMapper, userCredentialMapper, passwordEncoder,
-                noticePublishApi, tenantMapper, properties());
+                tenantMapper, properties());
     }
 
     @Test
