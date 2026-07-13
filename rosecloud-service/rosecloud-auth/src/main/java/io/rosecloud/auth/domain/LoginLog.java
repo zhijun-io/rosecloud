@@ -1,4 +1,4 @@
-package io.rosecloud.system.domain;
+package io.rosecloud.auth.domain;
 
 import io.rosecloud.common.core.model.HasId;
 
@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-/** Domain view of a login-audit entry. ORM-free; mapped to/from {@code sys_login_log}. */
+/** Domain view of a login-audit entry. ORM-free; mapped to/from {@code auth_login_log}. */
 @Value
 @AllArgsConstructor
 public final class LoginLog implements HasId {
@@ -18,5 +18,6 @@ public final class LoginLog implements HasId {
     String failReason;
     String ip;
     String userAgent;
+    String deviceId;
     LocalDateTime loginTime;
 }

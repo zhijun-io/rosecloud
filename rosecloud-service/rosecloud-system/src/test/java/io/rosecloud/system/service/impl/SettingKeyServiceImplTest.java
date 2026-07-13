@@ -1,9 +1,11 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.system.domain.SettingKey;
@@ -16,7 +18,9 @@ import io.rosecloud.system.persistence.UserSettingEntity;
 import io.rosecloud.system.persistence.UserSettingMapper;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
 import io.rosecloud.system.service.dto.SettingKeyUpdateRequest;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +49,13 @@ class SettingKeyServiceImplTest {
     SystemSettingMapper systemSettingMapper;
     @Mock
     UserSettingMapper userSettingMapper;
+
+    @BeforeAll
+    static void initTableInfo() {
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
+        TableInfoHelper.initTableInfo(assistant, SettingKeyEntity.class);
+    }
 
     @AfterEach
     void tearDown() {
@@ -122,21 +133,19 @@ class SettingKeyServiceImplTest {
 
     @Test
     void pageDelegatesToMapper() {
-        IPage<SettingKeyEntity> page = mock(IPage.class);
+        var page = mock(com.baomidou.mybatisplus.core.metadata.IPage.class);
         SettingKeyEntity e = new SettingKeyEntity();
         e.setId(1L);
         e.setKey("ui.theme");
         e.setName("主题");
         e.setRemark("desc");
-        when(page.getRecords()).thenReturn(List.of(e));
+        when(page.getRecords()).thenReturn(List.of(e, e, e, e, e));
         when(page.getTotal()).thenReturn(5L);
-        when(page.getCurrent()).thenReturn(1L);
-        when(page.getSize()).thenReturn(10L);
         when(settingKeyMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(page);
 
-        PageResult<SettingKey> result = service().page(1, 10, "ui");
-        assertEquals(5L, result.total());
-        assertEquals(1, result.records().size());
-        assertEquals("ui.theme", result.records().get(0).getKey());
+        PagedData<SettingKey> result = service().page(new PageQuery(1, 10, "ui", List.of()));
+        assertEquals(5L, result.getTotalElements());
+        assertEquals(5, result.getData().size());
+        assertEquals("ui.theme", result.getData().get(0).getKey());
     }
 }

@@ -2,14 +2,14 @@ package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
@@ -34,14 +34,12 @@ public class TenantServiceImpl implements TenantService {
 
     private final TenantMapper tenantMapper;
     private final TenantProfileMapper tenantProfileMapper;
-    private final ObjectMapper objectMapper;
     private final TenantProvisioner tenantProvisioner;
 
     public TenantServiceImpl(TenantMapper tenantMapper, TenantProfileMapper tenantProfileMapper,
-                             ObjectMapper objectMapper, TenantProvisioner tenantProvisioner) {
+                             TenantProvisioner tenantProvisioner) {
         this.tenantMapper = tenantMapper;
         this.tenantProfileMapper = tenantProfileMapper;
-        this.objectMapper = objectMapper;
         this.tenantProvisioner = tenantProvisioner;
     }
 
@@ -130,16 +128,16 @@ public class TenantServiceImpl implements TenantService {
     }
 
     @Override
-    public PageResult<Tenant> page(long current, long size, String keyword) {
-        Page<TenantEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(TenantEntity::getName, keyword);
-        }
-        wrapper.orderByDesc(TenantEntity::getCreateTime);
-        IPage<TenantEntity> result = tenantMapper.selectPage(page, wrapper);
-        List<Tenant> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
+    public PagedData<Tenant> page(PageQuery pageQuery) {
+        return PagedResults.page(pageQuery, TenantEntity.class, tenantMapper,
+                q -> {
+                    LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
+                        wrapper.like(TenantEntity::getName, q.getKeyword());
+                    }
+                    return wrapper;
+                },
+                SortField.of("createTime", SortDirection.DESC));
     }
 
     @Override
@@ -156,7 +154,7 @@ public class TenantServiceImpl implements TenantService {
     }
 
     private Optional<Tenant> findById(String id) {
-        return Optional.ofNullable(tenantMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(tenantMapper.selectById(id)).map(TenantEntity::toData);
     }
 
     private String persistTenant(TenantCreateRequest request) {
@@ -169,7 +167,7 @@ public class TenantServiceImpl implements TenantService {
         Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
                 request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(),
                 tenantProfileId, null);
-        TenantEntity po = toEntity(tenant);
+        TenantEntity po = new TenantEntity().toEntity(tenant);
         po.setAdminUsername(request.adminUsername());
         tenantMapper.insert(po);
         return tenantId;
@@ -196,52 +194,6 @@ public class TenantServiceImpl implements TenantService {
 
     private String requireTenantId(String id) {
         return TenantIdSupport.requireValid(id);
-    }
-
-    private Tenant toDomain(TenantEntity po) {
-        return new Tenant(po.getId(), po.getName(),
-                resolveStatus(po.getStatus(), po.getExpireTime()), po.getContactUser(), po.getContactPhone(),
-                po.getExpireTime(), po.getRemark(), po.getTenantProfileId(), readJson(po.getExtra()),
-                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private TenantStatus resolveStatus(Integer status, LocalDate expireTime) {
-        if (status == null) {
-            return null;
-        }
-        if (expireTime != null && expireTime.isBefore(LocalDate.now())) {
-            return TenantStatus.EXPIRED;
-        }
-        return TenantStatus.of(status);
-    }
-
-    private TenantEntity toEntity(Tenant t) {
-        TenantEntity po = new TenantEntity();
-        po.setId(t.getId());
-        po.setName(t.getName());
-        po.setStatus(t.getStatus() == null ? null : t.getStatus().code());
-        po.setContactUser(t.getContactUser());
-        po.setContactPhone(t.getContactPhone());
-        po.setExpireTime(t.getExpireTime());
-        po.setRemark(t.getRemark());
-        po.setTenantProfileId(t.getTenantProfileId());
-        po.setExtra(writeJson(t.getAdditionalInfo()));
-        po.setCreateTime(t.getCreateTime());
-        po.setCreateBy(t.getCreateBy());
-        po.setUpdateTime(t.getUpdateTime());
-        po.setUpdateBy(t.getUpdateBy());
-        return po;
-    }
-
-    private JsonNode readJson(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readTree(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Invalid tenant extra JSON", ex);
-        }
     }
 
     private String writeJson(JsonNode value) {

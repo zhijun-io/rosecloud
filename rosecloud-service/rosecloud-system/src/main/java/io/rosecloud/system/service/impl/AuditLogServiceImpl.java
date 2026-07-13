@@ -3,7 +3,8 @@ package io.rosecloud.system.service.impl;
 import io.rosecloud.api.audit.AuditLogApi;
 import io.rosecloud.api.audit.AuditLogRequest;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.TimePageQuery;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.AuditLogQuery;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -32,9 +33,9 @@ public class AuditLogServiceImpl implements AuditLogService, AuditLogApi {
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, AuditLogQuery query) {
+    public PagedData<AuditLog> page(TimePageQuery pageQuery, AuditLogQuery query) {
         AuditLogQuery resolved = resolveTenant(query);
-        return auditLogRepository.page(current, size, resolved);
+        return auditLogRepository.page(pageQuery, resolved);
     }
 
     @Override
@@ -55,6 +56,6 @@ public class AuditLogServiceImpl implements AuditLogService, AuditLogApi {
             return query;
         }
         return AuditLogQuery.of(query.action(), query.principal(), contextTenant, query.success(),
-                query.entityType(), query.startTime(), query.endTime());
+                query.entityType());
     }
 }

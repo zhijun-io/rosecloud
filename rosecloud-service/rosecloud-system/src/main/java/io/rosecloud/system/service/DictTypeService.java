@@ -1,6 +1,7 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.system.domain.DictType;
 import io.rosecloud.system.service.dto.DictTypeRequest;
 
@@ -14,5 +15,5 @@ public interface DictTypeService {
 
     DictType get(Long id);
 
-    PageResult<DictType> page(long current, long size, String keyword);
+    PagedData<DictType> page(PageQuery pageQuery);
 }

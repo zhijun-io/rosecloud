@@ -1,7 +1,9 @@
 package io.rosecloud.system.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.starter.web.PageQueryArgumentResolver;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantProfileData;
@@ -47,6 +49,7 @@ class TenantControllerTest {
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         mockMvc = MockMvcBuilders.standaloneSetup(new TenantController(tenantService, auditLogService))
+                .setCustomArgumentResolvers(new PageQueryArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .build();
     }
@@ -107,12 +110,12 @@ class TenantControllerTest {
 
     @Test
     void pageReturnsTenantPage() throws Exception {
-        when(tenantService.page(1, 10, null)).thenReturn(PageResult.of(List.of(), 0, 1, 10));
+        when(tenantService.page(any(PageQuery.class))).thenReturn(PagedData.empty());
 
-        mockMvc.perform(get("/api/tenants"))
+        mockMvc.perform(get("/api/tenants?page=1&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.total").value(0))
-                .andExpect(jsonPath("$.data.records").isArray());
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+                .andExpect(jsonPath("$.data.data").isArray());
     }
 
     @Test

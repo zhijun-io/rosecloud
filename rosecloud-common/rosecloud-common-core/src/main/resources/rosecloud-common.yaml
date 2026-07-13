@@ -15,6 +15,12 @@ spring:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:rosecloud123}
+    web:
+      pageable:
+        # 采用 Spring Data 默认的分页参数名 page/size；1 基（page=1 为第一页），
+        # 与前端原有 current/size(1 基) 语义一致，前端仅改参数名 current->page。
+        one-indexed-parameters: true
+        default-page-size: 10
   cloud:
     openfeign:
       autoconfiguration:
@@ -54,7 +60,7 @@ rosecloud:
       - sys_dict_type
       - sys_dict_data
       - sys_dept
-      - sys_login_session
+      - auth_login_session
       - sys_setting_key
       - sys_system_setting
       - sys_user_setting

@@ -1,13 +1,13 @@
 package io.rosecloud.system.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.service.RoleService;
 import io.rosecloud.system.service.dto.RoleCreateRequest;
 import io.rosecloud.system.service.dto.RoleMenuAssignRequest;
-import io.rosecloud.system.support.PageSupport;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,9 +56,7 @@ public class RoleController {
 
     @PreAuthorize("hasAuthority('system:role:list')")
     @GetMapping
-    public ApiResponse<PageResult<Role>> page(@RequestParam(defaultValue = "1") long current,
-                                              @RequestParam(defaultValue = "10") long size,
-                                              @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(roleService.page(PageSupport.current(current), PageSupport.size(size), keyword));
+    public ApiResponse<PagedData<Role>> page(PageQuery pageQuery) {
+        return ApiResponse.ok(roleService.page(pageQuery));
     }
 }

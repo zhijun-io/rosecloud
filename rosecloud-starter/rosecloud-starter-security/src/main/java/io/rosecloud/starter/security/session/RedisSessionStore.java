@@ -56,6 +56,7 @@ public class RedisSessionStore implements SessionStore {
         values.put("nickname", emptyToNullSafe(session.nickname()));
         values.put("clientIp", emptyToNullSafe(session.clientIp()));
         values.put("userAgent", emptyToNullSafe(session.userAgent()));
+        values.put("deviceId", emptyToNullSafe(session.deviceId()));
         values.put("loginAt", session.loginAt().toString());
         values.put("expireAt", session.expireAt().toString());
         redisTemplate.opsForHash().putAll(sessionKey, values);
@@ -154,7 +155,8 @@ public class RedisSessionStore implements SessionStore {
                     emptyToNull(stringValue(values.get("clientIp"))),
                     emptyToNull(stringValue(values.get("userAgent"))),
                     Instant.parse(stringValue(values.get("loginAt"))),
-                    Instant.parse(stringValue(values.get("expireAt")))
+                    Instant.parse(stringValue(values.get("expireAt"))),
+                    emptyToNull(stringValue(values.get("deviceId")))
             );
         } catch (RuntimeException ex) {
             return null;

@@ -1,14 +1,16 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.session.SessionStore;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.Role;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -72,16 +74,17 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public PageResult<Role> page(long current, long size, String keyword) {
-        Page<RoleEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(RoleEntity::getCode, keyword).or().like(RoleEntity::getName, keyword);
-        }
-        wrapper.orderByDesc(RoleEntity::getCreateTime);
-        IPage<RoleEntity> result = roleMapper.selectPage(page, wrapper);
-        List<Role> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
+    public PagedData<Role> page(PageQuery pageQuery) {
+        return PagedResults.page(pageQuery, RoleEntity.class, roleMapper,
+                q -> {
+                    LambdaQueryWrapper<RoleEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
+                        wrapper.like(RoleEntity::getCode, q.getKeyword())
+                                .or().like(RoleEntity::getName, q.getKeyword());
+                    }
+                    return wrapper;
+                },
+                SortField.of("createTime", SortDirection.DESC));
     }
 
     @AuditLog(action = "role-assign-menus", description = "角色菜单授权")
@@ -135,11 +138,6 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private Optional<Role> findById(Long id) {
-        return Optional.ofNullable(roleMapper.selectById(id)).map(this::toDomain);
-    }
-
-    private Role toDomain(RoleEntity po) {
-        return new Role(po.getId(), po.getCode(), po.getName(), po.getCreateTime(), po.getCreateBy(),
-                po.getUpdateTime(), po.getUpdateBy());
+        return Optional.ofNullable(roleMapper.selectById(id)).map(RoleEntity::toData);
     }
 }

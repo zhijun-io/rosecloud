@@ -1,6 +1,7 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
@@ -23,7 +24,7 @@ public interface TenantService {
 
     void enable(String id);
 
-    PageResult<Tenant> page(long current, long size, String keyword);
+    PagedData<Tenant> page(PageQuery pageQuery);
 
     /** All tenant ids (excluding the reserved system tenant). */
     List<String> findAllIds();

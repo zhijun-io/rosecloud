@@ -7,6 +7,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
+import io.rosecloud.common.core.model.ToData;
+import io.rosecloud.common.core.model.ToEntity;
+import io.rosecloud.system.domain.SystemSetting;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +18,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class SystemSettingEntity {
+public class SystemSettingEntity implements ToData<SystemSetting>, ToEntity<SystemSetting, SystemSettingEntity> {
 
     @TableId(value = "setting_key", type = IdType.INPUT)
     private String settingKey;
@@ -27,4 +30,18 @@ public class SystemSettingEntity {
 
     @TableField("updated_by")
     private Long updatedBy;
+
+    @Override
+    public SystemSetting toData() {
+        return new SystemSetting(settingKey, value, updatedAt, updatedBy);
+    }
+
+    @Override
+    public SystemSettingEntity toEntity(SystemSetting setting) {
+        setSettingKey(setting.getKey());
+        setValue(setting.getValue());
+        setUpdatedAt(setting.getUpdatedAt());
+        setUpdatedBy(setting.getUpdatedBy());
+        return this;
+    }
 }

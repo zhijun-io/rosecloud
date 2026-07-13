@@ -35,7 +35,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     @Override
     public List<SystemSetting> list() {
         return systemSettingMapper.selectList(new LambdaQueryWrapper<SystemSettingEntity>()
-                        .orderByAsc(SystemSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
+                        .orderByAsc(SystemSettingEntity::getSettingKey)).stream().map(SystemSettingEntity::toData).toList();
     }
 
     @Override
@@ -49,7 +49,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     public void save(String key, SettingValueRequest request) {
         ensureSettingKeyExists(key);
         SystemSettingEntity existing = systemSettingMapper.selectById(key);
-        SystemSettingEntity po = toEntity(new SystemSetting(key, request.value(), now(), currentUserId()));
+        SystemSettingEntity po = new SystemSettingEntity().toEntity(new SystemSetting(key, request.value(), now(), currentUserId()));
         if (existing == null) {
             systemSettingMapper.insert(po);
             return;
@@ -68,7 +68,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     }
 
     private Optional<SystemSetting> findByKey(String key) {
-        return Optional.ofNullable(systemSettingMapper.selectById(key)).map(this::toDomain);
+        return Optional.ofNullable(systemSettingMapper.selectById(key)).map(SystemSettingEntity::toData);
     }
 
     private void ensureSettingKeyExists(String key) {
@@ -90,16 +90,4 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         return su.getUserId();
     }
 
-    private SystemSetting toDomain(SystemSettingEntity po) {
-        return new SystemSetting(po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
-    }
-
-    private SystemSettingEntity toEntity(SystemSetting setting) {
-        SystemSettingEntity po = new SystemSettingEntity();
-        po.setSettingKey(setting.getKey());
-        po.setValue(setting.getValue());
-        po.setUpdatedAt(setting.getUpdatedAt());
-        po.setUpdatedBy(setting.getUpdatedBy());
-        return po;
-    }
 }

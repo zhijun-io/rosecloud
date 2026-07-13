@@ -1,11 +1,13 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.SettingKeyEntity;
@@ -49,7 +51,7 @@ public class SettingKeyServiceImpl implements SettingKeyService {
         }
         Long userId = currentUserId();
         LocalDateTime now = now();
-        settingKeyMapper.insert(toEntity(new SettingKey(null, request.key(), request.name(), request.remark(),
+        settingKeyMapper.insert(new SettingKeyEntity().toEntity(new SettingKey(null, request.key(), request.name(), request.remark(),
                 now, userId, now, userId)));
         return request.key();
     }
@@ -64,7 +66,7 @@ public class SettingKeyServiceImpl implements SettingKeyService {
         if (existing == null) {
             return;
         }
-        SettingKeyEntity entity = toEntity(new SettingKey(current.getId(), key, request.name(), request.remark(),
+        SettingKeyEntity entity = new SettingKeyEntity().toEntity(new SettingKey(current.getId(), key, request.name(), request.remark(),
                 current.getCreateTime(), current.getCreateBy(), now(), userId));
         entity.setId(existing.getId());
         settingKeyMapper.updateById(entity);
@@ -93,22 +95,22 @@ public class SettingKeyServiceImpl implements SettingKeyService {
     @Override
     public List<SettingKey> list() {
         return settingKeyMapper.selectList(new LambdaQueryWrapper<SettingKeyEntity>()
-                        .orderByAsc(SettingKeyEntity::getKey)).stream().map(this::toDomain).toList();
+                        .orderByAsc(SettingKeyEntity::getKey)).stream().map(SettingKeyEntity::toData).toList();
     }
 
     @Override
-    public PageResult<SettingKey> page(long current, long size, String keyword) {
-        Page<SettingKeyEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<SettingKeyEntity> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.and(w -> w.like(SettingKeyEntity::getKey, keyword)
-                    .or().like(SettingKeyEntity::getName, keyword)
-                    .or().like(SettingKeyEntity::getRemark, keyword));
-        }
-        wrapper.orderByAsc(SettingKeyEntity::getKey);
-        IPage<SettingKeyEntity> result = settingKeyMapper.selectPage(page, wrapper);
-        List<SettingKey> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
+    public PagedData<SettingKey> page(PageQuery pageQuery) {
+        return PagedResults.page(pageQuery, SettingKeyEntity.class, settingKeyMapper,
+                q -> {
+                    LambdaQueryWrapper<SettingKeyEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
+                        wrapper.and(w -> w.like(SettingKeyEntity::getKey, q.getKeyword())
+                                .or().like(SettingKeyEntity::getName, q.getKeyword())
+                                .or().like(SettingKeyEntity::getRemark, q.getKeyword()));
+                    }
+                    return wrapper;
+                },
+                SortField.of("key", SortDirection.ASC), SortField.of("createTime", SortDirection.DESC));
     }
 
     private SettingKey load(String key) {
@@ -119,7 +121,7 @@ public class SettingKeyServiceImpl implements SettingKeyService {
     private Optional<SettingKey> findByKey(String key) {
         return Optional.ofNullable(settingKeyMapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
                         .eq(SettingKeyEntity::getKey, key)))
-                .map(this::toDomain);
+                .map(SettingKeyEntity::toData);
     }
 
     private static LocalDateTime now() {
@@ -134,21 +136,4 @@ public class SettingKeyServiceImpl implements SettingKeyService {
         return su.getUserId();
     }
 
-    private SettingKey toDomain(SettingKeyEntity po) {
-        return new SettingKey(po.getId(), po.getKey(), po.getName(), po.getRemark(),
-                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private SettingKeyEntity toEntity(SettingKey settingKey) {
-        SettingKeyEntity po = new SettingKeyEntity();
-        po.setId(settingKey.getId());
-        po.setKey(settingKey.getKey());
-        po.setName(settingKey.getName());
-        po.setRemark(settingKey.getRemark());
-        po.setCreateTime(settingKey.getCreateTime());
-        po.setCreateBy(settingKey.getCreateBy());
-        po.setUpdateTime(settingKey.getUpdateTime());
-        po.setUpdateBy(settingKey.getUpdateBy());
-        return po;
-    }
 }

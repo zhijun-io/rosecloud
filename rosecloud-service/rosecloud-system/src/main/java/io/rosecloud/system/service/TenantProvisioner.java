@@ -55,12 +55,7 @@ public class TenantProvisioner {
 
     private Optional<Role> findByCode(String code) {
         return Optional.ofNullable(roleMapper.selectOne(
-                new LambdaQueryWrapper<RoleEntity>().eq(RoleEntity::getCode, code))).map(this::toDomain);
-    }
-
-    private Role toDomain(RoleEntity po) {
-        return new Role(po.getId(), po.getCode(), po.getName(), po.getCreateTime(), po.getCreateBy(),
-                po.getUpdateTime(), po.getUpdateBy());
+                new LambdaQueryWrapper<RoleEntity>().eq(RoleEntity::getCode, code))).map(RoleEntity::toData);
     }
 
 }

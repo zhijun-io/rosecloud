@@ -37,6 +37,7 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
     private static final String AUDIENCE = "aud";
     private static final String FINGERPRINT = "fp";
     private static final String IMPERSONATION = "imp";
+    private static final String AUTHORITIES = "authorities";
 
     /** Minimum secret length (bytes) recommended for HS512 (512 bits). */
     private static final int MIN_SECRET_BYTES = 64;
@@ -86,6 +87,14 @@ public class JwtTokenFactory implements io.rosecloud.common.security.token.Token
 
         if (securityUser.getNickname() != null) {
             claims.add(NICKNAME, securityUser.getNickname());
+        }
+
+        // Authorities (roles/permissions) are sourced from the system service at login and
+        // baked into the token so every downstream request authorizes from the claims alone —
+        // no per-request lookup back to system (Slice C / AC-7).
+        List<String> authorities = securityUser.getAuthorityStrings();
+        if (authorities != null && !authorities.isEmpty()) {
+            claims.add(AUTHORITIES, authorities);
         }
 
         withAudienceAndFingerprint(claims, deviceFingerprint);

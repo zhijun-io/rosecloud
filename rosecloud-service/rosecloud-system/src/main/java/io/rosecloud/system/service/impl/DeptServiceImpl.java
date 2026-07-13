@@ -29,7 +29,7 @@ public class DeptServiceImpl implements DeptService {
     @AuditLog(action = "dept-create", description = "创建部门")
     @Override
     public Long create(DeptRequest request) {
-        DeptEntity po = toEntity(toDept(null, request));
+        DeptEntity po = new DeptEntity().toEntity(toDept(null, request));
         po.setId(null);
         deptMapper.insert(po);
         return po.getId();
@@ -39,7 +39,7 @@ public class DeptServiceImpl implements DeptService {
     @Override
     public void update(Long id, DeptRequest request) {
         findById(id).orElseThrow(() -> new BizException(SystemErrorCode.DEPT_NOT_FOUND));
-        deptMapper.updateById(toEntity(toDept(id, request)));
+        deptMapper.updateById(new DeptEntity().toEntity(toDept(id, request)));
     }
 
     @AuditLog(action = "dept-delete", description = "删除部门")
@@ -55,7 +55,7 @@ public class DeptServiceImpl implements DeptService {
     public List<Dept> list() {
         return deptMapper.selectList(new LambdaQueryWrapper<DeptEntity>()
                         .orderByAsc(DeptEntity::getSort)
-                        .orderByAsc(DeptEntity::getId)).stream().map(this::toDomain).toList();
+                        .orderByAsc(DeptEntity::getId)).stream().map(DeptEntity::toData).toList();
     }
 
     @Override
@@ -67,7 +67,7 @@ public class DeptServiceImpl implements DeptService {
     }
 
     private Optional<Dept> findById(Long id) {
-        return Optional.ofNullable(deptMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(deptMapper.selectById(id)).map(DeptEntity::toData);
     }
 
     private List<DeptTreeNode> buildChildren(Map<Long, List<Dept>> byParent, Long parentId) {
@@ -83,25 +83,4 @@ public class DeptServiceImpl implements DeptService {
         return Dept.of(id, parentId, request.name(), sort, status, request.leader(), request.phone());
     }
 
-    private Dept toDomain(DeptEntity po) {
-        return new Dept(po.getId(), po.getParentId(), po.getName(), po.getSort(),
-                po.getStatus(), po.getLeader(), po.getPhone(), po.getCreateTime(), po.getCreateBy(),
-                po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private DeptEntity toEntity(Dept d) {
-        DeptEntity po = new DeptEntity();
-        po.setId(d.getId());
-        po.setParentId(d.getParentId());
-        po.setName(d.getName());
-        po.setSort(d.getSort());
-        po.setStatus(d.getStatus());
-        po.setLeader(d.getLeader());
-        po.setPhone(d.getPhone());
-        po.setCreateTime(d.getCreateTime());
-        po.setCreateBy(d.getCreateBy());
-        po.setUpdateTime(d.getUpdateTime());
-        po.setUpdateBy(d.getUpdateBy());
-        return po;
-    }
 }

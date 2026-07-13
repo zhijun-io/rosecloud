@@ -1,15 +1,20 @@
 package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.api.audit.AuditLogRequest;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
+import io.rosecloud.common.core.model.TimePageQuery;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.AuditLogQuery;
+import io.rosecloud.system.persistence.AuditLogEntity;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Optional;
+
+import java.util.Optional;
 
 /** Default {@link AuditLogRepository} backed by MyBatis-Plus. */
 @Repository
@@ -41,47 +46,37 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
 
     @Override
     public AuditLog findById(Long id) {
-        return toDomain(auditLogMapper.selectById(id));
+        return Optional.ofNullable(auditLogMapper.selectById(id)).map(AuditLogEntity::toData).orElse(null);
     }
 
     @Override
-    public PageResult<AuditLog> page(long current, long size, AuditLogQuery query) {
-        Page<AuditLogEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
-        if (query.tenantId() != null) {
-            wrapper.eq(AuditLogEntity::getTenantId, query.tenantId());
-        }
-        if (query.action() != null && !query.action().isBlank()) {
-            wrapper.eq(AuditLogEntity::getAction, query.action());
-        }
-        if (query.principal() != null && !query.principal().isBlank()) {
-            wrapper.eq(AuditLogEntity::getPrincipal, query.principal());
-        }
-        if (query.success() != null) {
-            wrapper.eq(AuditLogEntity::getSuccess, query.success() ? 1 : 0);
-        }
-        if (query.entityType() != null && !query.entityType().isBlank()) {
-            wrapper.eq(AuditLogEntity::getEntityType, query.entityType());
-        }
-        if (query.startTime() != null) {
-            wrapper.ge(AuditLogEntity::getCreateTime, query.startTime());
-        }
-        if (query.endTime() != null) {
-            wrapper.le(AuditLogEntity::getCreateTime, query.endTime());
-        }
-        wrapper.orderByDesc(AuditLogEntity::getCreateTime);
-        IPage<AuditLogEntity> result = auditLogMapper.selectPage(page, wrapper);
-        List<AuditLog> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
-    }
-
-    private AuditLog toDomain(AuditLogEntity po) {
-        if (po == null) {
-            return null;
-        }
-        return new AuditLog(po.getId(), po.getAction(), po.getDescription(), po.getPrincipal(),
-                po.getTenantId(), po.getTarget(), po.getElapsedMillis() == null ? 0L : po.getElapsedMillis(),
-                po.getSuccess() != null && po.getSuccess() == 1, po.getError(), po.getCreateTime(),
-                po.getEntityType(), po.getEntityId(), po.getIpAddress(), po.getSeverity());
+    public PagedData<AuditLog> page(TimePageQuery pageQuery, AuditLogQuery query) {
+        return PagedResults.page(pageQuery, AuditLogEntity.class, auditLogMapper,
+                q -> {
+                    LambdaQueryWrapper<AuditLogEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (query.tenantId() != null) {
+                        wrapper.eq(AuditLogEntity::getTenantId, query.tenantId());
+                    }
+                    if (query.action() != null && !query.action().isBlank()) {
+                        wrapper.eq(AuditLogEntity::getAction, query.action());
+                    }
+                    if (query.principal() != null && !query.principal().isBlank()) {
+                        wrapper.eq(AuditLogEntity::getPrincipal, query.principal());
+                    }
+                    if (query.success() != null) {
+                        wrapper.eq(AuditLogEntity::getSuccess, query.success() ? 1 : 0);
+                    }
+                    if (query.entityType() != null && !query.entityType().isBlank()) {
+                        wrapper.eq(AuditLogEntity::getEntityType, query.entityType());
+                    }
+                    if (q.getStartTime() != null) {
+                        wrapper.ge(AuditLogEntity::getCreateTime, q.getStartTime());
+                    }
+                    if (q.getEndTime() != null) {
+                        wrapper.le(AuditLogEntity::getCreateTime, q.getEndTime());
+                    }
+                    return wrapper;
+                },
+                SortField.of("createTime", SortDirection.DESC));
     }
 }

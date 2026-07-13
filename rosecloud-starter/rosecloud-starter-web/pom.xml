@@ -27,6 +27,14 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Spring Data Web: Pageable 解析（Spring Data 分页接口）。
+             spring-boot-autoconfigure 中的 SpringDataWebAutoConfiguration 在 Pageable 类
+             存在时自动注册分页参数解析器，无需引入 -starter。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-commons</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>

@@ -10,24 +10,23 @@ import io.rosecloud.starter.security.auth.JwtAuthenticationToken;
 import io.rosecloud.starter.security.token.JwtTokenFactory;
 import io.rosecloud.common.security.session.SessionStore;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
+import java.util.List;
 import java.util.Locale;
 
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     private final JwtTokenFactory tokenFactory;
     private final SessionStore sessionStore;
-    private final UserDetailsService userDetailsService;
     private final TenantLookupApi tenantLookupApi;
 
     public JwtAuthenticationProvider(JwtTokenFactory tokenFactory, SessionStore sessionStore,
-                                     UserDetailsService userDetailsService, TenantLookupApi tenantLookupApi) {
+                                     TenantLookupApi tenantLookupApi) {
         this.tokenFactory = tokenFactory;
         this.sessionStore = sessionStore;
-        this.userDetailsService = userDetailsService;
         this.tenantLookupApi = tenantLookupApi;
     }
 
@@ -43,7 +42,24 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
             throw new JwtExpiredTokenException("Token is outdated");
         }
 
-        SecurityUser securityUser = JwtAuthSupport.loadAndValidateUser(claims.getSubject(), userDetailsService);
+        // Reconstruct the principal directly from the signed claims. Authorities were baked
+        // into the token at login (Slice C / AC-7), so no per-request lookup back to system is
+        // needed for authorization. The token is signature-verified, so its claims are trusted.
+        boolean enabled = Boolean.TRUE.equals(claims.get("enabled", Boolean.class));
+        if (!enabled) {
+            throw new BadCredentialsException("认证失败");
+        }
+        List<String> authorityStrings = claims.get("authorities", List.class);
+        Number userId = (Number) claims.get("userId");
+        SecurityUser securityUser = SecurityUser.fromJson(
+                userId != null ? userId.longValue() : null,
+                claims.getSubject(),
+                claims.get("nickname", String.class),
+                null,
+                enabled,
+                null,
+                null,
+                authorityStrings);
 
         // The active tenant travels in the token's signed "tenant" claim (set at login or
         // after a tenant switch). For legacy tokens that predate the claim, fall back to the

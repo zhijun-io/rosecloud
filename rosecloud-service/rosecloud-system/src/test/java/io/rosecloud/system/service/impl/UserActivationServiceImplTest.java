@@ -1,5 +1,7 @@
 package io.rosecloud.system.service.impl;
 
+import io.rosecloud.api.credential.CredentialApi;
+import io.rosecloud.api.credential.CredentialSetRequest;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.error.SystemErrorCode;
@@ -14,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -34,9 +35,9 @@ class UserActivationServiceImplTest {
     @Mock
     UserCredentialMapper userCredentialMapper;
     @Mock
-    PasswordEncoder passwordEncoder;
-    @Mock
     TenantMapper tenantMapper;
+    @Mock
+    CredentialApi credentialApi;
 
     private UserActivationProperties properties() {
         UserActivationProperties p = new UserActivationProperties();
@@ -47,15 +48,14 @@ class UserActivationServiceImplTest {
     }
 
     private UserActivationServiceImpl service() {
-        return new UserActivationServiceImpl(userMapper, userCredentialMapper, passwordEncoder,
-                tenantMapper, properties());
+        return new UserActivationServiceImpl(userMapper, userCredentialMapper, tenantMapper,
+                credentialApi, properties());
     }
 
     @Test
     void confirmActivationTransitionsPendingTenantToEnabledWhenAdminMatches() {
         String token = "activate-token-1";
         String password = "SecurePass1!";
-        String encoded = "encoded-hash";
         UserEntity user = userEntity(1L, "admin@tenant1.com", "TENANT1");
         UserCredentialEntity credential = credential(1L, token, false);
         TenantEntity tenant = tenantEntity("TENANT1", "admin@tenant1.com", 0);
@@ -63,11 +63,11 @@ class UserActivationServiceImplTest {
         when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
         when(userMapper.selectById(1L)).thenReturn(user);
         when(tenantMapper.selectById("TENANT1")).thenReturn(tenant);
-        when(passwordEncoder.encode(password)).thenReturn(encoded);
         when(userMapper.selectOne(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
+        verify(credentialApi).setPassword(1L, new CredentialSetRequest(password));
         verify(tenantMapper).updateById(tenant);
         assertEquals(Integer.valueOf(1), tenant.getStatus());
     }
@@ -76,7 +76,6 @@ class UserActivationServiceImplTest {
     void confirmActivationDoesNotTransitionWhenAdminUsernameDoesNotMatch() {
         String token = "activate-token-2";
         String password = "SecurePass2@";
-        String encoded = "encoded-hash-2";
         UserEntity user = userEntity(2L, "user@tenant2.com", "TENANT2");
         UserCredentialEntity credential = credential(2L, token, false);
         TenantEntity tenant = tenantEntity("TENANT2", "different-admin", 0);
@@ -84,11 +83,11 @@ class UserActivationServiceImplTest {
         when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
         when(userMapper.selectById(2L)).thenReturn(user);
         when(tenantMapper.selectById("TENANT2")).thenReturn(tenant);
-        when(passwordEncoder.encode(password)).thenReturn(encoded);
         when(userMapper.selectOne(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
+        verify(credentialApi).setPassword(2L, new CredentialSetRequest(password));
         verify(tenantMapper, never()).updateById(any(TenantEntity.class));
     }
 
@@ -96,7 +95,6 @@ class UserActivationServiceImplTest {
     void confirmActivationDoesNotTransitionWhenTenantAlreadyEnabled() {
         String token = "activate-token-3";
         String password = "SecurePass3#";
-        String encoded = "encoded-hash-3";
         UserEntity user = userEntity(3L, "admin@tenant3.com", "TENANT3");
         UserCredentialEntity credential = credential(3L, token, false);
         TenantEntity tenant = tenantEntity("TENANT3", "admin@tenant3.com", 1);
@@ -104,11 +102,11 @@ class UserActivationServiceImplTest {
         when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
         when(userMapper.selectById(3L)).thenReturn(user);
         when(tenantMapper.selectById("TENANT3")).thenReturn(tenant);
-        when(passwordEncoder.encode(password)).thenReturn(encoded);
         when(userMapper.selectOne(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
+        verify(credentialApi).setPassword(3L, new CredentialSetRequest(password));
         verify(tenantMapper, never()).updateById(any(TenantEntity.class));
     }
 

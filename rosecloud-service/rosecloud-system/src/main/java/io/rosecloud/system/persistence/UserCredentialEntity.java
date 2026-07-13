@@ -10,7 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** MyBatis-Plus persistent entity for {@code user_credential}; confined to infrastructure. */
+/** MyBatis-Plus persistent entity for {@code user_credential}; confined to infrastructure.
+ *  Holds only activation-token state — passwords now live in auth's {@code auth_credential}. */
 @TableName("user_credential")
 @Getter
 @Setter
@@ -18,13 +19,10 @@ import lombok.Setter;
 public class UserCredentialEntity extends BaseEntity {
 
     private Long userId;
-    private String password;
-    private LocalDateTime passwordChangedTime;
     private String activateToken;
     private LocalDateTime expireTime;
     private LocalDateTime usedTime;
     private LocalDateTime sendTime;
-    private LocalDateTime lastLoginTime;
     @Version
     private Long version;
 }

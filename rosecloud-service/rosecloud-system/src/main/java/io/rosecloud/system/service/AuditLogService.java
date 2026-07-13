@@ -1,7 +1,8 @@
 package io.rosecloud.system.service;
 
 import io.rosecloud.api.audit.AuditLogRequest;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.TimePageQuery;
 import io.rosecloud.system.domain.AuditLog;
 import io.rosecloud.system.domain.AuditLogQuery;
 
@@ -11,7 +12,7 @@ public interface AuditLogService {
 
     AuditLog get(Long id);
 
-    PageResult<AuditLog> page(long current, long size, AuditLogQuery query);
+    PagedData<AuditLog> page(TimePageQuery pageQuery, AuditLogQuery query);
 
     void save(AuditLogRequest auditLogRequest);
 }

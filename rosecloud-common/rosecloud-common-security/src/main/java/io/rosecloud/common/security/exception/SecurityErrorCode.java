@@ -8,6 +8,8 @@ public enum SecurityErrorCode implements ErrorCode {
     USER_NOT_FOUND("用户不存在"),
     USER_DISABLED("用户已禁用"),
     BAD_CREDENTIALS("用户名或密码错误"),
+    PASSWORD_TOO_WEAK("密码不符合复杂度要求"),
+    PASSWORD_SAME_AS_OLD("新密码不能与旧密码相同"),
     ACCOUNT_LOCKED("账号已临时锁定，请稍后再试"),
     FORBIDDEN("无权限访问"),
     TENANT_UNAVAILABLE("租户不可用"),

@@ -1,9 +1,6 @@
 package io.rosecloud.system.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.core.model.ServiceMetadata;
@@ -38,14 +35,12 @@ public class UserTenantController {
     private final UserMapper userMapper;
     private final UserTenantMapper userTenantMapper;
     private final TenantService tenantService;
-    private final ObjectMapper objectMapper;
 
     public UserTenantController(UserMapper userMapper, UserTenantMapper userTenantMapper,
-                                TenantService tenantService, ObjectMapper objectMapper) {
+                                TenantService tenantService) {
         this.userMapper = userMapper;
         this.userTenantMapper = userTenantMapper;
         this.tenantService = tenantService;
-        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/{userId}/tenants")
@@ -92,7 +87,7 @@ public class UserTenantController {
     }
 
     private Optional<User> findById(Long userId) {
-        return Optional.ofNullable(userMapper.selectById(userId)).map(this::toDomain);
+        return Optional.ofNullable(userMapper.selectById(userId)).map(UserEntity::toData);
     }
 
     private List<String> findTenantIdsByUserId(Long userId) {
@@ -109,30 +104,4 @@ public class UserTenantController {
         return new TenantAccessCandidate(tenant.getId(), tenant.getName(), tenant.getStatus().name(), selectable);
     }
 
-    private User toDomain(UserEntity po) {
-        return new User(po.getId(), loginName(po), po.getNickname(), po.getStatus(), po.getTenantId(),
-                readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(),
-                po.getUpdateBy());
-    }
-
-    private JsonNode readJson(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readTree(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Invalid user extra JSON", ex);
-        }
-    }
-
-    private String loginName(UserEntity user) {
-        if (user.getEmail() != null && !user.getEmail().isBlank()) {
-            return user.getEmail();
-        }
-        if (user.getPhone() != null && !user.getPhone().isBlank()) {
-            return user.getPhone();
-        }
-        return null;
-    }
 }

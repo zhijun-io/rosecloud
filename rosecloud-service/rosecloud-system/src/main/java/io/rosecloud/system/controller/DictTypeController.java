@@ -1,9 +1,9 @@
 package io.rosecloud.system.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.system.domain.DictType;
 import io.rosecloud.system.service.DictTypeService;
 import io.rosecloud.system.service.dto.DictTypeRequest;
@@ -56,9 +56,7 @@ public class DictTypeController {
 
     @PreAuthorize("hasAuthority('system:dict:list')")
     @GetMapping
-    public ApiResponse<PageResult<DictType>> page(@RequestParam(defaultValue = "1") long current,
-                                                  @RequestParam(defaultValue = "10") long size,
-                                                  @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(dictTypeService.page(PageSupport.current(current), PageSupport.size(size), keyword));
+    public ApiResponse<PagedData<DictType>> page(PageQuery pageQuery) {
+        return ApiResponse.ok(dictTypeService.page(pageQuery));
     }
 }

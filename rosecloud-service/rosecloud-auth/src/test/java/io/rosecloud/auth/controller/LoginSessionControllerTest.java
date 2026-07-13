@@ -1,7 +1,9 @@
 package io.rosecloud.auth.controller;
 
 import io.rosecloud.auth.service.LoginSessionService;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.ApiResponse;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.security.model.LoginSession;
 import org.junit.jupiter.api.Test;
 
@@ -21,11 +23,10 @@ class LoginSessionControllerTest {
 
         LoginSessionController controller = new LoginSessionController(service);
 
-        PageResult<LoginSession> result = controller.online(-5, 0).data();
+        ApiResponse<PagedData<LoginSession>> response = controller.online(new PageQuery(1, 1000));
+        PagedData<LoginSession> result = response.data();
 
-        assertThat(result.current()).isEqualTo(1);
-        assertThat(result.size()).isEqualTo(10);
-        assertThat(result.records()).hasSize(2);
+        assertThat(result.getData()).hasSize(2);
     }
 
     private static LoginSession sampleSession(String id) {

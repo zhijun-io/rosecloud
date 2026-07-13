@@ -37,7 +37,7 @@ public class UserSettingServiceImpl implements UserSettingService {
     public List<UserSetting> listMine() {
         return userSettingMapper.selectList(new LambdaQueryWrapper<UserSettingEntity>()
                         .eq(UserSettingEntity::getUserId, currentUserId())
-                        .orderByAsc(UserSettingEntity::getSettingKey)).stream().map(this::toDomain).toList();
+                        .orderByAsc(UserSettingEntity::getSettingKey)).stream().map(UserSettingEntity::toData).toList();
     }
 
     @Override
@@ -54,7 +54,7 @@ public class UserSettingServiceImpl implements UserSettingService {
         UserSettingEntity existing = userSettingMapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
                 .eq(UserSettingEntity::getUserId, userId)
                 .eq(UserSettingEntity::getSettingKey, key));
-        UserSettingEntity po = toEntity(new UserSetting(userId, key, request.value(), now(), userId));
+        UserSettingEntity po = new UserSettingEntity().toEntity(new UserSetting(userId, key, request.value(), now(), userId));
         if (existing == null) {
             userSettingMapper.insert(po);
             return;
@@ -79,7 +79,7 @@ public class UserSettingServiceImpl implements UserSettingService {
         return Optional.ofNullable(userSettingMapper.selectOne(new LambdaQueryWrapper<UserSettingEntity>()
                         .eq(UserSettingEntity::getUserId, userId)
                         .eq(UserSettingEntity::getSettingKey, key)))
-                .map(this::toDomain);
+                .map(UserSettingEntity::toData);
     }
 
     private void ensureSettingKeyExists(String key) {
@@ -101,17 +101,4 @@ public class UserSettingServiceImpl implements UserSettingService {
         return LocalDateTime.now();
     }
 
-    private UserSetting toDomain(UserSettingEntity po) {
-        return new UserSetting(po.getUserId(), po.getSettingKey(), po.getValue(), po.getUpdatedAt(), po.getUpdatedBy());
-    }
-
-    private UserSettingEntity toEntity(UserSetting setting) {
-        UserSettingEntity po = new UserSettingEntity();
-        po.setUserId(setting.getUserId());
-        po.setSettingKey(setting.getKey());
-        po.setValue(setting.getValue());
-        po.setUpdatedAt(setting.getUpdatedAt());
-        po.setUpdatedBy(setting.getUpdatedBy());
-        return po;
-    }
 }

@@ -56,8 +56,10 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
                 ? securityUser.getTenantId()
                 : loginTenantResolver.resolveInitialTenant(securityUser);
         // M3: when device binding is enabled, embed a fingerprint of the client IP + UA so a
-        // stolen token cannot be replayed from a different device.
+        // stolen token cannot be replayed from a different device. The same fingerprint is
+        // used as the session/audit device id for device-trust.
         String deviceFingerprint = tokenBindingEnabled ? DeviceFingerprint.compute(request) : null;
+        String deviceId = DeviceFingerprint.compute(request);
         JwtPair tokenPair = tokenFactory.createTokenPair(securityUser, activeTenantId, deviceFingerprint);
 
         String sessionId = UUID.randomUUID().toString();
@@ -69,9 +71,9 @@ public class RestAwareAuthenticationSuccessHandler implements AuthenticationSucc
         Instant expireAt = now.plusSeconds(refreshTokenExpirationSeconds);
         sessionStore.save(new LoginSession(
                 sessionId, token, tokenPair.refreshToken(), securityUser.getUserId(), securityUser.getUsername(),
-                securityUser.getNickname(), ip, truncate(userAgent, 512), now, expireAt));
+                securityUser.getNickname(), ip, truncate(userAgent, 512), now, expireAt, deviceId));
 
-        eventPublisher.publishEvent(new LoginSucceededEvent(securityUser, ip, truncate(userAgent, 512)));
+        eventPublisher.publishEvent(new LoginSucceededEvent(securityUser, ip, truncate(userAgent, 512), deviceId));
 
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

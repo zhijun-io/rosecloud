@@ -1,7 +1,8 @@
 package io.rosecloud.system.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.starter.security.annotation.InternalApi;
@@ -11,7 +12,6 @@ import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
 import io.rosecloud.system.service.dto.UserRoleAssignRequest;
-import io.rosecloud.system.support.PageSupport;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -39,10 +39,8 @@ public class UserController {
 
     @PreAuthorize("hasAuthority('system:user:list')")
     @GetMapping
-    public ApiResponse<PageResult<User>> page(@RequestParam(defaultValue = "1") long current,
-                                              @RequestParam(defaultValue = "10") long size,
-                                              @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(userService.page(PageSupport.current(current), PageSupport.size(size), keyword));
+    public ApiResponse<PagedData<User>> page(PageQuery pageQuery) {
+        return ApiResponse.ok(userService.page(pageQuery));
     }
 
     @PreAuthorize("isAuthenticated()")

@@ -1,16 +1,19 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.rosecloud.api.credential.CredentialApi;
+import io.rosecloud.api.credential.CredentialChangeRequest;
+import io.rosecloud.api.credential.CredentialSetRequest;
 import io.rosecloud.api.user.UserApi;
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.common.security.session.SessionStore;
@@ -24,8 +27,6 @@ import io.rosecloud.system.persistence.RoleEntity;
 import io.rosecloud.system.persistence.RoleMapper;
 import io.rosecloud.system.persistence.RoleMenuEntity;
 import io.rosecloud.system.persistence.RoleMenuMapper;
-import io.rosecloud.system.persistence.UserCredentialEntity;
-import io.rosecloud.system.persistence.UserCredentialMapper;
 import io.rosecloud.system.persistence.UserEntity;
 import io.rosecloud.system.persistence.UserMapper;
 import io.rosecloud.system.persistence.UserRoleEntity;
@@ -34,17 +35,14 @@ import io.rosecloud.system.service.UserService;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
 import io.rosecloud.system.service.dto.UserCreateRequest;
 import io.rosecloud.system.service.dto.UserProfile;
-import io.rosecloud.system.support.PasswordPolicyValidator;
 import io.rosecloud.system.support.TenantIdSupport;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -53,28 +51,23 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService, UserApi {
 
     private final UserMapper userMapper;
-    private final UserCredentialMapper userCredentialMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
     private final MenuMapper menuMapper;
-    private final ObjectMapper objectMapper;
-    private final PasswordEncoder passwordEncoder;
     private final SessionStore sessionStore;
+    private final CredentialApi credentialApi;
 
-    public UserServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
-                          UserRoleMapper userRoleMapper, RoleMapper roleMapper,
-                          RoleMenuMapper roleMenuMapper, MenuMapper menuMapper, ObjectMapper objectMapper,
-                          PasswordEncoder passwordEncoder, SessionStore sessionStore) {
+    public UserServiceImpl(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper,
+                           RoleMenuMapper roleMenuMapper, MenuMapper menuMapper,
+                           SessionStore sessionStore, CredentialApi credentialApi) {
         this.userMapper = userMapper;
-        this.userCredentialMapper = userCredentialMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleMapper = roleMapper;
         this.roleMenuMapper = roleMenuMapper;
         this.menuMapper = menuMapper;
-        this.objectMapper = objectMapper;
-        this.passwordEncoder = passwordEncoder;
         this.sessionStore = sessionStore;
+        this.credentialApi = credentialApi;
     }
 
     // ==================== helper ====================
@@ -99,9 +92,12 @@ public class UserServiceImpl implements UserService, UserApi {
         if (existsByUsername(request.username())) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
-        PasswordPolicyValidator.validate(request.password());
         User user = new User(null, request.username(), request.nickname(), 1, targetTenant, null);
-        return insert(user, passwordEncoder.encode(request.password()));
+        Long userId = insert(user);
+        // Password policy + hashing happen in auth; the credential write is best-effort and,
+        // on failure, rolls back the user insert (this method is transactional).
+        credentialApi.setPassword(userId, new CredentialSetRequest(request.password()));
+        return userId;
     }
 
     /**
@@ -119,39 +115,29 @@ public class UserServiceImpl implements UserService, UserApi {
 
     @Override
     @Transactional
-    public Long createWithHash(String username, String passwordHash, String nickname, String tenantId) {
-        if (existsByUsername(username)) {
-            throw new BizException(SystemErrorCode.USERNAME_EXISTS);
-        }
-        User user = new User(null, username, nickname, 1, TenantIdSupport.requireValid(tenantId), null);
-        return insert(user, passwordHash);
-    }
-
-    @Override
-    @Transactional
     public Long createWithoutPassword(String username, String nickname, String tenantId) {
         if (existsByUsername(username)) {
             throw new BizException(SystemErrorCode.USERNAME_EXISTS);
         }
         User user = new User(null, username, nickname, 0, TenantIdSupport.requireValid(tenantId), null);
-        return insert(user, null);
+        return insert(user);
     }
 
     @Override
-    public PageResult<User> page(long current, long size, String keyword) {
-        Page<UserEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.nested(w -> w.like(UserEntity::getEmail, keyword)
-                    .or()
-                    .like(UserEntity::getPhone, keyword)
-                    .or()
-                    .like(UserEntity::getNickname, keyword));
-        }
-        wrapper.orderByDesc(UserEntity::getCreateTime);
-        IPage<UserEntity> result = userMapper.selectPage(page, wrapper);
-        List<User> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
+    public PagedData<User> page(PageQuery pageQuery) {
+        return PagedResults.page(pageQuery, UserEntity.class, userMapper,
+                q -> {
+                    LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
+                        wrapper.nested(w -> w.like(UserEntity::getEmail, q.getKeyword())
+                                .or()
+                                .like(UserEntity::getPhone, q.getKeyword())
+                                .or()
+                                .like(UserEntity::getNickname, q.getKeyword()));
+                    }
+                    return wrapper;
+                },
+                SortField.of("createTime", SortDirection.DESC));
     }
 
     @Override
@@ -177,18 +163,9 @@ public class UserServiceImpl implements UserService, UserApi {
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         SecurityUser securityUser = currentSecurityUser();
-        SecurityUser authInfo = loadByUsernameInternal(securityUser.getUsername())
-                .orElseThrow(() -> new BizException(SecurityErrorCode.UNAUTHORIZED));
-        if (authInfo.getPassword() == null || authInfo.getPassword().isBlank()
-                || !passwordEncoder.matches(request.currentPassword(), authInfo.getPassword())) {
-            throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
-        }
-        PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
-        updatePassword(securityUser.getUserId(),
-                passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
-        // The password is embedded in the JWT; revoke existing sessions so a previously
-        // valid token (e.g. one held by an attacker before the change) cannot be reused.
-        sessionStore.revokeByUserId(securityUser.getUserId());
+        // Current-password verification and policy enforcement live in auth (the credential owner).
+        credentialApi.changePassword(securityUser.getUserId(),
+                new CredentialChangeRequest(request.currentPassword(), request.newPassword()));
     }
 
     @AuditLog(action = "user-assign-roles", description = "用户角色授权")
@@ -233,15 +210,8 @@ public class UserServiceImpl implements UserService, UserApi {
         if (!securityUser.getUserId().equals(userId)) {
             throw new BizException(SecurityErrorCode.UNAUTHORIZED);
         }
-        SecurityUser authInfo = loadByUsernameInternal(securityUser.getUsername())
-                .orElseThrow(() -> new BizException(SecurityErrorCode.UNAUTHORIZED));
-        if (authInfo.getPassword() == null || authInfo.getPassword().isBlank()
-                || !passwordEncoder.matches(request.currentPassword(), authInfo.getPassword())) {
-            throw new BizException(SecurityErrorCode.BAD_CREDENTIALS);
-        }
-        PasswordPolicyValidator.validateChange(request.currentPassword(), request.newPassword());
-        updatePassword(userId, passwordEncoder.encode(request.newPassword()), LocalDateTime.now());
-        sessionStore.revokeByUserId(userId);
+        credentialApi.changePassword(userId,
+                new CredentialChangeRequest(request.currentPassword(), request.newPassword()));
     }
 
     @Override
@@ -258,7 +228,7 @@ public class UserServiceImpl implements UserService, UserApi {
                         .eq(UserEntity::getPhone, username)));
     }
 
-    private Long insert(User user, String passwordHash) {
+    private Long insert(User user) {
         if (user.getUsername() == null || user.getUsername().isBlank()
                 || (!isEmail(user.getUsername()) && !isPhone(user.getUsername()))) {
             throw new BizException(SystemErrorCode.USERNAME_INVALID);
@@ -274,26 +244,11 @@ public class UserServiceImpl implements UserService, UserApi {
         }
         po.setAdditionalInfo(writeJson(user.getAdditionalInfo()));
         userMapper.insert(po);
-        UserCredentialEntity credential = new UserCredentialEntity();
-        credential.setUserId(po.getId());
-        credential.setPassword(passwordHash);
-        credential.setPasswordChangedTime(passwordHash == null ? null : LocalDateTime.now());
-        userCredentialMapper.insert(credential);
         return po.getId();
     }
 
-    private void updatePassword(Long userId, String passwordHash, LocalDateTime passwordChangedTime) {
-        UserCredentialEntity credential = credentialByUserId(userId);
-        if (credential == null) {
-            throw new IllegalStateException("Missing user credential for userId=" + userId);
-        }
-        credential.setPassword(passwordHash);
-        credential.setPasswordChangedTime(passwordChangedTime);
-        userCredentialMapper.updateById(credential);
-    }
-
     private Optional<User> findById(Long id) {
-        return Optional.ofNullable(userMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(userMapper.selectById(id)).map(UserEntity::toData);
     }
 
     private Optional<SecurityUser> loadByUsernameInternal(String username) {
@@ -304,8 +259,6 @@ public class UserServiceImpl implements UserService, UserApi {
         if (po == null) {
             return Optional.empty();
         }
-        UserCredentialEntity credential = credentialByUserId(po.getId());
-        String password = credential == null ? null : credential.getPassword();
 
         List<GrantedAuthority> authorities = new ArrayList<>();
         for (String role : loadRoleCodes(po.getId())) {
@@ -316,8 +269,9 @@ public class UserServiceImpl implements UserService, UserApi {
         }
 
         UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po));
+        // The password is owned by auth; never returned to the auth service over Feign.
         return Optional.of(new SecurityUser(
-                po.getId(), loginName(po), loginName(po), password,
+                po.getId(), loginName(po), loginName(po), null,
                 po.getStatus() != null && po.getStatus() == 1,
                 po.getTenantId(), principal, authorities));
     }
@@ -371,11 +325,6 @@ public class UserServiceImpl implements UserService, UserApi {
                 .stream().map(RoleEntity::getCode).toList();
     }
 
-    private UserCredentialEntity credentialByUserId(Long userId) {
-        return userCredentialMapper.selectOne(
-                new LambdaQueryWrapper<UserCredentialEntity>().eq(UserCredentialEntity::getUserId, userId));
-    }
-
     private boolean isEmail(String username) {
         return username != null && username.contains("@");
     }
@@ -392,23 +341,6 @@ public class UserServiceImpl implements UserService, UserApi {
             return user.getPhone();
         }
         return null;
-    }
-
-    private User toDomain(UserEntity po) {
-        return new User(po.getId(), loginName(po), po.getNickname(), po.getStatus(), po.getTenantId(),
-                readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(),
-                po.getUpdateBy());
-    }
-
-    private JsonNode readJson(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readTree(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Invalid user extra JSON", ex);
-        }
     }
 
     private String writeJson(JsonNode value) {

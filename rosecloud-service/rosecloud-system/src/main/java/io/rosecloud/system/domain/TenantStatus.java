@@ -3,6 +3,7 @@ package io.rosecloud.system.domain;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.error.SystemErrorCode;
 
+import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -33,6 +34,22 @@ public enum TenantStatus {
             }
         }
         throw new IllegalArgumentException("unknown tenant status: " + code);
+    }
+
+    /**
+     * Resolves the effective status for a stored code plus expiry date. A past
+     * {@code expireTime} overrides the stored status with {@link #EXPIRED}; a
+     * {@code null} code yields {@code null}.
+     */
+    public static TenantStatus resolve(Integer code, LocalDate expireTime) {
+        if (code == null) {
+            return null;
+        }
+        TenantStatus status = of(code);
+        if (expireTime != null && expireTime.isBefore(LocalDate.now())) {
+            return EXPIRED;
+        }
+        return status;
     }
 
     /**

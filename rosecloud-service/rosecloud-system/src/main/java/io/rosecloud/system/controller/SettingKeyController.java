@@ -1,9 +1,9 @@
 package io.rosecloud.system.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
-import io.rosecloud.system.support.PageSupport;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.service.SettingKeyService;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -57,9 +56,7 @@ public class SettingKeyController {
 
     @PreAuthorize("hasAuthority('system:setting-key:list')")
     @GetMapping
-    public ApiResponse<PageResult<SettingKey>> page(@RequestParam(defaultValue = "1") long current,
-                                                    @RequestParam(defaultValue = "10") long size,
-                                                    @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(settingKeyService.page(PageSupport.current(current), PageSupport.size(size), keyword));
+    public ApiResponse<PagedData<SettingKey>> page(PageQuery pageQuery) {
+        return ApiResponse.ok(settingKeyService.page(pageQuery));
     }
 }

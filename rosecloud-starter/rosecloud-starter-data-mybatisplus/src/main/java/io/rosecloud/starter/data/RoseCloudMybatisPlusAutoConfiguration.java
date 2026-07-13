@@ -33,7 +33,9 @@ public class RoseCloudMybatisPlusAutoConfiguration {
         for (InnerInterceptor inner : innerInterceptors) {
             interceptor.addInnerInterceptor(inner);
         }
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.getDbType(dataProperties.getDbType())));
+        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.getDbType(dataProperties.getDbType()));
+        pagination.setMaxLimit(dataProperties.getMaxPageSize());
+        interceptor.addInnerInterceptor(pagination);
         return interceptor;
     }
 

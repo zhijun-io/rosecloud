@@ -1,6 +1,7 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
 import io.rosecloud.system.service.dto.SettingKeyUpdateRequest;
@@ -19,5 +20,5 @@ public interface SettingKeyService {
 
     List<SettingKey> list();
 
-    PageResult<SettingKey> page(long current, long size, String keyword);
+    PagedData<SettingKey> page(PageQuery pageQuery);
 }

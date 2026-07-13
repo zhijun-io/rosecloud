@@ -1,11 +1,13 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.rosecloud.common.core.error.BizException;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortDirection;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
+import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.system.domain.DictData;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.DictDataEntity;
@@ -29,7 +31,7 @@ public class DictDataServiceImpl implements DictDataService {
     @AuditLog(action = "dict-data-create", description = "创建字典项")
     @Override
     public Long create(DictDataRequest request) {
-        DictDataEntity po = toEntity(DictData.of(null, request.dictCode(), request.label(),
+        DictDataEntity po = new DictDataEntity().toEntity(DictData.of(null, request.dictCode(), request.label(),
                 request.value(), request.sort() == null ? 0 : request.sort(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         po.setId(null);
@@ -41,7 +43,7 @@ public class DictDataServiceImpl implements DictDataService {
     @Override
     public void update(Long id, DictDataRequest request) {
         findById(id).orElseThrow(() -> new BizException(SystemErrorCode.DICT_DATA_NOT_FOUND));
-        DictDataEntity po = toEntity(DictData.of(id, request.dictCode(), request.label(), request.value(),
+        DictDataEntity po = new DictDataEntity().toEntity(DictData.of(id, request.dictCode(), request.label(), request.value(),
                 request.sort() == null ? 0 : request.sort(),
                 request.status() == null ? 1 : request.status(), request.remark()));
         dictDataMapper.updateById(po);
@@ -64,45 +66,24 @@ public class DictDataServiceImpl implements DictDataService {
         return dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
                         .eq(DictDataEntity::getDictCode, dictCode)
                         .eq(DictDataEntity::getStatus, 1)
-                        .orderByAsc(DictDataEntity::getSort)).stream().map(this::toDomain).toList();
+                        .orderByAsc(DictDataEntity::getSort)).stream().map(DictDataEntity::toData).toList();
     }
 
     @Override
-    public PageResult<DictData> page(long current, long size, String dictCode) {
-        Page<DictDataEntity> page = new Page<>(current, size);
-        LambdaQueryWrapper<DictDataEntity> wrapper = new LambdaQueryWrapper<>();
-        if (dictCode != null && !dictCode.isBlank()) {
-            wrapper.eq(DictDataEntity::getDictCode, dictCode);
-        }
-        wrapper.orderByAsc(DictDataEntity::getSort).orderByDesc(DictDataEntity::getCreateTime);
-        IPage<DictDataEntity> result = dictDataMapper.selectPage(page, wrapper);
-        List<DictData> records = result.getRecords().stream().map(this::toDomain).toList();
-        return PageResult.of(records, result.getTotal(), result.getCurrent(), result.getSize());
+    public PagedData<DictData> page(PageQuery pageQuery, String dictCode) {
+        return PagedResults.page(pageQuery, DictDataEntity.class, dictDataMapper,
+                q -> {
+                    LambdaQueryWrapper<DictDataEntity> wrapper = new LambdaQueryWrapper<>();
+                    if (dictCode != null && !dictCode.isBlank()) {
+                        wrapper.eq(DictDataEntity::getDictCode, dictCode);
+                    }
+                    return wrapper;
+                },
+                SortField.of("sort", SortDirection.ASC), SortField.of("createTime", SortDirection.DESC));
     }
 
     private Optional<DictData> findById(Long id) {
-        return Optional.ofNullable(dictDataMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(dictDataMapper.selectById(id)).map(DictDataEntity::toData);
     }
 
-    private DictData toDomain(DictDataEntity po) {
-        return new DictData(po.getId(), po.getDictCode(), po.getLabel(), po.getValue(),
-                po.getSort(), po.getStatus(), po.getRemark(), po.getCreateTime(), po.getCreateBy(),
-                po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private DictDataEntity toEntity(DictData d) {
-        DictDataEntity po = new DictDataEntity();
-        po.setId(d.getId());
-        po.setDictCode(d.getDictCode());
-        po.setLabel(d.getLabel());
-        po.setValue(d.getValue());
-        po.setSort(d.getSort());
-        po.setStatus(d.getStatus());
-        po.setRemark(d.getRemark());
-        po.setCreateTime(d.getCreateTime());
-        po.setCreateBy(d.getCreateBy());
-        po.setUpdateTime(d.getUpdateTime());
-        po.setUpdateBy(d.getUpdateBy());
-        return po;
-    }
 }

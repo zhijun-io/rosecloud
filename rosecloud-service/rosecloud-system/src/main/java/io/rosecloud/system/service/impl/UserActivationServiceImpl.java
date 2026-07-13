@@ -1,6 +1,8 @@
 package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.rosecloud.api.credential.CredentialApi;
+import io.rosecloud.api.credential.CredentialSetRequest;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.UserCredentialEntity;
@@ -12,8 +14,6 @@ import io.rosecloud.system.persistence.TenantMapper;
 import io.rosecloud.system.service.UserActivationService;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.service.dto.UserActivationInfo;
-import io.rosecloud.system.support.PasswordPolicyValidator;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,8 +32,8 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     private final UserMapper userMapper;
     private final UserCredentialMapper userCredentialMapper;
-    private final PasswordEncoder passwordEncoder;
     private final TenantMapper tenantMapper;
+    private final CredentialApi credentialApi;
     private final long activationTtlHours;
     private final long resendCooldownSeconds;
     private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
@@ -48,12 +48,12 @@ public class UserActivationServiceImpl implements UserActivationService {
     private int globalResendCount = 0;
 
     public UserActivationServiceImpl(UserMapper userMapper, UserCredentialMapper userCredentialMapper,
-                                     PasswordEncoder passwordEncoder,
-                                     TenantMapper tenantMapper, UserActivationProperties properties) {
+                                      TenantMapper tenantMapper, CredentialApi credentialApi,
+                                      UserActivationProperties properties) {
         this.userMapper = userMapper;
         this.userCredentialMapper = userCredentialMapper;
-        this.passwordEncoder = passwordEncoder;
         this.tenantMapper = tenantMapper;
+        this.credentialApi = credentialApi;
         this.activationTtlHours = properties.getActivationTtlHours();
         this.resendCooldownSeconds = properties.getResendCooldownSeconds();
     }
@@ -75,8 +75,10 @@ public class UserActivationServiceImpl implements UserActivationService {
         if (info.expired()) {
             throw new BizException(SystemErrorCode.USER_ACTIVATION_TOKEN_EXPIRED);
         }
-        PasswordPolicyValidator.validate(password);
-        confirmActivation(info.userId(), passwordEncoder.encode(password), LocalDateTime.now());
+        // Password policy + hashing happen in auth; the credential write is best-effort and,
+        // on failure, rolls back this transaction (the user stays unactivated).
+        credentialApi.setPassword(info.userId(), new CredentialSetRequest(password));
+        confirmActivation(info.userId());
         return findActivationByUsername(info.username())
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_ACTIVATION_TOKEN_INVALID));
     }
@@ -158,16 +160,14 @@ public class UserActivationServiceImpl implements UserActivationService {
         return Optional.of(toActivationInfo(user, credential));
     }
 
-    private void confirmActivation(Long userId, String encodedPassword, LocalDateTime usedTime) {
+    private void confirmActivation(Long userId) {
         UserCredentialEntity credential = credentialByUserId(userId);
         if (credential == null) {
             throw new IllegalStateException("Missing user credential for userId=" + userId);
         }
-        credential.setPassword(encodedPassword);
-        credential.setPasswordChangedTime(usedTime);
         credential.setActivateToken(null);
         credential.setExpireTime(null);
-        credential.setUsedTime(usedTime);
+        credential.setUsedTime(LocalDateTime.now());
         userCredentialMapper.updateById(credential);
 
         UserEntity user = userMapper.selectById(userId);
@@ -203,7 +203,7 @@ public class UserActivationServiceImpl implements UserActivationService {
     }
 
     private void saveActivationToken(Long userId, String activateToken, LocalDateTime expireTime,
-                                     LocalDateTime sendTime, Long version) {
+                                      LocalDateTime sendTime, Long version) {
         UserCredentialEntity credential = credentialByUserId(userId);
         if (credential == null) {
             throw new IllegalStateException("Missing user credential for userId=" + userId);

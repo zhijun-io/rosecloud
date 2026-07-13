@@ -1,7 +1,9 @@
 package io.rosecloud.system.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import io.rosecloud.common.core.model.ToData;
 import io.rosecloud.starter.data.BaseEntity;
+import io.rosecloud.system.domain.AuditLog;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AuditLogEntity extends BaseEntity {
+public class AuditLogEntity extends BaseEntity implements ToData<AuditLog> {
 
     private String action;
     private String description;
@@ -26,4 +28,11 @@ public class AuditLogEntity extends BaseEntity {
     private String entityId;
     private String ipAddress;
     private String severity;
+
+    @Override
+    public AuditLog toData() {
+        return new AuditLog(getId(), action, description, principal, tenantId, target,
+                elapsedMillis == null ? 0L : elapsedMillis, success != null && success == 1,
+                error, getCreateTime(), entityType, entityId, ipAddress, severity);
+    }
 }

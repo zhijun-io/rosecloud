@@ -54,7 +54,7 @@ cd rosecloud-service/rosecloud-auth && ./mvnw spring-boot:run
 - 包根使用 `io.rosecloud.*`
 - API 前缀统一使用 `ServiceMetadata.API_PREFIX`
 - 统一返回体使用 `ApiResponse<T>`
-- 分页统一使用 `ApiResponse<PageResult<T>>`
+- 分页统一使用 `ApiResponse<Page<T>>`（`org.springframework.data.domain.Page`，由 MyBatis 分页结果经 `new PageImpl<>(records, pageable, total)` 构造；最大页大小由 `RoseCloudDataProperties.maxPageSize` 声明式限制）
 - 错误码使用 `ErrorCode`，业务异常使用 `BizException`
 - 常量类使用 `final` + 私有构造
 - 不可变数据载体与 DTO 的注解选型见 [docs/lombok-conventions.md](docs/lombok-conventions.md)。简则：纯 DTO / 不实现接口的值对象用 `record`；**实现 `HasId`/`HasTenantId`/`HasUserId`/`HasStatus` 等 JavaBean 接口的不可变载体必须用 `@Value`**（不能用 `record`）；Entity / 可变 POJO 用 `@Getter @Setter @NoArgsConstructor`。

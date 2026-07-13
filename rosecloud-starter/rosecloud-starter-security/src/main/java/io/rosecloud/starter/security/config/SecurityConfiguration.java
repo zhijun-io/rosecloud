@@ -201,9 +201,8 @@ public class SecurityConfiguration {
     public JwtAuthenticationProvider jwtAuthenticationProvider(
             JwtTokenFactory jwtTokenFactory,
             SessionStore sessionStore,
-            UserDetailsService userDetailsService,
             ObjectProvider<TenantLookupApi> tenantLookupApiProvider) {
-        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore, userDetailsService,
+        return new JwtAuthenticationProvider(jwtTokenFactory, sessionStore,
                 tenantLookupApiProvider.getIfAvailable());
     }
 

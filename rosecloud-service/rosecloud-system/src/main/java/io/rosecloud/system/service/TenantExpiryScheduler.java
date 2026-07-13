@@ -18,7 +18,7 @@ import java.time.LocalDate;
  * in the PRD: "租户到期后自动进入停用状态".
  *
  * <p>Write guard ({@link io.rosecloud.starter.security.web.TenantWriteGuardFilter})
- * and dynamic status resolution ({@link TenantServiceImpl#resolveStatus}) both
+ * and dynamic status resolution ({@link TenantStatus#resolve}) both
  * recognise {@code EXPIRED} as read-only, so expired tenants are blocked from
  * mutating operations even before this scheduler runs — but the scheduler closes
  * the gap between in-memory resolution and persistent state.

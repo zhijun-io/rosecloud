@@ -2,12 +2,8 @@ package io.rosecloud.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.TenantProfile;
-import io.rosecloud.system.domain.TenantProfileData;
 import io.rosecloud.system.error.SystemErrorCode;
 import io.rosecloud.system.persistence.TenantEntity;
 import io.rosecloud.system.persistence.TenantMapper;
@@ -27,13 +23,10 @@ public class TenantProfileServiceImpl implements TenantProfileService {
 
     private final TenantProfileMapper tenantProfileMapper;
     private final TenantMapper tenantMapper;
-    private final ObjectMapper objectMapper;
 
-    public TenantProfileServiceImpl(TenantProfileMapper tenantProfileMapper, TenantMapper tenantMapper,
-                                    ObjectMapper objectMapper) {
+    public TenantProfileServiceImpl(TenantProfileMapper tenantProfileMapper, TenantMapper tenantMapper) {
         this.tenantProfileMapper = tenantProfileMapper;
         this.tenantMapper = tenantMapper;
-        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -44,7 +37,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_EXISTS);
         }
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileMapper.insert(toEntity(profile));
+        tenantProfileMapper.insert(new TenantProfileEntity().toEntity(profile));
         return id;
     }
 
@@ -53,7 +46,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
     public void update(String id, TenantProfileUpdateRequest request) {
         load(id);
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileMapper.updateById(toEntity(profile));
+        tenantProfileMapper.updateById(new TenantProfileEntity().toEntity(profile));
     }
 
     @Transactional
@@ -95,7 +88,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
                         .orderByDesc(TenantProfileEntity::getIsDefault)
                         .orderByAsc(TenantProfileEntity::getId))
                 .stream()
-                .map(this::toDomain)
+                .map(TenantProfileEntity::toData)
                 .toList();
     }
 
@@ -105,48 +98,13 @@ public class TenantProfileServiceImpl implements TenantProfileService {
     }
 
     private Optional<TenantProfile> findById(String id) {
-        return Optional.ofNullable(tenantProfileMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(tenantProfileMapper.selectById(id)).map(TenantProfileEntity::toData);
     }
 
     private Optional<TenantProfile> findDefault() {
         TenantProfileEntity po = tenantProfileMapper.selectOne(new LambdaQueryWrapper<TenantProfileEntity>()
                 .eq(TenantProfileEntity::getIsDefault, 1));
-        return Optional.ofNullable(po).map(this::toDomain);
-    }
-
-    private TenantProfile toDomain(TenantProfileEntity po) {
-        return new TenantProfile(po.getId(), po.getName(), po.getDescription(), po.getIsDefault(),
-                readJson(po.getAdditionalInfo()), po.getCreateTime(), po.getCreateBy(),
-                po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private TenantProfileEntity toEntity(TenantProfile profile) {
-        TenantProfileEntity po = new TenantProfileEntity();
-        po.setId(profile.getId());
-        po.setName(profile.getName());
-        po.setDescription(profile.getDescription());
-        po.setAdditionalInfo(writeJson(profile.getAdditionalInfo()));
-        po.setIsDefault(profile.isDefault());
-        po.setCreateTime(profile.getCreateTime());
-        po.setCreateBy(profile.getCreateBy());
-        po.setUpdateTime(profile.getUpdateTime());
-        po.setUpdateBy(profile.getUpdateBy());
-        return po;
-    }
-
-    private JsonNode readJson(String value) {
-        if (value == null || value.isBlank()) {
-            return objectMapper.valueToTree(TenantProfileData.defaults());
-        }
-        try {
-            return objectMapper.readTree(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Invalid tenant profile JSON", ex);
-        }
-    }
-
-    private String writeJson(JsonNode value) {
-        return value == null || value.isNull() ? null : value.toString();
+        return Optional.ofNullable(po).map(TenantProfileEntity::toData);
     }
 
     private static String requireId(String id) {

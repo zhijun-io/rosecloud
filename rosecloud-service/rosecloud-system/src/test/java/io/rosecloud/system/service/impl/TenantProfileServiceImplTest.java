@@ -47,10 +47,8 @@ class TenantProfileServiceImplTest {
     @Mock
     TenantMapper tenantMapper;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private TenantProfileServiceImpl service() {
-        return new TenantProfileServiceImpl(tenantProfileMapper, tenantMapper, objectMapper);
+        return new TenantProfileServiceImpl(tenantProfileMapper, tenantMapper);
     }
 
     @Test

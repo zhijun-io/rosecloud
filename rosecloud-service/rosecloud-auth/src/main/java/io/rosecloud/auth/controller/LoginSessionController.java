@@ -1,11 +1,12 @@
 package io.rosecloud.auth.controller;
 
 import io.rosecloud.common.core.model.ApiResponse;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.ServiceMetadata;
 import io.rosecloud.common.security.model.LoginSession;
 import io.rosecloud.auth.service.LoginSessionService;
-import lombok.AllArgsConstructor;
+import io.rosecloud.starter.data.PagedResults;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,16 +26,9 @@ public class LoginSessionController {
 
     @PreAuthorize("hasAuthority('system:session:list')")
     @GetMapping("/online")
-    public ApiResponse<PageResult<LoginSession>> online(@RequestParam(defaultValue = "1") long current,
-                                                        @RequestParam(defaultValue = "10") long size) {
+    public ApiResponse<PagedData<LoginSession>> online(PageQuery pageQuery) {
         List<LoginSession> all = sessionStoreService.findAll();
-        long total = all.size();
-        long safeCurrent = current < 1 ? 1 : current;
-        long safeSize = size < 1 ? 10 : Math.min(size, 100);
-        int start = (int) ((safeCurrent - 1) * safeSize);
-        int end = Math.min(start + (int) safeSize, all.size());
-        List<LoginSession> page = start >= all.size() ? List.of() : all.subList(start, end);
-        return ApiResponse.ok(PageResult.of(page, total, safeCurrent, safeSize));
+        return ApiResponse.ok(PagedResults.slice(all, pageQuery));
     }
 
     @PreAuthorize("hasAuthority('system:session:kick')")

@@ -1,7 +1,8 @@
 package io.rosecloud.system.service;
 
 import io.rosecloud.api.user.UserPasswordUpdateRequest;
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.system.domain.User;
 import io.rosecloud.system.service.dto.ChangePasswordRequest;
@@ -14,11 +15,9 @@ public interface UserService {
 
     Long create(UserCreateRequest request);
 
-    Long createWithHash(String username, String passwordHash, String nickname, String tenantId);
-
     Long createWithoutPassword(String username, String nickname, String tenantId);
 
-    PageResult<User> page(long current, long size, String keyword);
+    PagedData<User> page(PageQuery pageQuery);
 
     User get(Long id);
 

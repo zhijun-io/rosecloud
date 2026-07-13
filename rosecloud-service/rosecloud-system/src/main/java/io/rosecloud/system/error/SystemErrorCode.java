@@ -21,8 +21,6 @@ public enum SystemErrorCode implements ErrorCode {
     USER_ACTIVATION_TOKEN_INVALID("激活链接无效"),
     USER_ACTIVATION_TOKEN_EXPIRED("激活链接已过期"),
     USER_ACTIVATION_TOKEN_USED("激活链接已使用"),
-    PASSWORD_TOO_WEAK("密码不符合复杂度要求"),
-    PASSWORD_SAME_AS_OLD("新密码不能与旧密码相同"),
     ROLE_CODE_EXISTS("角色编码已存在"),
     MENU_NOT_FOUND("菜单不存在"),
     MENU_HAS_CHILDREN("存在子菜单，无法删除"),

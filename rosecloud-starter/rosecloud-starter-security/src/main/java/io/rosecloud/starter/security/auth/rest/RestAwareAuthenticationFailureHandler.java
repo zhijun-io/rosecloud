@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.common.security.event.LoginFailedEvent;
 import io.rosecloud.common.security.exception.SecurityErrorCode;
+import io.rosecloud.starter.security.util.DeviceFingerprint;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -38,8 +39,9 @@ public class RestAwareAuthenticationFailureHandler implements AuthenticationFail
         String username = (String) request.getAttribute("ATTEMPTED_USERNAME");
         String ip = request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
+        String deviceId = DeviceFingerprint.compute(request);
 
-        eventPublisher.publishEvent(new LoginFailedEvent(username, null, e.getMessage(), ip, userAgent));
+        eventPublisher.publishEvent(new LoginFailedEvent(username, null, e.getMessage(), ip, userAgent, deviceId));
 
         // A locked account (H3) surfaces a distinct 423 so a legitimate user knows why they
         // are blocked; every other failure stays a uniform 401 to avoid username enumeration.

@@ -1,7 +1,6 @@
 package io.rosecloud.system.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.model.ApiResponse;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
@@ -32,8 +31,6 @@ class UserTenantControllerTest {
     UserTenantMapper userTenantMapper;
     @Mock
     TenantService tenantService;
-    @Mock
-    ObjectMapper objectMapper;
 
     @Test
     void listTenantCandidatesMarksSelectableTenants() {
@@ -54,7 +51,7 @@ class UserTenantControllerTest {
         when(tenantService.get("TENANT2")).thenReturn(tenant("TENANT2", "Tenant 2", TenantStatus.DISABLED));
 
         UserTenantController controller =
-                new UserTenantController(userMapper, userTenantMapper, tenantService, objectMapper);
+                new UserTenantController(userMapper, userTenantMapper, tenantService);
 
         var response = controller.listTenantCandidates(1L).data();
 

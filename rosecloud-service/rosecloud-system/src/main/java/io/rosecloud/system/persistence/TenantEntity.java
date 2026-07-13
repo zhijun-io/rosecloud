@@ -10,6 +10,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import io.rosecloud.common.core.model.ToData;
+import io.rosecloud.common.core.model.ToEntity;
+import io.rosecloud.common.core.util.Json;
+import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,7 +24,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @TableName("sys_tenant")
-public class TenantEntity {
+public class TenantEntity implements ToData<Tenant>, ToEntity<Tenant, TenantEntity> {
 
     @TableId(type = IdType.INPUT)
     private String id;
@@ -42,4 +47,29 @@ public class TenantEntity {
     private Long updateBy;
     @TableLogic
     private Integer deleted;
+
+    @Override
+    public Tenant toData() {
+        return new Tenant(id, name, TenantStatus.resolve(status, expireTime), contactUser, contactPhone,
+                expireTime, remark, tenantProfileId, Json.readTree(extra),
+                createTime, createBy, updateTime, updateBy);
+    }
+
+    @Override
+    public TenantEntity toEntity(Tenant t) {
+        setId(t.getId());
+        setName(t.getName());
+        setStatus(t.getStatus() == null ? null : t.getStatus().code());
+        setContactUser(t.getContactUser());
+        setContactPhone(t.getContactPhone());
+        setExpireTime(t.getExpireTime());
+        setRemark(t.getRemark());
+        setTenantProfileId(t.getTenantProfileId());
+        setExtra(Json.writeString(t.getAdditionalInfo()));
+        setCreateTime(t.getCreateTime());
+        setCreateBy(t.getCreateBy());
+        setUpdateTime(t.getUpdateTime());
+        setUpdateBy(t.getUpdateBy());
+        return this;
+    }
 }

@@ -1,6 +1,7 @@
 package io.rosecloud.system.service;
 
-import io.rosecloud.common.core.model.PageResult;
+import io.rosecloud.common.core.model.PageQuery;
+import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.system.domain.DictData;
 import io.rosecloud.system.service.dto.DictDataRequest;
 
@@ -18,5 +19,5 @@ public interface DictDataService {
 
     List<DictData> listByCode(String dictCode);
 
-    PageResult<DictData> page(long current, long size, String dictCode);
+    PagedData<DictData> page(PageQuery pageQuery, String dictCode);
 }

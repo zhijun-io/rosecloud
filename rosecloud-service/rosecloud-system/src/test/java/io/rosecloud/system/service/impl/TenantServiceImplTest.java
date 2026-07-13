@@ -1,6 +1,5 @@
 package io.rosecloud.system.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
@@ -52,10 +51,8 @@ class TenantServiceImplTest {
     @Mock
     TenantProvisioner tenantProvisioner;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private TenantServiceImpl service() {
-        return new TenantServiceImpl(tenantMapper, tenantProfileMapper, objectMapper, tenantProvisioner);
+        return new TenantServiceImpl(tenantMapper, tenantProfileMapper, tenantProvisioner);
     }
 
     @Test

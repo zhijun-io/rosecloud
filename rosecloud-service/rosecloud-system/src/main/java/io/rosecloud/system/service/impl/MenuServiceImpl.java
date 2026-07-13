@@ -43,7 +43,7 @@ public class MenuServiceImpl implements MenuService {
     @AuditLog(action = "menu-create", description = "创建菜单")
     @Override
     public Long create(MenuRequest request) {
-        MenuEntity po = toEntity(toMenu(null, request));
+        MenuEntity po = new MenuEntity().toEntity(toMenu(null, request));
         po.setId(null);
         menuMapper.insert(po);
         return po.getId();
@@ -53,7 +53,7 @@ public class MenuServiceImpl implements MenuService {
     @Override
     public void update(Long id, MenuRequest request) {
         findById(id).orElseThrow(() -> new BizException(SystemErrorCode.MENU_NOT_FOUND));
-        menuMapper.updateById(toEntity(toMenu(id, request)));
+        menuMapper.updateById(new MenuEntity().toEntity(toMenu(id, request)));
     }
 
     @AuditLog(action = "menu-delete", description = "删除菜单")
@@ -71,7 +71,7 @@ public class MenuServiceImpl implements MenuService {
     public List<Menu> list() {
         return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
                         .orderByAsc(MenuEntity::getSort))
-                .stream().map(this::toDomain).toList();
+                .stream().map(MenuEntity::toData).toList();
     }
 
     @Override
@@ -106,7 +106,7 @@ public class MenuServiceImpl implements MenuService {
     }
 
     private Optional<Menu> findById(Long id) {
-        return Optional.ofNullable(menuMapper.selectById(id)).map(this::toDomain);
+        return Optional.ofNullable(menuMapper.selectById(id)).map(MenuEntity::toData);
     }
 
     private List<Menu> findByRoleIds(Collection<Long> roleIds) {
@@ -122,7 +122,7 @@ public class MenuServiceImpl implements MenuService {
         return menuMapper.selectList(new LambdaQueryWrapper<MenuEntity>()
                         .in(MenuEntity::getId, menuIds)
                         .orderByAsc(MenuEntity::getSort))
-                .stream().map(this::toDomain).toList();
+                .stream().map(MenuEntity::toData).toList();
     }
 
     private Menu toMenu(Long id, MenuRequest request) {
@@ -132,32 +132,6 @@ public class MenuServiceImpl implements MenuService {
         int visible = request.visible() == null ? 1 : request.visible();
         return Menu.of(id, parentId, request.name(), request.type(), request.path(), request.component(),
                 request.perms(), request.icon(), sort, status, visible);
-    }
-
-    private Menu toDomain(MenuEntity po) {
-        return new Menu(po.getId(), po.getParentId(), po.getName(), po.getType(), po.getPath(),
-                po.getComponent(), po.getPerms(), po.getIcon(), po.getSort(), po.getStatus(), po.getVisible(),
-                po.getCreateTime(), po.getCreateBy(), po.getUpdateTime(), po.getUpdateBy());
-    }
-
-    private MenuEntity toEntity(Menu m) {
-        MenuEntity po = new MenuEntity();
-        po.setId(m.getId());
-        po.setParentId(m.getParentId());
-        po.setName(m.getName());
-        po.setType(m.getType());
-        po.setPath(m.getPath());
-        po.setComponent(m.getComponent());
-        po.setPerms(m.getPerms());
-        po.setIcon(m.getIcon());
-        po.setSort(m.getSort());
-        po.setStatus(m.getStatus());
-        po.setVisible(m.getVisible());
-        po.setCreateTime(m.getCreateTime());
-        po.setCreateBy(m.getCreateBy());
-        po.setUpdateTime(m.getUpdateTime());
-        po.setUpdateBy(m.getUpdateBy());
-        return po;
     }
 
     private List<MenuTreeNode> buildTree(List<Menu> menus) {
