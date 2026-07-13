@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +52,7 @@ class TenantSelectionServiceTest {
     private TenantSelectionService service() {
         SecurityProperties properties = new SecurityProperties();
         properties.setRefreshTokenExpirationSeconds(86400);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         return new TenantSelectionService(userTenantApi, redisTemplate, sessionStore, tokenFactory, properties, tenantLookupApi, auditLogApi);
     }
 
@@ -111,6 +112,63 @@ class TenantSelectionServiceTest {
                 () -> service().resolveInitialTenant(user));
     }
 
+    @Test
+    void impersonateCreatesTokenForEnabledTenant() {
+        SecurityUser admin = systemAdmin();
+        when(tenantLookupApi.findTenantStatus("TENANT-B")).thenReturn(ApiResponse.ok(
+                new io.rosecloud.api.user.TenantStatusView("TENANT-B", "ENABLED")));
+        when(tokenFactory.createTokenPair(any(SecurityUser.class), eq("TENANT-B")))
+                .thenReturn(new JwtPair("imp-access", "imp-refresh"));
+
+        JwtPair pair = service().impersonate(admin, "admin-token", "tenant-b", "10.0.0.1", "AdminUI");
+
+        assertEquals("imp-access", pair.accessToken());
+        verify(sessionStore).save(any(io.rosecloud.common.security.model.LoginSession.class));
+        verify(sessionStore).revoke("admin-token");
+    }
+
+    @Test
+    void impersonateCreatesTokenForExpiredTenant() {
+        SecurityUser admin = systemAdmin();
+        when(tenantLookupApi.findTenantStatus("TENANT-C")).thenReturn(ApiResponse.ok(
+                new io.rosecloud.api.user.TenantStatusView("TENANT-C", "EXPIRED")));
+        when(tokenFactory.createTokenPair(any(SecurityUser.class), eq("TENANT-C")))
+                .thenReturn(new JwtPair("imp-access-c", "imp-refresh-c"));
+
+        JwtPair pair = service().impersonate(admin, "admin-token", "tenant-c", "10.0.0.1", "AdminUI");
+
+        assertEquals("imp-access-c", pair.accessToken());
+        verify(sessionStore).save(any(io.rosecloud.common.security.model.LoginSession.class));
+    }
+
+    @Test
+    void impersonateRejectsPendingTenant() {
+        SecurityUser admin = systemAdmin();
+        when(tenantLookupApi.findTenantStatus("TENANT-D")).thenReturn(ApiResponse.ok(
+                new io.rosecloud.api.user.TenantStatusView("TENANT-D", "PENDING")));
+
+        assertThrows(io.rosecloud.common.core.error.BizException.class,
+                () -> service().impersonate(admin, "admin-token", "tenant-d", "10.0.0.1", "AdminUI"));
+    }
+
+    @Test
+    void impersonateRejectsDisabledTenant() {
+        SecurityUser admin = systemAdmin();
+        when(tenantLookupApi.findTenantStatus("TENANT-E")).thenReturn(ApiResponse.ok(
+                new io.rosecloud.api.user.TenantStatusView("TENANT-E", "DISABLED")));
+
+        assertThrows(io.rosecloud.common.core.error.BizException.class,
+                () -> service().impersonate(admin, "admin-token", "tenant-e", "10.0.0.1", "AdminUI"));
+    }
+
+    @Test
+    void impersonateRejectsNonPlatformAdmin() {
+        SecurityUser regularUser = user("ACME");
+
+        assertThrows(io.rosecloud.common.core.error.BizException.class,
+                () -> service().impersonate(regularUser, "user-token", "TENANT-F", "10.0.0.1", "AdminUI"));
+    }
+
     private static SecurityUser user(String tenantId) {
         return new SecurityUser(1L, "alice@example.com", "Alice", "hash", true, tenantId,
                 new UserPrincipal(UserPrincipal.Type.USER_NAME, "alice@example.com"), List.of());
@@ -118,5 +176,10 @@ class TenantSelectionServiceTest {
 
     private static TenantAccessCandidate candidate(String tenantId, String tenantName, boolean selectable) {
         return new TenantAccessCandidate(tenantId, tenantName, "ENABLED", selectable);
+    }
+
+    private static SecurityUser systemAdmin() {
+        return new SecurityUser(99L, "root@platform.com", "PlatformAdmin", "hash", true, "ROOT",
+                new UserPrincipal(UserPrincipal.Type.USER_NAME, "root@platform.com"), List.of());
     }
 }
