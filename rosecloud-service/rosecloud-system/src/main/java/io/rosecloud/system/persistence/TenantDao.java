@@ -6,6 +6,7 @@ import io.rosecloud.starter.data.dao.MyBatisDao;
 import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.Tenant;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -38,6 +39,16 @@ public class TenantDao extends MyBatisDao<Tenant, String, TenantEntity> {
     public long countByProfileId(String profileId) {
         return mapper.selectCount(new LambdaQueryWrapper<TenantEntity>()
                 .eq(TenantEntity::getTenantProfileId, profileId));
+    }
+
+    /**
+     * Check whether a given username matches the tenant's admin username.
+     * The adminUsername field lives only in the entity (not in the Tenant domain),
+     * so this check is encapsulated here rather than leaking into the service.
+     */
+    public boolean isAdminUser(String tenantId, String username) {
+        TenantEntity entity = mapper.selectById(tenantId);
+        return entity != null && username != null && username.equals(entity.getAdminUsername());
     }
 
     @Override

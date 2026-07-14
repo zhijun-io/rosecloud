@@ -1,13 +1,11 @@
 package io.rosecloud.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.user.TenantAccessCandidate;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
-import io.rosecloud.system.persistence.UserEntity;
-import io.rosecloud.system.persistence.UserMapper;
-import io.rosecloud.system.persistence.UserTenantEntity;
-import io.rosecloud.system.persistence.UserTenantMapper;
+import io.rosecloud.system.domain.User;
+import io.rosecloud.system.persistence.UserDao;
+import io.rosecloud.system.persistence.UserTenantDao;
 import io.rosecloud.system.service.TenantService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,40 +14,32 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserTenantServiceImplTest {
 
     @Mock
-    UserMapper userMapper;
+    UserDao userDao;
     @Mock
-    UserTenantMapper userTenantMapper;
+    UserTenantDao userTenantDao;
     @Mock
     TenantService tenantService;
 
     @Test
     void listTenantCandidatesMarksSelectableTenants() {
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        user.setTenantId("TENANT1");
-        user.setEmail("alice@example.com");
-        user.setNickname("Alice");
-        user.setStatus(1);
-        when(userMapper.selectById(1L)).thenReturn(user);
+        User user = new User(1L, "alice@example.com", "Alice", 1, "TENANT1", null);
+        when(userDao.findById(1L)).thenReturn(Optional.of(user));
 
-        UserTenantEntity link = new UserTenantEntity();
-        link.setUserId(1L);
-        link.setTenantId("TENANT2");
-        when(userTenantMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(link));
+        when(userTenantDao.findTenantIdsByUserId(1L)).thenReturn(List.of("TENANT2"));
 
         when(tenantService.get("TENANT1")).thenReturn(tenant("TENANT1", "Tenant 1", TenantStatus.ENABLED));
         when(tenantService.get("TENANT2")).thenReturn(tenant("TENANT2", "Tenant 2", TenantStatus.DISABLED));
 
-        UserTenantServiceImpl service = new UserTenantServiceImpl(userMapper, userTenantMapper, tenantService);
+        UserTenantServiceImpl service = new UserTenantServiceImpl(userDao, userTenantDao, tenantService);
 
         List<TenantAccessCandidate> response = service.listTenantCandidates(1L);
 

@@ -1,5 +1,4 @@
 package io.rosecloud.auth.service.impl;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -7,14 +6,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.log.LoginLogApi;
 import io.rosecloud.api.log.LoginLogRequest;
 import io.rosecloud.auth.domain.LoginLog;
+import io.rosecloud.auth.persistence.LoginLogDao;
 import io.rosecloud.auth.persistence.LoginLogEntity;
-import io.rosecloud.auth.persistence.LoginLogMapper;
 import io.rosecloud.auth.service.LoginLogService;
 import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.common.core.model.TimePageQuery;
-import io.rosecloud.starter.data.PagedResults;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,25 +24,19 @@ import java.time.LocalDateTime;
 @Service
 public class LoginLogServiceImpl implements LoginLogService, LoginLogApi {
 
-    private final LoginLogMapper loginLogMapper;
+    private final LoginLogDao loginLogDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void record(LoginLogRequest request) {
-        LoginLogEntity po = new LoginLogEntity();
-        po.setUsername(request.username());
-        po.setSuccess(request.success() ? 1 : 0);
-        po.setFailReason(request.failReason());
-        po.setIp(request.ip());
-        po.setUserAgent(request.userAgent());
-        po.setDeviceId(request.deviceId());
-        po.setLoginTime(LocalDateTime.now());
-        loginLogMapper.insert(po);
+        LoginLog log = new LoginLog(null, request.username(), request.success(),
+                request.failReason(), request.ip(), request.userAgent(), request.deviceId(), LocalDateTime.now());
+        loginLogDao.save(log);
     }
 
     @Override
     public PagedData<LoginLog> page(TimePageQuery pageQuery, String username, Boolean success) {
-        return PagedResults.page(pageQuery, LoginLogEntity.class, loginLogMapper,
+        return loginLogDao.page(pageQuery,
                 q -> {
                     LambdaQueryWrapper<LoginLogEntity> wrapper = new LambdaQueryWrapper<>();
                     if (username != null && !username.isBlank()) {

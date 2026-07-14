@@ -1,16 +1,16 @@
 package io.rosecloud.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.api.credential.CredentialApi;
 import io.rosecloud.api.credential.CredentialSetRequest;
 import io.rosecloud.common.core.error.BizException;
+import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantStatus;
+import io.rosecloud.system.domain.User;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.UserCredentialDao;
 import io.rosecloud.system.persistence.UserCredentialEntity;
-import io.rosecloud.system.persistence.UserCredentialMapper;
-import io.rosecloud.system.persistence.UserEntity;
-import io.rosecloud.system.persistence.UserMapper;
-import io.rosecloud.system.persistence.TenantEntity;
-import io.rosecloud.system.persistence.TenantMapper;
+import io.rosecloud.system.persistence.UserDao;
+import io.rosecloud.system.persistence.TenantDao;
 import io.rosecloud.system.service.UserActivationService;
 import io.rosecloud.system.config.UserActivationProperties;
 import io.rosecloud.system.service.dto.UserActivationInfo;
@@ -32,16 +32,13 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     private static final long DEFAULT_VERSION = 1L;
 
-    private final UserMapper userMapper;
-    private final UserCredentialMapper userCredentialMapper;
-    private final TenantMapper tenantMapper;
+    private final UserDao userDao;
+    private final UserCredentialDao userCredentialDao;
+    private final TenantDao tenantDao;
     private final CredentialApi credentialApi;
     private final UserActivationProperties properties;
     private final Map<String, Instant> lastResendAt = new ConcurrentHashMap<>();
 
-    // Global (per-instance) resend ceiling as a first line of defence against email bombing
-    // and username enumeration. In a multi-instance deployment pair this with a shared
-    // counter (e.g. Redis) so the limit is enforced cluster-wide.
     private static final int GLOBAL_MAX_RESENDS = 30;
     private static final long GLOBAL_WINDOW_SECONDS = 60;
     private final Object globalLock = new Object();
@@ -50,9 +47,8 @@ public class UserActivationServiceImpl implements UserActivationService {
 
     @Override
     public UserActivationInfo check(String activateToken) {
-        UserActivationInfo info = findActivationByToken(activateToken)
+        return findActivationByToken(activateToken)
                 .orElseThrow(() -> new BizException(SystemErrorCode.USER_ACTIVATION_TOKEN_INVALID));
-        return info;
     }
 
     @Override
@@ -65,8 +61,6 @@ public class UserActivationServiceImpl implements UserActivationService {
         if (info.expired()) {
             throw new BizException(SystemErrorCode.USER_ACTIVATION_TOKEN_EXPIRED);
         }
-        // Password policy + hashing happen in auth; the credential write is best-effort and,
-        // on failure, rolls back this transaction (the user stays unactivated).
         credentialApi.setPassword(info.userId(), new CredentialSetRequest(password));
         confirmActivation(info.userId());
         return findActivationByUsername(info.username())
@@ -77,19 +71,15 @@ public class UserActivationServiceImpl implements UserActivationService {
     @Transactional
     public void resend(String username) {
         if (!acquireGlobalResendQuota()) {
-            // Global ceiling reached: drop the request silently to avoid signalling the limit.
             return;
         }
         UserActivationInfo info = findActivationByUsername(username).orElse(null);
         if (info == null || info.used()) {
-            // Generic success — never reveal whether the account exists or is already activated,
-            // which would otherwise let an attacker enumerate valid usernames.
             return;
         }
         Instant now = Instant.now();
         Instant last = lastResendAt.get(username);
         if (last != null && Duration.between(last, now).toSeconds() < properties.getResendCooldownSeconds()) {
-            // Within the cooldown window: ignore the request without re-sending, mitigating email bombing.
             return;
         }
         lastResendAt.put(username, now);
@@ -123,110 +113,82 @@ public class UserActivationServiceImpl implements UserActivationService {
         if (activateToken == null || activateToken.isBlank()) {
             return Optional.empty();
         }
-        UserCredentialEntity credential = userCredentialMapper.selectOne(
-                new LambdaQueryWrapper<UserCredentialEntity>().eq(UserCredentialEntity::getActivateToken, activateToken));
-        if (credential == null) {
+        Optional<UserCredentialEntity> credentialOpt = userCredentialDao.findByActivateToken(activateToken);
+        if (credentialOpt.isEmpty()) {
             return Optional.empty();
         }
-        UserEntity user = userMapper.selectById(credential.getUserId());
-        if (user == null) {
-            return Optional.empty();
-        }
-        return Optional.of(toActivationInfo(user, credential));
+        UserCredentialEntity credential = credentialOpt.get();
+        Optional<User> userOpt = userDao.findById(credential.getUserId());
+        return userOpt.map(user -> toActivationInfo(user, credential));
     }
 
     private Optional<UserActivationInfo> findActivationByUsername(String username) {
         if (username == null || username.isBlank()) {
             return Optional.empty();
         }
-        UserEntity user = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
-                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
-                        .or()
-                        .eq(UserEntity::getPhone, username)));
-        if (user == null) {
+        Optional<User> userOpt = userDao.findByEmailOrPhone(username);
+        if (userOpt.isEmpty()) {
             return Optional.empty();
         }
-        UserCredentialEntity credential = credentialByUserId(user.getId());
-        return Optional.of(toActivationInfo(user, credential));
+        User user = userOpt.get();
+        Optional<UserCredentialEntity> credentialOpt = userCredentialDao.findByUserId(user.getId());
+        return credentialOpt.map(credential -> toActivationInfo(user, credential));
     }
 
     private void confirmActivation(Long userId) {
-        UserCredentialEntity credential = credentialByUserId(userId);
-        if (credential == null) {
-            throw new IllegalStateException("Missing user credential for userId=" + userId);
-        }
+        UserCredentialEntity credential = userCredentialDao.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("Missing user credential for userId=" + userId));
         credential.setActivateToken(null);
         credential.setExpireTime(null);
         credential.setUsedTime(LocalDateTime.now());
-        userCredentialMapper.updateById(credential);
+        userCredentialDao.update(credential);
 
-        UserEntity user = userMapper.selectById(userId);
-        if (user != null) {
-            user.setStatus(1);
-            userMapper.updateById(user);
+        Optional<User> userOpt = userDao.findById(userId);
+        userOpt.ifPresent(user -> {
+            User updated = new User(user.getId(), user.getUsername(), user.getNickname(), 1, user.getTenantId(),
+                    user.getAdditionalInfo(), user.getCreateTime(), user.getCreateBy(),
+                    LocalDateTime.now(), userId);
+            userDao.save(updated);
             activateFirstAdminTenant(user);
-        }
+        });
     }
 
-    /**
-     * If the activated user is the first admin of a PENDING tenant, transition
-     * the tenant to ENABLED.  This satisfies the PRD requirement that a tenant
-     * stays PENDING until the first admin completes activation.
-     */
-    private void activateFirstAdminTenant(UserEntity user) {
-        String loginName = loginName(user);
+    private void activateFirstAdminTenant(User user) {
+        String loginName = user.getUsername();
         if (loginName == null) {
             return;
         }
-        TenantEntity tenant = tenantMapper.selectById(user.getTenantId());
-        if (tenant == null || tenant.getAdminUsername() == null) {
+        Tenant tenant = tenantDao.findById(user.getTenantId()).orElse(null);
+        if (tenant == null) {
             return;
         }
-        if (!tenant.getAdminUsername().equals(loginName)) {
+        if (!tenantDao.isAdminUser(user.getTenantId(), loginName)) {
             return;
         }
-        if (tenant.getStatus() == null || tenant.getStatus() != 0) {
+        if (tenant.getStatus() == null || tenant.getStatus() != TenantStatus.PENDING) {
             return;
         }
-        tenant.setStatus(1);
-        tenantMapper.updateById(tenant);
+        tenantDao.updateStatus(user.getTenantId(), TenantStatus.ENABLED.code());
     }
 
     private void saveActivationToken(Long userId, String activateToken, LocalDateTime expireTime,
                                       LocalDateTime sendTime, Long version) {
-        UserCredentialEntity credential = credentialByUserId(userId);
-        if (credential == null) {
-            throw new IllegalStateException("Missing user credential for userId=" + userId);
-        }
+        UserCredentialEntity credential = userCredentialDao.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("Missing user credential for userId=" + userId));
         credential.setActivateToken(activateToken);
         credential.setExpireTime(expireTime);
         credential.setUsedTime(null);
         credential.setSendTime(sendTime);
         credential.setVersion(version);
-        userCredentialMapper.updateById(credential);
+        userCredentialDao.update(credential);
     }
 
-    private UserActivationInfo toActivationInfo(UserEntity user, UserCredentialEntity credential) {
-        return new UserActivationInfo(user.getId(), loginName(user), user.getTenantId(),
-                credential == null ? null : credential.getActivateToken(),
-                credential == null ? null : credential.getExpireTime(),
-                credential == null ? null : credential.getUsedTime(),
-                credential == null ? null : credential.getSendTime(),
-                credential == null ? null : credential.getVersion());
-    }
-
-    private UserCredentialEntity credentialByUserId(Long userId) {
-        return userCredentialMapper.selectOne(
-                new LambdaQueryWrapper<UserCredentialEntity>().eq(UserCredentialEntity::getUserId, userId));
-    }
-
-    private String loginName(UserEntity user) {
-        if (user.getEmail() != null && !user.getEmail().isBlank()) {
-            return user.getEmail();
-        }
-        if (user.getPhone() != null && !user.getPhone().isBlank()) {
-            return user.getPhone();
-        }
-        return null;
+    private UserActivationInfo toActivationInfo(User user, UserCredentialEntity credential) {
+        return new UserActivationInfo(user.getId(), user.getUsername(), user.getTenantId(),
+                credential.getActivateToken(),
+                credential.getExpireTime(),
+                credential.getUsedTime(),
+                credential.getSendTime(),
+                credential.getVersion());
     }
 }

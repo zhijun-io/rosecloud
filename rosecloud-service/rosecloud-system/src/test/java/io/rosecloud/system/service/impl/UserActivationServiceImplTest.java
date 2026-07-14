@@ -4,13 +4,14 @@ import io.rosecloud.api.credential.CredentialApi;
 import io.rosecloud.api.credential.CredentialSetRequest;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.config.UserActivationProperties;
+import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantStatus;
+import io.rosecloud.system.domain.User;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.TenantEntity;
-import io.rosecloud.system.persistence.TenantMapper;
+import io.rosecloud.system.persistence.TenantDao;
+import io.rosecloud.system.persistence.UserCredentialDao;
 import io.rosecloud.system.persistence.UserCredentialEntity;
-import io.rosecloud.system.persistence.UserCredentialMapper;
-import io.rosecloud.system.persistence.UserEntity;
-import io.rosecloud.system.persistence.UserMapper;
+import io.rosecloud.system.persistence.UserDao;
 import io.rosecloud.system.service.dto.UserActivationInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,11 +19,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,11 +35,11 @@ import static org.mockito.Mockito.when;
 class UserActivationServiceImplTest {
 
     @Mock
-    UserMapper userMapper;
+    UserDao userDao;
     @Mock
-    UserCredentialMapper userCredentialMapper;
+    UserCredentialDao userCredentialDao;
     @Mock
-    TenantMapper tenantMapper;
+    TenantDao tenantDao;
     @Mock
     CredentialApi credentialApi;
 
@@ -48,7 +52,7 @@ class UserActivationServiceImplTest {
     }
 
     private UserActivationServiceImpl service() {
-        return new UserActivationServiceImpl(userMapper, userCredentialMapper, tenantMapper,
+        return new UserActivationServiceImpl(userDao, userCredentialDao, tenantDao,
                 credentialApi, properties());
     }
 
@@ -56,68 +60,76 @@ class UserActivationServiceImplTest {
     void confirmActivationTransitionsPendingTenantToEnabledWhenAdminMatches() {
         String token = "activate-token-1";
         String password = "SecurePass1!";
-        UserEntity user = userEntity(1L, "admin@tenant1.com", "TENANT1");
+        User user = new User(1L, "admin@tenant1.com", null, 0, "TENANT1", null);
         UserCredentialEntity credential = credential(1L, token, false);
-        TenantEntity tenant = tenantEntity("TENANT1", "admin@tenant1.com", 0);
+        Tenant tenant = new Tenant("TENANT1", null, TenantStatus.PENDING, "admin@tenant1.com", null, null, null, null, null);
 
-        when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
-        when(userMapper.selectById(1L)).thenReturn(user);
-        when(tenantMapper.selectById("TENANT1")).thenReturn(tenant);
-        when(userMapper.selectOne(any())).thenReturn(user);
+        when(userCredentialDao.findByActivateToken(token)).thenReturn(Optional.of(credential));
+        when(userDao.findById(1L)).thenReturn(Optional.of(user));
+        when(userCredentialDao.findByUserId(1L)).thenReturn(Optional.of(credential));
+        when(tenantDao.findById("TENANT1")).thenReturn(Optional.of(tenant));
+        when(tenantDao.isAdminUser(anyString(), anyString())).thenReturn(true);
+        when(userDao.findByEmailOrPhone("admin@tenant1.com")).thenReturn(Optional.of(user));
+        when(userDao.save(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
         verify(credentialApi).setPassword(1L, new CredentialSetRequest(password));
-        verify(tenantMapper).updateById(tenant);
-        assertEquals(Integer.valueOf(1), tenant.getStatus());
+        verify(tenantDao).updateStatus("TENANT1", 1);
     }
 
     @Test
     void confirmActivationDoesNotTransitionWhenAdminUsernameDoesNotMatch() {
         String token = "activate-token-2";
         String password = "SecurePass2@";
-        UserEntity user = userEntity(2L, "user@tenant2.com", "TENANT2");
+        User user = new User(2L, "user@tenant2.com", null, 0, "TENANT2", null);
         UserCredentialEntity credential = credential(2L, token, false);
-        TenantEntity tenant = tenantEntity("TENANT2", "different-admin", 0);
+        Tenant tenant = new Tenant("TENANT2", null, TenantStatus.PENDING, "different-admin", null, null, null, null, null);
 
-        when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
-        when(userMapper.selectById(2L)).thenReturn(user);
-        when(tenantMapper.selectById("TENANT2")).thenReturn(tenant);
-        when(userMapper.selectOne(any())).thenReturn(user);
+        when(userCredentialDao.findByActivateToken(token)).thenReturn(Optional.of(credential));
+        when(userDao.findById(2L)).thenReturn(Optional.of(user));
+        when(userCredentialDao.findByUserId(2L)).thenReturn(Optional.of(credential));
+        when(tenantDao.findById("TENANT2")).thenReturn(Optional.of(tenant));
+        when(tenantDao.isAdminUser(anyString(), anyString())).thenReturn(false);
+        when(userDao.findByEmailOrPhone("user@tenant2.com")).thenReturn(Optional.of(user));
+        when(userDao.save(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
         verify(credentialApi).setPassword(2L, new CredentialSetRequest(password));
-        verify(tenantMapper, never()).updateById(any(TenantEntity.class));
+        verify(tenantDao, never()).updateStatus(anyString(), anyInt());
     }
 
     @Test
     void confirmActivationDoesNotTransitionWhenTenantAlreadyEnabled() {
         String token = "activate-token-3";
         String password = "SecurePass3#";
-        UserEntity user = userEntity(3L, "admin@tenant3.com", "TENANT3");
+        User user = new User(3L, "admin@tenant3.com", null, 0, "TENANT3", null);
         UserCredentialEntity credential = credential(3L, token, false);
-        TenantEntity tenant = tenantEntity("TENANT3", "admin@tenant3.com", 1);
+        Tenant tenant = new Tenant("TENANT3", null, TenantStatus.ENABLED, "admin@tenant3.com", null, null, null, null, null);
 
-        when(userCredentialMapper.selectOne(any())).thenReturn(credential, credential, credential);
-        when(userMapper.selectById(3L)).thenReturn(user);
-        when(tenantMapper.selectById("TENANT3")).thenReturn(tenant);
-        when(userMapper.selectOne(any())).thenReturn(user);
+        when(userCredentialDao.findByActivateToken(token)).thenReturn(Optional.of(credential));
+        when(userDao.findById(3L)).thenReturn(Optional.of(user));
+        when(userCredentialDao.findByUserId(3L)).thenReturn(Optional.of(credential));
+        when(tenantDao.findById("TENANT3")).thenReturn(Optional.of(tenant));
+        when(tenantDao.isAdminUser(anyString(), anyString())).thenReturn(true);
+        when(userDao.findByEmailOrPhone("admin@tenant3.com")).thenReturn(Optional.of(user));
+        when(userDao.save(any())).thenReturn(user);
 
         UserActivationInfo info = service().confirm(token, password);
 
         verify(credentialApi).setPassword(3L, new CredentialSetRequest(password));
-        verify(tenantMapper, never()).updateById(any(TenantEntity.class));
+        verify(tenantDao, never()).updateStatus(anyString(), anyInt());
     }
 
     @Test
     void checkReturnsActivationInfoForValidToken() {
         String token = "valid-token";
         UserCredentialEntity credential = credential(1L, token, false);
-        UserEntity user = userEntity(1L, "admin@test.com", "TENANT1");
+        User user = new User(1L, "admin@test.com", null, 0, "TENANT1", null);
 
-        when(userCredentialMapper.selectOne(any())).thenReturn(credential);
-        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userCredentialDao.findByActivateToken(token)).thenReturn(Optional.of(credential));
+        when(userDao.findById(1L)).thenReturn(Optional.of(user));
 
         UserActivationInfo info = service().check(token);
 
@@ -126,18 +138,9 @@ class UserActivationServiceImplTest {
 
     @Test
     void checkThrowsForInvalidToken() {
-        when(userCredentialMapper.selectOne(any())).thenReturn(null);
+        when(userCredentialDao.findByActivateToken("bogus-token")).thenReturn(Optional.empty());
 
         assertThrows(BizException.class, () -> service().check("bogus-token"));
-    }
-
-    private static UserEntity userEntity(Long id, String email, String tenantId) {
-        UserEntity e = new UserEntity();
-        e.setId(id);
-        e.setEmail(email);
-        e.setTenantId(tenantId);
-        e.setStatus(0);
-        return e;
     }
 
     private static UserCredentialEntity credential(Long userId, String token, boolean used) {
@@ -146,14 +149,6 @@ class UserActivationServiceImplTest {
         e.setActivateToken(token);
         e.setExpireTime(LocalDateTime.now().plusHours(72));
         e.setUsedTime(used ? LocalDateTime.now() : null);
-        return e;
-    }
-
-    private static TenantEntity tenantEntity(String id, String adminUsername, int status) {
-        TenantEntity e = new TenantEntity();
-        e.setId(id);
-        e.setAdminUsername(adminUsername);
-        e.setStatus(status);
         return e;
     }
 }
