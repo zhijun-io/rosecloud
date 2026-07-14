@@ -5,23 +5,18 @@ import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Tenant;
+import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import io.rosecloud.system.persistence.RoleEntity;
-import io.rosecloud.system.persistence.TenantEntity;
-import io.rosecloud.system.persistence.TenantMapper;
-import io.rosecloud.system.persistence.TenantProfileEntity;
-import io.rosecloud.system.persistence.TenantProfileMapper;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
-import org.junit.jupiter.api.BeforeAll;
+import io.rosecloud.system.persistence.TenantDao;
+import io.rosecloud.system.persistence.TenantProfileDao;
 import io.rosecloud.system.service.TenantProvisioner;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
 import io.rosecloud.system.service.dto.TenantUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,28 +26,19 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceImplTest {
 
-    @BeforeAll
-    static void initTableInfo() {
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
-        TableInfoHelper.initTableInfo(assistant, TenantEntity.class);
-        TableInfoHelper.initTableInfo(assistant, TenantProfileEntity.class);
-        TableInfoHelper.initTableInfo(assistant, RoleEntity.class);
-    }
-
     @Mock
-    TenantMapper tenantMapper;
+    TenantDao tenantDao;
     @Mock
-    TenantProfileMapper tenantProfileMapper;
+    TenantProfileDao tenantProfileDao;
     @Mock
     TenantProvisioner tenantProvisioner;
     @Mock
@@ -60,25 +46,30 @@ class TenantServiceImplTest {
     @Mock
     EntityEventPublisher eventPublisher;
 
+    @Captor
+    ArgumentCaptor<Tenant> tenantCaptor;
+
     private TenantServiceImpl service() {
-        return new TenantServiceImpl(tenantMapper, tenantProfileMapper, tenantProvisioner, tenantCache, eventPublisher);
+        return new TenantServiceImpl(tenantDao, tenantProfileDao, tenantProvisioner, tenantCache, eventPublisher);
     }
 
     @Test
     void createPersistsTenantAndTriggersProvisioning() {
         TenantCreateRequest request = new TenantCreateRequest("tenant1", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", null, "admin");
-        when(tenantProfileMapper.selectOne(any())).thenReturn(defaultProfile("profile-default"));
-        when(tenantMapper.selectById("TENANT1")).thenReturn(null, entity("TENANT1", TenantStatus.PENDING, "profile-default"));
+        when(tenantProfileDao.findDefault()).thenReturn(Optional.of(
+                new TenantProfile("profile-default", "Default", "Default tier", true, null)));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT1"), any())).thenReturn(null,
+                new Tenant("TENANT1", "Acme", TenantStatus.PENDING, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", "profile-default", null));
 
         String id = service().create(request);
 
         assertEquals("TENANT1", id);
-        ArgumentCaptor<TenantEntity> captor = ArgumentCaptor.forClass(TenantEntity.class);
-        verify(tenantMapper).insert(captor.capture());
-        assertEquals("TENANT1", captor.getValue().getId());
-        assertEquals(TenantStatus.PENDING.code(), captor.getValue().getStatus());
-        assertEquals("profile-default", captor.getValue().getTenantProfileId());
+        verify(tenantDao).create(tenantCaptor.capture(), eq("admin"));
+        assertEquals("TENANT1", tenantCaptor.getValue().getId());
+        assertEquals(TenantStatus.PENDING.code(), tenantCaptor.getValue().getStatus().code());
+        assertEquals("profile-default", tenantCaptor.getValue().getTenantProfileId());
         verify(tenantProvisioner).provision("TENANT1");
     }
 
@@ -86,8 +77,11 @@ class TenantServiceImplTest {
     void createUsesProvidedTenantProfile() {
         TenantCreateRequest request = new TenantCreateRequest("tenant2", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", "profile-custom", "admin");
-        when(tenantProfileMapper.selectById("profile-custom")).thenReturn(customProfile("profile-custom"));
-        when(tenantMapper.selectById("TENANT2")).thenReturn(null, entity("TENANT2", TenantStatus.PENDING, "profile-custom"));
+        when(tenantProfileDao.findById("profile-custom")).thenReturn(Optional.of(
+                new TenantProfile("profile-custom", "Custom", "Custom tier", false, null)));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT2"), any())).thenReturn(null,
+                new Tenant("TENANT2", "Acme", TenantStatus.PENDING, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", "profile-custom", null));
 
         assertEquals("TENANT2", service().create(request));
         verify(tenantProvisioner).provision("TENANT2");
@@ -101,44 +95,54 @@ class TenantServiceImplTest {
         BizException ex = assertThrows(BizException.class, () -> service().create(request));
 
         assertEquals(SystemErrorCode.TENANT_ID_RESERVED, ex.getErrorCode());
-        verify(tenantMapper, never()).insert(any(TenantEntity.class));
+        verify(tenantDao, never()).create(any(), any());
     }
 
     @Test
     void createRejectsDuplicateTenantId() {
-        when(tenantMapper.selectById("TENANT9")).thenReturn(entity("TENANT9", TenantStatus.ENABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT9"), any())).thenReturn(
+                new Tenant("TENANT9", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
         TenantCreateRequest request = new TenantCreateRequest("tenant9", "Acme", "Owner", "13800000000",
                 LocalDate.now().plusDays(30), "remark", null, "admin");
 
         BizException ex = assertThrows(BizException.class, () -> service().create(request));
 
         assertEquals(SystemErrorCode.TENANT_CODE_EXISTS, ex.getErrorCode());
-        verify(tenantMapper, never()).insert(any(TenantEntity.class));
+        verify(tenantDao, never()).create(any(), any());
     }
 
     @Test
     void updateReusesExistingProfileWhenNotSpecified() {
-        when(tenantMapper.selectById("TENANT200")).thenReturn(entity("TENANT200", TenantStatus.ENABLED, "profile-default"));
-        when(tenantProfileMapper.selectById("profile-default")).thenReturn(defaultProfile("profile-default"));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT200"), any())).thenReturn(
+                new Tenant("TENANT200", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", "profile-default", null));
+        when(tenantProfileDao.findById("profile-default")).thenReturn(Optional.of(
+                new TenantProfile("profile-default", "Default", "Default tier", true, null)));
 
         service().update("tenant200", new TenantUpdateRequest("New", "Owner-2", "13900000000",
                 LocalDate.now().plusDays(60), "new remark", null));
 
-        verify(tenantMapper).update(any(), any());
+        verify(tenantDao).save(any());
     }
 
     @Test
     void deleteDelegatesToMapper() {
-        when(tenantMapper.selectById("TENANT300")).thenReturn(entity("TENANT300", TenantStatus.ENABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT300"), any())).thenReturn(
+                new Tenant("TENANT300", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         service().delete("tenant300");
 
-        verify(tenantMapper).deleteById("TENANT300");
+        verify(tenantProvisioner).deprovision("TENANT300");
+        verify(tenantDao).removeById("TENANT300");
     }
 
     @Test
     void openRejectsEnabledTenant() {
-        when(tenantMapper.selectById("TENANT400")).thenReturn(entity("TENANT400", TenantStatus.ENABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT400"), any())).thenReturn(
+                new Tenant("TENANT400", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         BizException ex = assertThrows(BizException.class, () -> service().open("tenant400"));
 
@@ -148,7 +152,9 @@ class TenantServiceImplTest {
 
     @Test
     void openProvisionsPendingTenant() {
-        when(tenantMapper.selectById("TENANT401")).thenReturn(entity("TENANT401", TenantStatus.PENDING, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT401"), any())).thenReturn(
+                new Tenant("TENANT401", "Acme", TenantStatus.PENDING, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         assertEquals("TENANT401", service().open("tenant401"));
         verify(tenantProvisioner).provision("TENANT401");
@@ -156,67 +162,46 @@ class TenantServiceImplTest {
 
     @Test
     void disableUpdatesEnabledTenantToDisabled() {
-        when(tenantMapper.selectById("TENANT500")).thenReturn(entity("TENANT500", TenantStatus.ENABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT500"), any())).thenReturn(
+                new Tenant("TENANT500", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         service().disable("tenant500");
 
-        verify(tenantMapper).update(any(), any());
+        verify(tenantDao).updateStatus(eq("TENANT500"), eq(TenantStatus.DISABLED.code()));
     }
 
     @Test
     void enableUpdatesDisabledTenantToEnabled() {
-        when(tenantMapper.selectById("TENANT600")).thenReturn(entity("TENANT600", TenantStatus.DISABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT600"), any())).thenReturn(
+                new Tenant("TENANT600", "Acme", TenantStatus.DISABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         service().enable("tenant600");
 
-        verify(tenantMapper).update(any(), any());
+        verify(tenantDao).updateStatus(eq("TENANT600"), eq(TenantStatus.ENABLED.code()));
     }
 
     @Test
     void enableRejectsExpiredTenant() {
-        TenantEntity expired = entity("TENANT7", TenantStatus.DISABLED, null);
-        expired.setExpireTime(LocalDate.now().minusDays(1));
-        when(tenantMapper.selectById("TENANT7")).thenReturn(expired);
+        when(tenantCache.getOrLoadTransactional(eq("TENANT7"), any())).thenReturn(
+                new Tenant("TENANT7", "Acme", TenantStatus.DISABLED, "Owner", "13800000000",
+                        LocalDate.now().minusDays(1), "remark", null, null));
 
         BizException ex = assertThrows(BizException.class, () -> service().enable("tenant7"));
 
         assertEquals("system.tenant_status_invalid", ex.getErrorCode().code());
-        verify(tenantMapper, never()).update(any(), any());
+        verify(tenantDao, never()).updateStatus(any(), anyInt());
     }
 
     @Test
     void getReturnsMapperValue() {
-        when(tenantMapper.selectById("TENANT8")).thenReturn(entity("TENANT8", TenantStatus.ENABLED, null));
+        when(tenantCache.getOrLoadTransactional(eq("TENANT8"), any())).thenReturn(
+                new Tenant("TENANT8", "Acme", TenantStatus.ENABLED, "Owner", "13800000000",
+                        LocalDate.now().plusDays(30), "remark", null, null));
 
         Tenant tenant = service().get("tenant8");
 
         assertEquals("TENANT8", tenant.getId());
-    }
-
-    private static TenantEntity entity(String id, TenantStatus status, String profileId) {
-        TenantEntity e = new TenantEntity();
-        e.setId(id);
-        e.setName("Acme");
-        e.setStatus(status.code());
-        e.setContactUser("Owner");
-        e.setContactPhone("13800000000");
-        e.setExpireTime(LocalDate.now().plusDays(30));
-        e.setRemark("remark");
-        e.setTenantProfileId(profileId);
-        return e;
-    }
-
-    private static TenantProfileEntity defaultProfile(String id) {
-        TenantProfileEntity e = new TenantProfileEntity();
-        e.setId(id);
-        e.setIsDefault(true);
-        return e;
-    }
-
-    private static TenantProfileEntity customProfile(String id) {
-        TenantProfileEntity e = new TenantProfileEntity();
-        e.setId(id);
-        e.setIsDefault(false);
-        return e;
     }
 }

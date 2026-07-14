@@ -1,1 +1,2 @@
+io.rosecloud.starter.data.cache.CaffeineCacheAutoConfiguration
 io.rosecloud.starter.data.RoseCloudMybatisPlusAutoConfiguration

@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.HasId;
 import io.rosecloud.common.core.model.HasName;
 import io.rosecloud.common.core.model.HasStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import lombok.Value;
@@ -13,7 +14,7 @@ import lombok.Value;
  * Domain view of a dictionary type. ORM-free; mapped to/from {@code sys_dict_type}.
  */
 @Value
-public final class DictType implements HasId, HasCode, HasName, HasStatus<Integer> {
+public final class DictType implements HasId, HasCode, HasName, HasStatus<Integer>, Serializable {
 
     Long id;
     String code;

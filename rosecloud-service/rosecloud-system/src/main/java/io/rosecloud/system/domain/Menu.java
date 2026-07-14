@@ -5,6 +5,7 @@ import io.rosecloud.common.core.model.HasName;
 import io.rosecloud.common.core.model.HasParentId;
 import io.rosecloud.common.core.model.HasStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import lombok.Value;
 /** Domain view of a menu/permission node. ORM-free; mapped to/from {@code sys_menu}. */
 @Value
 @AllArgsConstructor
-public final class Menu implements HasId, HasName, HasParentId, HasStatus<Integer> {
+public final class Menu implements HasId, HasName, HasParentId, HasStatus<Integer>, Serializable {
 
     Long id;
     Long parentId;

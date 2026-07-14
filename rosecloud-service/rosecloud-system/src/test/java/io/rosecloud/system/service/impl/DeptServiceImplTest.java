@@ -7,10 +7,11 @@ import io.rosecloud.common.core.event.EntityChangeType;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Dept;
+import io.rosecloud.system.persistence.DeptDao;
 import io.rosecloud.system.persistence.DeptEntity;
-import io.rosecloud.system.persistence.DeptMapper;
 import io.rosecloud.system.service.dto.DeptRequest;
 import io.rosecloud.system.service.dto.DeptTreeNode;
+import io.rosecloud.system.service.validator.DeptValidator;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,7 +36,9 @@ import static org.mockito.Mockito.when;
 class DeptServiceImplTest {
 
     @Mock
-    DeptMapper deptMapper;
+    DeptDao deptDao;
+    @Mock
+    DeptValidator deptValidator;
     @Mock
     EntityCache<Long, Dept> deptCache;
     @Mock
@@ -56,7 +60,8 @@ class DeptServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new DeptServiceImpl(deptMapper, deptCache, deptListCache, eventPublisher);
+        service = new DeptServiceImpl(deptDao, deptValidator,
+                deptCache, deptListCache, eventPublisher);
     }
 
     @Test
@@ -75,11 +80,8 @@ class DeptServiceImplTest {
     @Test
     void createEvictsDeptListCacheAndPublishesEvent() {
         DeptRequest request = new DeptRequest(0L, "HQ", 1, 1, "Leader", "123456");
-        when(deptMapper.insert(any(DeptEntity.class))).thenAnswer(invocation -> {
-            DeptEntity po = invocation.getArgument(0);
-            po.setId(100L);
-            return 1;
-        });
+        when(deptDao.save(any())).thenReturn(
+                Dept.of(100L, 0L, "HQ", 1, 1, "Leader", "123456"));
 
         Long id = service.create(request);
 
@@ -91,18 +93,14 @@ class DeptServiceImplTest {
     }
 
     @Test
-    void updateEvictsBothCachesAndPublishesEvent() {
-        DeptEntity existing = new DeptEntity();
-        existing.setId(1L);
-        existing.setParentId(0L);
-        existing.setName("Old");
-        existing.setSort(1);
-        existing.setStatus(1);
-        when(deptMapper.selectById(1L)).thenReturn(existing);
+    void updateEvictsListCacheAndPublishesEvent() {
+        when(deptCache.getOrLoadTransactional(eq(1L), any())).thenReturn(
+                Dept.of(1L, 0L, "Old", 1, 1, "Leader", "123456"));
+        when(deptDao.save(any())).thenReturn(
+                Dept.of(1L, 0L, "Updated", 1, 1, "Leader", "123456"));
 
         service.update(1L, new DeptRequest(0L, "Updated", 1, 1, "Leader", "123456"));
 
-        verify(deptCache).evict(1L);
         verify(deptListCache).evictAll();
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.UPDATED, eventCaptor.getValue().changeType());
@@ -110,12 +108,12 @@ class DeptServiceImplTest {
     }
 
     @Test
-    void deleteEvictsBothCachesAndPublishesEvent() {
-        when(deptMapper.exists(any())).thenReturn(false);
+    void deleteEvictsListCacheAndPublishesEvent() {
+        when(deptDao.existsByParentId(1L)).thenReturn(false);
+        doNothing().when(deptDao).removeById(1L);
 
         service.delete(1L);
 
-        verify(deptCache).evict(1L);
         verify(deptListCache).evictAll();
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.DELETED, eventCaptor.getValue().changeType());

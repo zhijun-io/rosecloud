@@ -8,10 +8,12 @@ import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.DictType;
 import io.rosecloud.system.persistence.DictDataEntity;
-import io.rosecloud.system.persistence.DictDataMapper;
+import io.rosecloud.system.persistence.DictDataDao;
+import io.rosecloud.system.persistence.DictTypeDao;
 import io.rosecloud.system.persistence.DictTypeEntity;
 import io.rosecloud.system.persistence.DictTypeMapper;
 import io.rosecloud.system.service.dto.DictTypeRequest;
+import io.rosecloud.system.service.validator.DictTypeValidator;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,11 +39,15 @@ import static org.mockito.Mockito.when;
 class DictTypeServiceImplTest {
 
     @Mock
-    DictTypeMapper dictTypeMapper;
+    DictTypeDao dictTypeDao;
     @Mock
-    DictDataMapper dictDataMapper;
+    DictDataDao dictDataDao;
+    @Mock
+    DictTypeValidator dictTypeValidator;
     @Mock
     EntityCache<Long, DictType> dictTypeCache;
+    @Mock
+    EntityCache<String, List<io.rosecloud.system.domain.DictData>> dictDataByCodeCache;
     @Mock
     EntityEventPublisher eventPublisher;
 
@@ -60,13 +66,14 @@ class DictTypeServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new DictTypeServiceImpl(dictTypeMapper, dictDataMapper, dictTypeCache, eventPublisher);
+        service = new DictTypeServiceImpl(dictTypeDao, dictDataDao, dictTypeValidator,
+                dictTypeCache, dictDataByCodeCache, eventPublisher);
     }
 
     @Test
     void getReturnsCachedDictType() {
         DictType cached = DictType.of(1L, "gender", "Gender", 1, "Gender dict");
-        when(dictTypeCache.getOrLoad(eq(1L), any())).thenReturn(cached);
+        when(dictTypeCache.getOrLoadTransactional(eq(1L), any())).thenReturn(cached);
 
         DictType result = service.get(1L);
 
@@ -76,7 +83,7 @@ class DictTypeServiceImplTest {
 
     @Test
     void getThrowsWhenNotFound() {
-        when(dictTypeCache.getOrLoad(eq(99L), any())).thenReturn(null);
+        when(dictTypeCache.getOrLoadTransactional(eq(99L), any())).thenReturn(null);
 
         assertThrows(io.rosecloud.common.core.error.BizException.class,
                 () -> service.get(99L));
@@ -85,11 +92,8 @@ class DictTypeServiceImplTest {
     @Test
     void createEvictsAndPublishesEvent() {
         DictTypeRequest request = new DictTypeRequest("gender", "Gender", 1, "Gender dict");
-        when(dictTypeMapper.insert(any(DictTypeEntity.class))).thenAnswer(invocation -> {
-            DictTypeEntity po = invocation.getArgument(0);
-            po.setId(100L);
-            return 1;
-        });
+        when(dictTypeDao.save(any())).thenReturn(
+                DictType.of(100L, "gender", "Gender", 1, "Gender dict"));
 
         Long id = service.create(request);
 
@@ -100,26 +104,27 @@ class DictTypeServiceImplTest {
     }
 
     @Test
-    void updateEvictsCacheAndPublishesEvent() {
-        when(dictTypeCache.getOrLoad(eq(1L), any())).thenReturn(
-                DictType.of(1L, "gender", "Gender", 1, "Gender dict"));
+    void updatePublishesEvent() {
+        when(dictTypeDao.findById(1L)).thenReturn(
+                Optional.of(DictType.of(1L, "gender", "Gender", 1, "Gender dict")));
+        when(dictTypeDao.save(any())).thenReturn(
+                DictType.of(1L, "gender", "Updated", 1, "Updated"));
 
         service.update(1L, new DictTypeRequest("gender", "Updated", 1, "Updated"));
 
-        verify(dictTypeCache).evict(1L);
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.UPDATED, eventCaptor.getValue().changeType());
         assertEquals(1L, eventCaptor.getValue().entityId());
     }
 
     @Test
-    void deleteEvictsCacheAndPublishesEvent() {
-        when(dictTypeCache.getOrLoad(eq(1L), any())).thenReturn(
-                DictType.of(1L, "gender", "Gender", 1, "Gender dict"));
+    void deleteEvictsDictDataCacheAndPublishesEvent() {
+        when(dictTypeDao.findById(1L)).thenReturn(
+                Optional.of(DictType.of(1L, "gender", "Gender", 1, "Gender dict")));
 
         service.delete(1L);
 
-        verify(dictTypeCache).evict(1L);
+        verify(dictDataByCodeCache).evict("gender");
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.DELETED, eventCaptor.getValue().changeType());
         assertEquals(1L, eventCaptor.getValue().entityId());

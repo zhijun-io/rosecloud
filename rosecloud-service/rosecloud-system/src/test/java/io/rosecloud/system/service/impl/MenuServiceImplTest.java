@@ -1,24 +1,16 @@
 package io.rosecloud.system.service.impl;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.common.core.event.EntityChangeType;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Menu;
-import io.rosecloud.system.persistence.MenuEntity;
-import io.rosecloud.system.persistence.MenuMapper;
-import io.rosecloud.system.persistence.RoleMenuEntity;
-import io.rosecloud.system.persistence.RoleMenuMapper;
-import io.rosecloud.system.persistence.UserRoleEntity;
-import io.rosecloud.system.persistence.UserRoleMapper;
+import io.rosecloud.system.persistence.MenuDao;
 import io.rosecloud.system.service.dto.MenuRequest;
 import io.rosecloud.system.service.dto.MenuTreeNode;
 import io.rosecloud.system.service.dto.UserMenuResult;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
+import io.rosecloud.system.service.validator.MenuValidator;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,15 +33,15 @@ import static org.mockito.Mockito.when;
 class MenuServiceImplTest {
 
     @Mock
-    MenuMapper menuMapper;
+    MenuDao menuDao;
     @Mock
-    RoleMenuMapper roleMenuMapper;
-    @Mock
-    UserRoleMapper userRoleMapper;
+    MenuValidator menuValidator;
     @Mock
     EntityCache<Long, Menu> menuCache;
     @Mock
     EntityCache<String, List<Menu>> menuListCache;
+    @Mock
+    EntityCache<Long, List<Long>> roleMenuIdsCache;
     @Mock
     EntityEventPublisher eventPublisher;
 
@@ -58,19 +50,10 @@ class MenuServiceImplTest {
 
     private MenuServiceImpl service;
 
-    @BeforeAll
-    static void initTableInfo() {
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
-        TableInfoHelper.initTableInfo(assistant, MenuEntity.class);
-        TableInfoHelper.initTableInfo(assistant, RoleMenuEntity.class);
-        TableInfoHelper.initTableInfo(assistant, UserRoleEntity.class);
-    }
-
     @BeforeEach
     void setUp() {
-        service = new MenuServiceImpl(menuMapper, roleMenuMapper, userRoleMapper,
-                menuCache, menuListCache, eventPublisher);
+        service = new MenuServiceImpl(menuDao, menuValidator, menuCache, menuListCache,
+                roleMenuIdsCache, eventPublisher);
     }
 
     @AfterEach
@@ -94,11 +77,8 @@ class MenuServiceImplTest {
     @Test
     void createEvictsMenuListCacheAndPublishesEvent() {
         MenuRequest request = new MenuRequest(0L, "Test", 0, "/test", "test/index", "test", "test", 1, 1, 1);
-        when(menuMapper.insert(any(MenuEntity.class))).thenAnswer(invocation -> {
-            MenuEntity po = invocation.getArgument(0);
-            po.setId(100L);
-            return 1;
-        });
+        when(menuDao.save(any())).thenReturn(
+                Menu.of(100L, 0L, "Test", 0, "/test", "test/index", "test", "test", 1, 1, 1));
 
         Long id = service.create(request);
 
@@ -110,24 +90,14 @@ class MenuServiceImplTest {
     }
 
     @Test
-    void updateEvictsBothCachesAndPublishesEvent() {
-        MenuEntity entity = new MenuEntity();
-        entity.setId(1L);
-        entity.setName("Old");
-        entity.setParentId(0L);
-        entity.setType(0);
-        entity.setPath("/old");
-        entity.setComponent("old/index");
-        entity.setPerms("old");
-        entity.setIcon("old");
-        entity.setSort(1);
-        entity.setStatus(1);
-        entity.setVisible(1);
-        when(menuMapper.selectById(1L)).thenReturn(entity);
+    void updateEvictsListCacheAndPublishesEvent() {
+        when(menuCache.getOrLoadTransactional(eq(1L), any())).thenReturn(
+                Menu.of(1L, 0L, "Old", 0, "/old", "old/index", "old", "old", 1, 1, 1));
+        when(menuDao.save(any())).thenReturn(
+                Menu.of(1L, 0L, "Updated", 0, "/updated", "updated/index", "updated", "updated", 1, 1, 1));
 
         service.update(1L, new MenuRequest(0L, "Updated", 0, "/updated", "updated/index", "updated", "updated", 1, 1, 1));
 
-        verify(menuCache).evict(1L);
         verify(menuListCache).evictAll();
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.UPDATED, eventCaptor.getValue().changeType());
@@ -135,12 +105,11 @@ class MenuServiceImplTest {
     }
 
     @Test
-    void deleteEvictsBothCachesAndPublishesEvent() {
-        when(menuMapper.exists(any())).thenReturn(false);
+    void deleteEvictsListCacheAndPublishesEvent() {
+        when(menuDao.existsByParentId(1L)).thenReturn(false);
 
         service.delete(1L);
 
-        verify(menuCache).evict(1L);
         verify(menuListCache).evictAll();
         verify(eventPublisher).publish(eventCaptor.capture());
         assertEquals(EntityChangeType.DELETED, eventCaptor.getValue().changeType());

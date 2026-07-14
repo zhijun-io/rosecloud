@@ -9,7 +9,6 @@ public final class EntityCacheNames {
     private EntityCacheNames() {}
 
     public static final String USER_SECURITY = "user.security";
-    public static final String USER_ROLES = "user.roles";
     public static final String USER_PERMS = "user.perms";
     public static final String ROLE_MENU_IDS = "role.menuIds";
     public static final String TENANT = "tenant";
@@ -25,5 +24,8 @@ public final class EntityCacheNames {
 
     /** 部门列表缓存（按不同查询参数的部门列表）。 */
     public static final String DEPT_LIST = "dept.list";
+
+    /** 角色缓存（roleId → Role）。 */
+    public static final String ROLE = "role";
 
 }

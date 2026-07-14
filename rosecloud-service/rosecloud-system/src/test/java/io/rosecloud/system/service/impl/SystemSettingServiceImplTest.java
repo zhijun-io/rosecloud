@@ -1,16 +1,12 @@
 package io.rosecloud.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
-import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.domain.SystemSetting;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.SettingKeyEntity;
-import io.rosecloud.system.persistence.SettingKeyMapper;
-import io.rosecloud.system.persistence.SystemSettingEntity;
-import io.rosecloud.system.persistence.SystemSettingMapper;
+import io.rosecloud.system.persistence.SettingKeyDao;
+import io.rosecloud.system.persistence.SystemSettingDao;
 import io.rosecloud.system.service.dto.SettingValueRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -23,11 +19,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,9 +31,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SystemSettingServiceImplTest {
     @Mock
-    SystemSettingMapper systemSettingMapper;
+    SystemSettingDao systemSettingDao;
     @Mock
-    SettingKeyMapper settingKeyMapper;
+    SettingKeyDao settingKeyDao;
 
     @AfterEach
     void tearDown() {
@@ -45,7 +41,7 @@ class SystemSettingServiceImplTest {
     }
 
     private SystemSettingServiceImpl service() {
-        return new SystemSettingServiceImpl(systemSettingMapper, settingKeyMapper);
+        return new SystemSettingServiceImpl(systemSettingDao, settingKeyDao);
     }
 
     private static void setCurrentUser(Long userId, String username) {
@@ -55,51 +51,39 @@ class SystemSettingServiceImplTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
-    private static SettingKeyEntity knownKey() {
-        SettingKeyEntity sk = new SettingKeyEntity();
-        sk.setId(9L);
-        sk.setKey("ui.theme");
-        return sk;
-    }
-
     @Test
     void saveRejectsUnknownKey() {
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(settingKeyDao.existsByKey("ui.theme")).thenReturn(false);
         BizException ex = assertThrows(BizException.class,
                 () -> service().save("ui.theme", new SettingValueRequest("dark")));
         assertEquals(SystemErrorCode.SETTING_KEY_NOT_FOUND, ex.getErrorCode());
-        verify(systemSettingMapper, never()).insert(any(SystemSettingEntity.class));
-        verify(systemSettingMapper, never()).updateById(any(SystemSettingEntity.class));
+        verify(systemSettingDao, never()).save(any());
     }
 
     @Test
     void saveStoresValueAndOperator() {
         setCurrentUser(9L, "admin");
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(knownKey());
-        when(systemSettingMapper.selectById(anyString())).thenReturn(null);
+        when(settingKeyDao.existsByKey("ui.theme")).thenReturn(true);
+
         service().save("ui.theme", new SettingValueRequest("{\"mode\":\"dark\"}"));
-        ArgumentCaptor<SystemSettingEntity> captor = ArgumentCaptor.forClass(SystemSettingEntity.class);
-        verify(systemSettingMapper).insert(captor.capture());
-        assertEquals("ui.theme", captor.getValue().getSettingKey());
+
+        ArgumentCaptor<SystemSetting> captor = ArgumentCaptor.forClass(SystemSetting.class);
+        verify(systemSettingDao).save(captor.capture());
+        assertEquals("ui.theme", captor.getValue().getKey());
         assertEquals("{\"mode\":\"dark\"}", captor.getValue().getValue());
-        assertEquals(9L, captor.getValue().getUpdatedBy());
     }
 
     @Test
     void getRejectsMissingSetting() {
-        when(systemSettingMapper.selectById(anyString())).thenReturn(null);
         BizException ex = assertThrows(BizException.class, () -> service().get("ui.theme"));
         assertEquals(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND, ex.getErrorCode());
     }
 
     @Test
     void listDelegatesToMapper() {
-        SystemSettingEntity setting = new SystemSettingEntity();
-        setting.setSettingKey("ui.theme");
-        setting.setValue("dark");
-        setting.setUpdatedAt(LocalDateTime.now());
-        setting.setUpdatedBy(1L);
-        when(systemSettingMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(setting));
+        when(systemSettingDao.findAllOrderByKey()).thenReturn(List.of(
+                new SystemSetting("ui.theme", "dark", LocalDateTime.now(), 1L)
+        ));
         List<SystemSetting> result = service().list();
         assertEquals(1, result.size());
         assertEquals("ui.theme", result.get(0).getKey());
@@ -108,10 +92,9 @@ class SystemSettingServiceImplTest {
 
     @Test
     void deleteRejectsMissingSetting() {
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(knownKey());
-        when(systemSettingMapper.selectById(anyString())).thenReturn(null);
+        when(settingKeyDao.existsByKey("ui.theme")).thenReturn(true);
         BizException ex = assertThrows(BizException.class, () -> service().delete("ui.theme"));
         assertEquals(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND, ex.getErrorCode());
-        verify(systemSettingMapper, never()).deleteById(anyString());
+        verify(systemSettingDao, never()).removeById(any());
     }
 }

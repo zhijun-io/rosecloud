@@ -7,11 +7,13 @@ import com.baomidou.mybatisplus.extension.plugins.inner.InnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import io.rosecloud.starter.data.cache.CaffeineEntityCache;
 import io.rosecloud.starter.data.cache.EntityCache;
+import io.rosecloud.starter.data.cache.CachingConfigProperties;
 import io.rosecloud.starter.data.event.CacheEvictionListener;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
@@ -29,6 +31,7 @@ import java.util.List;
  */
 @AutoConfiguration
 @ConditionalOnClass(MybatisPlusInterceptor.class)
+@EnableConfigurationProperties(CachingConfigProperties.class)
 public class RoseCloudMybatisPlusAutoConfiguration {
 
     @Bean

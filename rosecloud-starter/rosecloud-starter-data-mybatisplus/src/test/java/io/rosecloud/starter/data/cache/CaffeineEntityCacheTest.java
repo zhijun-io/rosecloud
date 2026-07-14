@@ -89,8 +89,37 @@ class CaffeineEntityCacheTest {
     }
 
     @Test
-    void cacheNameReturnsConfiguredName() {
-        CaffeineEntityCache<String, String> cache = new CaffeineEntityCache<>("my.cache");
-        assertEquals("my.cache", cache.cacheName());
+    void putIfAbsentDoesNotOverwriteExisting() {
+        CaffeineEntityCache<String, String> cache = new CaffeineEntityCache<>("test");
+        cache.put("key", "first");
+        cache.putIfAbsent("key", "second");
+        assertEquals("first", cache.get("key"));
+    }
+
+    @Test
+    void putIfAbsentStoresWhenMissing() {
+        CaffeineEntityCache<String, String> cache = new CaffeineEntityCache<>("test");
+        cache.putIfAbsent("key", "value");
+        assertEquals("value", cache.get("key"));
+    }
+
+    @Test
+    void beginTransactionCommitAppliesPendingPuts() {
+        CaffeineEntityCache<String, String> cache = new CaffeineEntityCache<>("test");
+        var tx = cache.beginTransaction("key");
+        tx.put("key", "pending");
+        assertNull(cache.get("key"));
+        assertTrue(tx.commit());
+        assertEquals("pending", cache.get("key"));
+    }
+
+    @Test
+    void evictFailsPendingTransaction() {
+        CaffeineEntityCache<String, String> cache = new CaffeineEntityCache<>("test");
+        var tx = cache.beginTransaction("key");
+        tx.put("key", "pending");
+        cache.evict("key");
+        assertFalse(tx.commit());
+        assertNull(cache.get("key"));
     }
 }

@@ -5,13 +5,14 @@ import io.rosecloud.common.core.model.HasName;
 import io.rosecloud.common.core.model.HasParentId;
 import io.rosecloud.common.core.model.HasStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import lombok.Value;
 
 /** Domain view of a department/org node. ORM-free; mapped to/from {@code sys_dept}. */
 @Value
-public final class Dept implements HasId, HasName, HasParentId, HasStatus<Integer> {
+public final class Dept implements HasId, HasName, HasParentId, HasStatus<Integer>, Serializable {
 
     Long id;
     Long parentId;

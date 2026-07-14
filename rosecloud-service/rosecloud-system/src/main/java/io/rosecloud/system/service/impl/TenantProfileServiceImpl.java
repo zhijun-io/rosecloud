@@ -1,15 +1,11 @@
 package io.rosecloud.system.service.impl;
 import lombok.RequiredArgsConstructor;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.system.domain.TenantProfile;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.TenantEntity;
-import io.rosecloud.system.persistence.TenantMapper;
-import io.rosecloud.system.persistence.TenantProfileEntity;
-import io.rosecloud.system.persistence.TenantProfileMapper;
+import io.rosecloud.system.persistence.TenantDao;
+import io.rosecloud.system.persistence.TenantProfileDao;
 import io.rosecloud.system.service.TenantProfileService;
 import io.rosecloud.system.service.dto.TenantProfileCreateRequest;
 import io.rosecloud.system.service.dto.TenantProfileUpdateRequest;
@@ -23,17 +19,18 @@ import java.util.Optional;
 @Service
 public class TenantProfileServiceImpl implements TenantProfileService {
 
-    private final TenantProfileMapper tenantProfileMapper;
-    private final TenantMapper tenantMapper;
+    private final TenantProfileDao tenantProfileDao;
+    private final TenantDao tenantDao;
+
     @Transactional
     @Override
     public String create(TenantProfileCreateRequest request) {
         String id = requireId(request.id());
-        if (tenantProfileMapper.selectById(id) != null) {
+        if (tenantProfileDao.findById(id).isPresent()) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_EXISTS);
         }
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileMapper.insert(new TenantProfileEntity().toEntity(profile));
+        tenantProfileDao.save(profile);
         return id;
     }
 
@@ -42,7 +39,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
     public void update(String id, TenantProfileUpdateRequest request) {
         load(id);
         TenantProfile profile = new TenantProfile(id, request.name(), request.description(), request.profileData());
-        tenantProfileMapper.updateById(new TenantProfileEntity().toEntity(profile));
+        tenantProfileDao.save(profile);
     }
 
     @Transactional
@@ -52,19 +49,17 @@ public class TenantProfileServiceImpl implements TenantProfileService {
         if (profile.isDefault()) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_DEFAULT_DELETE_FORBIDDEN);
         }
-        if (tenantMapper.selectCount(new LambdaQueryWrapper<TenantEntity>()
-                .eq(TenantEntity::getTenantProfileId, id)) > 0) {
+        if (tenantDao.countByProfileId(id) > 0) {
             throw new BizException(SystemErrorCode.TENANT_PROFILE_IN_USE);
         }
-        tenantProfileMapper.deleteById(id);
+        tenantProfileDao.removeById(id);
     }
 
     @Transactional
     @Override
     public void makeDefault(String id) {
         load(id);
-        tenantProfileMapper.update(null, new LambdaUpdateWrapper<TenantProfileEntity>()
-                .setSql("is_default = CASE WHEN id = {0} THEN 1 ELSE 0 END", id));
+        tenantProfileDao.makeDefault(id);
     }
 
     @Override
@@ -74,18 +69,13 @@ public class TenantProfileServiceImpl implements TenantProfileService {
 
     @Override
     public TenantProfile getDefault() {
-        return findDefault()
+        return tenantProfileDao.findDefault()
                 .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
     }
 
     @Override
     public List<TenantProfile> list() {
-        return tenantProfileMapper.selectList(new LambdaQueryWrapper<TenantProfileEntity>()
-                        .orderByDesc(TenantProfileEntity::getIsDefault)
-                        .orderByAsc(TenantProfileEntity::getId))
-                .stream()
-                .map(TenantProfileEntity::toData)
-                .toList();
+        return tenantProfileDao.findAllOrdered();
     }
 
     private TenantProfile load(String id) {
@@ -94,13 +84,7 @@ public class TenantProfileServiceImpl implements TenantProfileService {
     }
 
     private Optional<TenantProfile> findById(String id) {
-        return Optional.ofNullable(tenantProfileMapper.selectById(id)).map(TenantProfileEntity::toData);
-    }
-
-    private Optional<TenantProfile> findDefault() {
-        TenantProfileEntity po = tenantProfileMapper.selectOne(new LambdaQueryWrapper<TenantProfileEntity>()
-                .eq(TenantProfileEntity::getIsDefault, 1));
-        return Optional.ofNullable(po).map(TenantProfileEntity::toData);
+        return tenantProfileDao.findById(id);
     }
 
     private static String requireId(String id) {

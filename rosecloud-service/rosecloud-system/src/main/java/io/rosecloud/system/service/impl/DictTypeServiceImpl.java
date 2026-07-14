@@ -1,5 +1,4 @@
 package io.rosecloud.system.service.impl;
-import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
@@ -10,17 +9,18 @@ import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.starter.data.EntityCacheNames;
-import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
+import io.rosecloud.system.domain.DictData;
 import io.rosecloud.system.domain.DictType;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.DictDataEntity;
-import io.rosecloud.system.persistence.DictDataMapper;
+import io.rosecloud.system.persistence.DictDataDao;
+import io.rosecloud.system.persistence.DictTypeDao;
 import io.rosecloud.system.persistence.DictTypeEntity;
-import io.rosecloud.system.persistence.DictTypeMapper;
 import io.rosecloud.system.service.DictTypeService;
 import io.rosecloud.system.service.dto.DictTypeRequest;
+import io.rosecloud.system.service.validator.DictTypeValidator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,34 +31,36 @@ import java.util.Optional;
 @Service
 public class DictTypeServiceImpl implements DictTypeService {
 
-    private final DictTypeMapper dictTypeMapper;
-    private final DictDataMapper dictDataMapper;
+    private final DictTypeDao dictTypeDao;
+    private final DictDataDao dictDataDao;
+    private final DictTypeValidator dictTypeValidator;
     private final EntityCache<Long, DictType> dictTypeCache;
+    private final EntityCache<String, List<DictData>> dictDataByCodeCache;
     private final EntityEventPublisher eventPublisher;
+
     @AuditLog(action = "dict-type-create", description = "创建字典类型")
+    @Transactional
     @Override
     public Long create(DictTypeRequest request) {
-        if (dictTypeMapper.exists(new LambdaQueryWrapper<DictTypeEntity>().eq(DictTypeEntity::getCode, request.code()))) {
-            throw new BizException(SystemErrorCode.DICT_TYPE_CODE_EXISTS);
-        }
-        DictTypeEntity po = new DictTypeEntity().toEntity(DictType.of(null, request.code(), request.name(),
-                request.status() == null ? 1 : request.status(), request.remark()));
-        po.setId(null);
-        dictTypeMapper.insert(po);
+        DictType dictType = DictType.of(null, request.code(), request.name(),
+                request.status() == null ? 1 : request.status(), request.remark());
+        dictTypeValidator.validateCreate(dictType);
+        DictType saved = dictTypeDao.save(dictType);
         eventPublisher.publish(EntityChangedEvent.created(
-                EntityCacheNames.DICT_TYPE, po.getId(), null, null));
-        return po.getId();
+                EntityCacheNames.DICT_TYPE, saved.getId(), null, null));
+        return saved.getId();
     }
 
     @AuditLog(action = "dict-type-update", description = "修改字典类型")
+    @Transactional
     @Override
     public void update(Long id, DictTypeRequest request) {
-        DictType existing = findById(id)
+        DictType existing = dictTypeDao.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.DICT_TYPE_NOT_FOUND));
-        DictTypeEntity po = new DictTypeEntity().toEntity(DictType.of(id, request.code(), request.name(),
-                request.status() == null ? existing.getStatus() : request.status(), request.remark()));
-        dictTypeMapper.updateById(po);
-        dictTypeCache.evict(id);
+        DictType updated = DictType.of(id, request.code(), request.name(),
+                request.status() == null ? existing.getStatus() : request.status(), request.remark());
+        dictTypeValidator.validateUpdate(updated, Optional.of(existing));
+        dictTypeDao.save(updated);
         eventPublisher.publish(EntityChangedEvent.updated(
                 EntityCacheNames.DICT_TYPE, id, null, null, null));
     }
@@ -67,11 +69,12 @@ public class DictTypeServiceImpl implements DictTypeService {
     @Transactional
     @Override
     public void delete(Long id) {
-        DictType dictType = findById(id)
+        DictType dictType = dictTypeDao.findById(id)
                 .orElseThrow(() -> new BizException(SystemErrorCode.DICT_TYPE_NOT_FOUND));
-        dictDataMapper.delete(new LambdaQueryWrapper<DictDataEntity>().eq(DictDataEntity::getDictCode, dictType.getCode()));
-        dictTypeMapper.deleteById(id);
-        dictTypeCache.evict(id);
+        dictTypeValidator.validateDelete(dictType);
+        dictDataDao.deleteByCode(dictType.getCode());
+        dictTypeDao.removeById(id);
+        dictDataByCodeCache.evict(dictType.getCode());
         eventPublisher.publish(EntityChangedEvent.deleted(
                 EntityCacheNames.DICT_TYPE, id, null, null));
     }
@@ -84,7 +87,7 @@ public class DictTypeServiceImpl implements DictTypeService {
 
     @Override
     public PagedData<DictType> page(PageQuery pageQuery) {
-        return PagedResults.page(pageQuery, DictTypeEntity.class, dictTypeMapper,
+        return dictTypeDao.page(pageQuery,
                 q -> {
                     LambdaQueryWrapper<DictTypeEntity> wrapper = new LambdaQueryWrapper<>();
                     if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
@@ -97,9 +100,8 @@ public class DictTypeServiceImpl implements DictTypeService {
     }
 
     private Optional<DictType> findById(Long id) {
-        return Optional.ofNullable(dictTypeCache.getOrLoad(id, () ->
-                Optional.ofNullable(dictTypeMapper.selectById(id)).map(DictTypeEntity::toData).orElse(null)
+        return Optional.ofNullable(dictTypeCache.getOrLoadTransactional(id, () ->
+                dictTypeDao.findById(id).orElse(null)
         ));
     }
-
 }

@@ -69,3 +69,38 @@ rosecloud:
       secret: ${ROSECLOUD_SECURITY_JWT_SECRET:}
       issuer: ${ROSECLOUD_SECURITY_JWT_ISSUER:rosecloud}
     internal-token: ${ROSECLOUD_SECURITY_INTERNAL_API_KEY:}
+
+# Cache specs — 借鉴 ThingsBoard CacheSpecs 模式，使 TTL 和 maxSize 可外部配置。
+# 各缓存名称对应 @EntityCache.cacheName()，未显式配置的缓存使用默认值（5min / 1000）。
+cache:
+  specs:
+    tenant:
+      timeToLiveInMinutes: ${CACHE_SPECS_TENANT_TTL:30}
+      maxSize: ${CACHE_SPECS_TENANT_MAX_SIZE:5000}
+    user.security:
+      timeToLiveInMinutes: ${CACHE_SPECS_USER_SECURITY_TTL:10}
+      maxSize: ${CACHE_SPECS_USER_SECURITY_MAX_SIZE:5000}
+    user.perms:
+      timeToLiveInMinutes: ${CACHE_SPECS_USER_PERMS_TTL:10}
+      maxSize: ${CACHE_SPECS_USER_PERMS_MAX_SIZE:10000}
+    role.menuIds:
+      timeToLiveInMinutes: ${CACHE_SPECS_ROLE_MENU_IDS_TTL:10}
+      maxSize: ${CACHE_SPECS_ROLE_MENU_IDS_MAX_SIZE:5000}
+    menu:
+      timeToLiveInMinutes: ${CACHE_SPECS_MENU_TTL:60}
+      maxSize: ${CACHE_SPECS_MENU_MAX_SIZE:5000}
+    menu.list:
+      timeToLiveInMinutes: ${CACHE_SPECS_MENU_LIST_TTL:10}
+      maxSize: ${CACHE_SPECS_MENU_LIST_MAX_SIZE:5000}
+    dict.data.byCode:
+      timeToLiveInMinutes: ${CACHE_SPECS_DICT_DATA_TTL:60}
+      maxSize: ${CACHE_SPECS_DICT_DATA_MAX_SIZE:5000}
+    dict.type:
+      timeToLiveInMinutes: ${CACHE_SPECS_DICT_TYPE_TTL:60}
+      maxSize: ${CACHE_SPECS_DICT_TYPE_MAX_SIZE:1000}
+    dept:
+      timeToLiveInMinutes: ${CACHE_SPECS_DEPT_TTL:30}
+      maxSize: ${CACHE_SPECS_DEPT_MAX_SIZE:5000}
+    dept.list:
+      timeToLiveInMinutes: ${CACHE_SPECS_DEPT_LIST_TTL:10}
+      maxSize: ${CACHE_SPECS_DEPT_LIST_MAX_SIZE:5000}

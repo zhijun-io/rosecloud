@@ -8,6 +8,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -60,6 +61,24 @@ public class CacheEvictionListener {
      */
     public void evictNow(EntityChangedEvent<?> event) {
         evictCache(event);
+    }
+
+    /**
+     * 返回所有注册缓存的实时统计信息。
+     * <p>借鉴 ThingsBoard {@code TbCaffeineCacheConfiguration} 对 Cache 实例调用
+     * {@code recordStats()} 后通过自定义端点暴露的监控模式。
+     * 仅对 {@link io.rosecloud.starter.data.cache.CaffeineEntityCache} 生效，
+     * 其他实现返回 {@code null} 的 stats 会被跳过。
+     */
+    public Map<String, com.github.benmanes.caffeine.cache.stats.CacheStats> cacheStats() {
+        Map<String, com.github.benmanes.caffeine.cache.stats.CacheStats> stats = new java.util.LinkedHashMap<>();
+        caches.forEach((name, cache) -> {
+            var s = cache.stats();
+            if (s != null) {
+                stats.put(name, s);
+            }
+        });
+        return stats;
     }
 
     private void evictCache(EntityChangedEvent<?> event) {

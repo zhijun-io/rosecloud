@@ -271,34 +271,29 @@ public class UserServiceImpl implements UserService, UserApi {
      * 在登录频繁时收益显著。
      */
     private Optional<SecurityUser> loadByUsernameInternal(String username) {
-        SecurityUser cached = userSecurityCache.get(username);
-        if (cached != null) {
-            return Optional.of(cached);
-        }
-        UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
-                .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
-                        .or()
-                        .eq(UserEntity::getPhone, username)));
-        if (po == null) {
-            return Optional.empty();
-        }
+        return Optional.ofNullable(userSecurityCache.getOrLoad(username, () -> {
+            UserEntity po = userMapper.selectOne(new LambdaQueryWrapper<UserEntity>()
+                    .and(wrapper -> wrapper.eq(UserEntity::getEmail, username)
+                            .or()
+                            .eq(UserEntity::getPhone, username)));
+            if (po == null) {
+                return null;
+            }
 
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        for (String role : loadRoleCodes(po.getId())) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        }
-        for (String perm : loadPerms(po.getId())) {
-            authorities.add(new SimpleGrantedAuthority(perm));
-        }
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            for (String role : loadRoleCodes(po.getId())) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            }
+            for (String perm : loadPerms(po.getId())) {
+                authorities.add(new SimpleGrantedAuthority(perm));
+            }
 
-        UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po));
-        SecurityUser securityUser = new SecurityUser(
-                po.getId(), loginName(po), loginName(po), null,
-                po.getStatus() != null && po.getStatus() == 1,
-                po.getTenantId(), principal, authorities);
-
-        userSecurityCache.put(loginName(po), securityUser);
-        return Optional.of(securityUser);
+            UserPrincipal principal = new UserPrincipal(UserPrincipal.Type.USER_NAME, loginName(po));
+            return new SecurityUser(
+                    po.getId(), loginName(po), loginName(po), null,
+                    po.getStatus() != null && po.getStatus() == 1,
+                    po.getTenantId(), principal, authorities);
+        }));
     }
 
     private List<String> loadRoleCodes(Long userId) {
@@ -318,30 +313,26 @@ public class UserServiceImpl implements UserService, UserApi {
      * 角色分配变更、菜单权限变更。
      */
     private List<String> loadPerms(Long userId) {
-        List<String> cached = userPermsCache.get(userId);
-        if (cached != null) {
-            return cached;
-        }
-        List<Long> roleIds = findRoleIdsByUserId(userId);
-        if (roleIds.isEmpty()) {
-            return List.of();
-        }
-        List<Long> menuIds = roleMenuMapper.selectList(
-                        new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds))
-                .stream().map(RoleMenuEntity::getMenuId).toList();
-        if (menuIds.isEmpty()) {
-            return List.of();
-        }
-        List<String> perms = menuMapper.selectList(
-                        new LambdaQueryWrapper<MenuEntity>().in(MenuEntity::getId, menuIds))
-                .stream()
-                .map(MenuEntity::getPerms)
-                .filter(Objects::nonNull)
-                .filter(p -> !p.isBlank())
-                .distinct()
-                .toList();
-        userPermsCache.put(userId, perms);
-        return perms;
+        return userPermsCache.getOrLoad(userId, () -> {
+            List<Long> roleIds = findRoleIdsByUserId(userId);
+            if (roleIds.isEmpty()) {
+                return List.of();
+            }
+            List<Long> menuIds = roleMenuMapper.selectList(
+                            new LambdaQueryWrapper<RoleMenuEntity>().in(RoleMenuEntity::getRoleId, roleIds))
+                    .stream().map(RoleMenuEntity::getMenuId).toList();
+            if (menuIds.isEmpty()) {
+                return List.of();
+            }
+            return menuMapper.selectList(
+                            new LambdaQueryWrapper<MenuEntity>().in(MenuEntity::getId, menuIds))
+                    .stream()
+                    .map(MenuEntity::getPerms)
+                    .filter(Objects::nonNull)
+                    .filter(p -> !p.isBlank())
+                    .distinct()
+                    .toList();
+        });
     }
 
     private List<String> findRoleCodesByUserId(Long userId) {

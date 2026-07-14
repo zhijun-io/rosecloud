@@ -7,10 +7,9 @@ import io.rosecloud.common.core.event.EntityChangeType;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.DictData;
-import io.rosecloud.system.persistence.DictDataEntity;
-import io.rosecloud.system.persistence.DictDataMapper;
+import io.rosecloud.system.persistence.DictDataDao;
 import io.rosecloud.system.service.dto.DictDataRequest;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
+import io.rosecloud.system.service.validator.DictDataValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,7 +33,9 @@ import static org.mockito.Mockito.when;
 class DictDataServiceImplTest {
 
     @Mock
-    DictDataMapper dictDataMapper;
+    DictDataDao dictDataDao;
+    @Mock
+    DictDataValidator dictDataValidator;
     @Mock
     EntityCache<String, List<DictData>> dictDataByCodeCache;
     @Mock
@@ -46,14 +48,12 @@ class DictDataServiceImplTest {
 
     @BeforeAll
     static void initTableInfo() {
-        MybatisConfiguration configuration = new MybatisConfiguration();
-        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "test");
-        TableInfoHelper.initTableInfo(assistant, DictDataEntity.class);
+        // TableInfoHelper init no longer needed — no direct mapper calls in service
     }
 
     @BeforeEach
     void setUp() {
-        service = new DictDataServiceImpl(dictDataMapper, dictDataByCodeCache, eventPublisher);
+        service = new DictDataServiceImpl(dictDataDao, dictDataValidator, dictDataByCodeCache, eventPublisher);
     }
 
     @Test
@@ -72,11 +72,8 @@ class DictDataServiceImplTest {
     @Test
     void createEvictsCacheAndPublishesEvent() {
         DictDataRequest request = new DictDataRequest("gender", "Male", "0", 1, 1, "Male gender");
-        when(dictDataMapper.insert(any(DictDataEntity.class))).thenAnswer(invocation -> {
-            DictDataEntity po = invocation.getArgument(0);
-            po.setId(100L);
-            return 1;
-        });
+        when(dictDataDao.save(any())).thenReturn(
+                DictData.of(100L, "gender", "Male", "0", 1, 1, "Male gender"));
 
         Long id = service.create(request);
 
@@ -89,14 +86,10 @@ class DictDataServiceImplTest {
 
     @Test
     void updateEvictsCacheAndPublishesEvent() {
-        DictDataEntity existing = new DictDataEntity();
-        existing.setId(1L);
-        existing.setDictCode("gender");
-        existing.setLabel("Old");
-        existing.setValue("0");
-        existing.setSort(1);
-        existing.setStatus(1);
-        when(dictDataMapper.selectById(1L)).thenReturn(existing);
+        when(dictDataDao.findById(1L)).thenReturn(
+                Optional.of(DictData.of(1L, "gender", "Old", "0", 1, 1, "Old gender")));
+        when(dictDataDao.save(any())).thenReturn(
+                DictData.of(1L, "gender", "Updated", "0", 1, 1, "Updated"));
 
         service.update(1L, new DictDataRequest("gender", "Updated", "0", 1, 1, "Updated"));
 
@@ -118,7 +111,7 @@ class DictDataServiceImplTest {
 
     @Test
     void getThrowsWhenNotFound() {
-        when(dictDataMapper.selectById(99L)).thenReturn(null);
+        when(dictDataDao.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(io.rosecloud.common.core.error.BizException.class,
                 () -> service.get(99L));

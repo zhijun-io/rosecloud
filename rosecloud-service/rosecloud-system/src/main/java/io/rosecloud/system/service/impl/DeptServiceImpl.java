@@ -1,7 +1,6 @@
 package io.rosecloud.system.service.impl;
-import lombok.RequiredArgsConstructor;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.event.EntityChangedEvent;
 import io.rosecloud.starter.audit.AuditLog;
@@ -10,12 +9,13 @@ import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.system.domain.Dept;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.DeptEntity;
-import io.rosecloud.system.persistence.DeptMapper;
+import io.rosecloud.system.persistence.DeptDao;
 import io.rosecloud.system.service.DeptService;
 import io.rosecloud.system.service.dto.DeptRequest;
 import io.rosecloud.system.service.dto.DeptTreeNode;
+import io.rosecloud.system.service.validator.DeptValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -26,41 +26,48 @@ import java.util.stream.Collectors;
 @Service
 public class DeptServiceImpl implements DeptService {
 
-    private final DeptMapper deptMapper;
+    private final DeptDao deptDao;
+    private final DeptValidator deptValidator;
     private final EntityCache<Long, Dept> deptCache;
     private final EntityCache<String, List<Dept>> deptListCache;
     private final EntityEventPublisher eventPublisher;
+
     @AuditLog(action = "dept-create", description = "创建部门")
+    @Transactional
     @Override
     public Long create(DeptRequest request) {
-        DeptEntity po = new DeptEntity().toEntity(toDept(null, request));
-        po.setId(null);
-        deptMapper.insert(po);
+        Dept dept = toDept(null, request);
+        deptValidator.validateCreate(dept);
+        Dept saved = deptDao.save(dept);
         deptListCache.evictAll();
         eventPublisher.publish(EntityChangedEvent.created(
-                EntityCacheNames.DEPT, po.getId(), null, null));
-        return po.getId();
+                EntityCacheNames.DEPT, saved.getId(), null, null));
+        return saved.getId();
     }
 
     @AuditLog(action = "dept-update", description = "修改部门")
+    @Transactional
     @Override
     public void update(Long id, DeptRequest request) {
-        findById(id).orElseThrow(() -> new BizException(SystemErrorCode.DEPT_NOT_FOUND));
-        deptMapper.updateById(new DeptEntity().toEntity(toDept(id, request)));
-        deptCache.evict(id);
+        Dept existing = findById(id)
+                .orElseThrow(() -> new BizException(SystemErrorCode.DEPT_NOT_FOUND));
+        Dept updated = toDept(id, request);
+        deptValidator.validateUpdate(updated, Optional.of(existing));
+        deptDao.save(updated);
+        // 单实体缓存由 CacheEvictionListener 在事务提交后失效；列表缓存需显式清空。
         deptListCache.evictAll();
         eventPublisher.publish(EntityChangedEvent.updated(
                 EntityCacheNames.DEPT, id, null, null, null));
     }
 
     @AuditLog(action = "dept-delete", description = "删除部门")
+    @Transactional
     @Override
     public void delete(Long id) {
-        if (deptMapper.exists(new LambdaQueryWrapper<DeptEntity>().eq(DeptEntity::getParentId, id))) {
+        if (deptDao.existsByParentId(id)) {
             throw new BizException(SystemErrorCode.DEPT_HAS_CHILDREN);
         }
-        deptMapper.deleteById(id);
-        deptCache.evict(id);
+        deptDao.removeById(id);
         deptListCache.evictAll();
         eventPublisher.publish(EntityChangedEvent.deleted(
                 EntityCacheNames.DEPT, id, null, null));
@@ -69,10 +76,7 @@ public class DeptServiceImpl implements DeptService {
     @Override
     public List<Dept> list() {
         return deptListCache.getOrLoad("__all__", () ->
-                deptMapper.selectList(new LambdaQueryWrapper<DeptEntity>()
-                                .orderByAsc(DeptEntity::getSort)
-                                .orderByAsc(DeptEntity::getId))
-                        .stream().map(DeptEntity::toData).toList()
+                deptDao.findAllOrderBySort()
         );
     }
 
@@ -85,15 +89,9 @@ public class DeptServiceImpl implements DeptService {
     }
 
     private Optional<Dept> findById(Long id) {
-        Dept cached = deptCache.get(id);
-        if (cached != null) {
-            return Optional.of(cached);
-        }
-        return Optional.ofNullable(deptMapper.selectById(id)).map(po -> {
-            Dept d = po.toData();
-            deptCache.put(id, d);
-            return d;
-        });
+        return Optional.ofNullable(deptCache.getOrLoadTransactional(id, () ->
+                deptDao.findById(id).orElse(null)
+        ));
     }
 
     private List<DeptTreeNode> buildChildren(Map<Long, List<Dept>> byParent, Long parentId) {

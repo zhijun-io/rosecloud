@@ -1,16 +1,13 @@
 package io.rosecloud.system.service.impl;
 import lombok.RequiredArgsConstructor;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.starter.audit.AuditLog;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.domain.SystemSetting;
 import io.rosecloud.system.error.SystemErrorCode;
-import io.rosecloud.system.persistence.SettingKeyEntity;
-import io.rosecloud.system.persistence.SettingKeyMapper;
-import io.rosecloud.system.persistence.SystemSettingEntity;
-import io.rosecloud.system.persistence.SystemSettingMapper;
+import io.rosecloud.system.persistence.SettingKeyDao;
+import io.rosecloud.system.persistence.SystemSettingDao;
 import io.rosecloud.system.service.SystemSettingService;
 import io.rosecloud.system.service.dto.SettingValueRequest;
 import org.springframework.security.core.Authentication;
@@ -25,12 +22,11 @@ import java.util.Optional;
 @Service
 public class SystemSettingServiceImpl implements SystemSettingService {
 
-    private final SystemSettingMapper systemSettingMapper;
-    private final SettingKeyMapper settingKeyMapper;
+    private final SystemSettingDao systemSettingDao;
+    private final SettingKeyDao settingKeyDao;
     @Override
     public List<SystemSetting> list() {
-        return systemSettingMapper.selectList(new LambdaQueryWrapper<SystemSettingEntity>()
-                        .orderByAsc(SystemSettingEntity::getSettingKey)).stream().map(SystemSettingEntity::toData).toList();
+        return systemSettingDao.findAllOrderByKey();
     }
 
     @Override
@@ -43,13 +39,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     @Override
     public void save(String key, SettingValueRequest request) {
         ensureSettingKeyExists(key);
-        SystemSettingEntity existing = systemSettingMapper.selectById(key);
-        SystemSettingEntity po = new SystemSettingEntity().toEntity(new SystemSetting(key, request.value(), now(), currentUserId()));
-        if (existing == null) {
-            systemSettingMapper.insert(po);
-            return;
-        }
-        systemSettingMapper.updateById(po);
+        systemSettingDao.save(new SystemSetting(key, request.value(), now(), currentUserId()));
     }
 
     @AuditLog(action = "system-setting-delete", description = "删除系统配置")
@@ -59,16 +49,15 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         if (findByKey(key).isEmpty()) {
             throw new BizException(SystemErrorCode.SYSTEM_SETTING_NOT_FOUND);
         }
-        systemSettingMapper.deleteById(key);
+        systemSettingDao.removeById(key);
     }
 
     private Optional<SystemSetting> findByKey(String key) {
-        return Optional.ofNullable(systemSettingMapper.selectById(key)).map(SystemSettingEntity::toData);
+        return systemSettingDao.findById(key);
     }
 
     private void ensureSettingKeyExists(String key) {
-        if (settingKeyMapper.selectOne(new LambdaQueryWrapper<SettingKeyEntity>()
-                .eq(SettingKeyEntity::getKey, key)) == null) {
+        if (!settingKeyDao.existsByKey(key)) {
             throw new BizException(SystemErrorCode.SETTING_KEY_NOT_FOUND);
         }
     }

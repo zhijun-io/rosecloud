@@ -2,27 +2,23 @@ package io.rosecloud.system.service.impl;
 import lombok.RequiredArgsConstructor;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageQuery;
 import io.rosecloud.common.core.model.PagedData;
 import io.rosecloud.common.core.model.SortDirection;
 import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.starter.audit.AuditLog;
-import io.rosecloud.starter.data.PagedResults;
 import io.rosecloud.starter.data.EntityCacheNames;
 import io.rosecloud.starter.data.cache.EntityCache;
 import io.rosecloud.starter.data.event.EntityEventPublisher;
 import io.rosecloud.common.core.event.EntityChangedEvent;
-import io.rosecloud.starter.tenant.core.TenantContextHolder;
 import io.rosecloud.system.domain.Tenant;
 import io.rosecloud.system.domain.TenantStatus;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.TenantDao;
 import io.rosecloud.system.persistence.TenantEntity;
-import io.rosecloud.system.persistence.TenantMapper;
-import io.rosecloud.system.persistence.TenantProfileEntity;
-import io.rosecloud.system.persistence.TenantProfileMapper;
+import io.rosecloud.system.domain.TenantProfile;
+import io.rosecloud.system.persistence.TenantProfileDao;
 import io.rosecloud.system.service.TenantProvisioner;
 import io.rosecloud.system.service.TenantService;
 import io.rosecloud.system.service.dto.TenantCreateRequest;
@@ -39,8 +35,8 @@ import java.util.Optional;
 @Service
 public class TenantServiceImpl implements TenantService {
 
-    private final TenantMapper tenantMapper;
-    private final TenantProfileMapper tenantProfileMapper;
+    private final TenantDao tenantDao;
+    private final TenantProfileDao tenantProfileDao;
     private final TenantProvisioner tenantProvisioner;
     private final EntityCache<String, Tenant> tenantCache;
     private final EntityEventPublisher eventPublisher;
@@ -66,17 +62,7 @@ public class TenantServiceImpl implements TenantService {
         Tenant updated = new Tenant(tenantId, request.name(), tenant.getStatus(), request.contactUser(),
                 request.contactPhone(), request.expireTime(), request.remark(), tenantProfileId,
                 tenant.getAdditionalInfo());
-        tenantMapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
-                .eq(TenantEntity::getId, updated.getId())
-                .set(TenantEntity::getName, updated.getName())
-                .set(TenantEntity::getStatus, updated.getStatus() == null ? null : updated.getStatus().code())
-                .set(TenantEntity::getContactUser, updated.getContactUser())
-                .set(TenantEntity::getContactPhone, updated.getContactPhone())
-                .set(TenantEntity::getExpireTime, updated.getExpireTime())
-                .set(TenantEntity::getRemark, updated.getRemark())
-                .set(TenantEntity::getTenantProfileId, updated.getTenantProfileId())
-                .set(TenantEntity::getExtra, writeJson(updated.getAdditionalInfo())));
-        tenantCache.evict(tenantId);
+        tenantDao.save(updated);
         eventPublisher.publish(EntityChangedEvent.updated(
                 EntityCacheNames.TENANT, tenantId, tenantId, tenant, updated));
     }
@@ -90,8 +76,7 @@ public class TenantServiceImpl implements TenantService {
         // Cascade-delete all tenant-scoped resources before removing the tenant record.
         // 借鉴 ThingsBoard TenantServiceImpl.deleteTenant() 的级联清理顺序。
         tenantProvisioner.deprovision(tenantId);
-        tenantMapper.deleteById(tenantId);
-        tenantCache.evict(tenantId);
+        tenantDao.removeById(tenantId);
         eventPublisher.publish(EntityChangedEvent.deleted(
                 EntityCacheNames.TENANT, tenantId, tenantId, tenant));
     }
@@ -121,11 +106,8 @@ public class TenantServiceImpl implements TenantService {
     public void disable(String id) {
         String tenantId = requireTenantId(id);
         Tenant tenant = load(tenantId);
-        tenantMapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
-                .eq(TenantEntity::getId, tenantId)
-                .set(TenantEntity::getStatus,
-                        tenant.getStatus().transitionTo(TenantStatus.DISABLED).code()));
-        tenantCache.evict(tenantId);
+        int newStatusCode = tenant.getStatus().transitionTo(TenantStatus.DISABLED).code();
+        tenantDao.updateStatus(tenantId, newStatusCode);
         eventPublisher.publish(EntityChangedEvent.updated(
                 EntityCacheNames.TENANT, tenantId, tenantId, tenant, null));
     }
@@ -138,18 +120,15 @@ public class TenantServiceImpl implements TenantService {
         if (tenant.getExpireTime() != null && tenant.getExpireTime().isBefore(LocalDate.now())) {
             throw new BizException(SystemErrorCode.TENANT_STATUS_INVALID);
         }
-        tenantMapper.update(null, new LambdaUpdateWrapper<TenantEntity>()
-                .eq(TenantEntity::getId, tenantId)
-                .set(TenantEntity::getStatus,
-                        tenant.getStatus().transitionTo(TenantStatus.ENABLED).code()));
-        tenantCache.evict(tenantId);
+        int newStatusCode = tenant.getStatus().transitionTo(TenantStatus.ENABLED).code();
+        tenantDao.updateStatus(tenantId, newStatusCode);
         eventPublisher.publish(EntityChangedEvent.updated(
                 EntityCacheNames.TENANT, tenantId, tenantId, tenant, null));
     }
 
     @Override
     public PagedData<Tenant> page(PageQuery pageQuery) {
-        return PagedResults.page(pageQuery, TenantEntity.class, tenantMapper,
+        return tenantDao.page(pageQuery,
                 q -> {
                     LambdaQueryWrapper<TenantEntity> wrapper = new LambdaQueryWrapper<>();
                     if (q.getKeyword() != null && !q.getKeyword().isBlank()) {
@@ -162,10 +141,7 @@ public class TenantServiceImpl implements TenantService {
 
     @Override
     public List<String> findAllIds() {
-        return tenantMapper.selectList(new LambdaQueryWrapper<TenantEntity>()
-                        .eq(TenantEntity::getDeleted, 0)
-                        .ne(TenantEntity::getId, TenantContextHolder.SYSTEM_TENANT_ID))
-                .stream().map(TenantEntity::getId).toList();
+        return tenantDao.findAllIds();
     }
 
     private Tenant load(String id) {
@@ -174,15 +150,9 @@ public class TenantServiceImpl implements TenantService {
     }
 
     private Optional<Tenant> findById(String id) {
-        Tenant cached = tenantCache.get(id);
-        if (cached != null) {
-            return Optional.of(cached);
-        }
-        return Optional.ofNullable(tenantMapper.selectById(id)).map(po -> {
-            Tenant t = po.toData();
-            tenantCache.put(id, t);
-            return t;
-        });
+        return Optional.ofNullable(tenantCache.getOrLoadTransactional(id, () ->
+                tenantDao.findById(id).orElse(null)
+        ));
     }
 
     private String persistTenant(TenantCreateRequest request) {
@@ -195,9 +165,7 @@ public class TenantServiceImpl implements TenantService {
         Tenant tenant = new Tenant(tenantId, request.name(), TenantStatus.PENDING,
                 request.contactUser(), request.contactPhone(), request.expireTime(), request.remark(),
                 tenantProfileId, null);
-        TenantEntity po = new TenantEntity().toEntity(tenant);
-        po.setAdminUsername(request.adminUsername());
-        tenantMapper.insert(po);
+        tenantDao.create(tenant, request.adminUsername());
         return tenantId;
     }
 
@@ -205,26 +173,18 @@ public class TenantServiceImpl implements TenantService {
         if (tenantProfileId == null || tenantProfileId.isBlank()) {
             return defaultProfileId();
         }
-        if (tenantProfileMapper.selectById(tenantProfileId) == null) {
-            throw new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND);
-        }
-        return tenantProfileId;
+        return tenantProfileDao.findById(tenantProfileId)
+                .map(TenantProfile::getId)
+                .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
     }
 
     private String defaultProfileId() {
-        TenantProfileEntity def = tenantProfileMapper.selectOne(
-                new LambdaQueryWrapper<TenantProfileEntity>().eq(TenantProfileEntity::getIsDefault, 1));
-        if (def == null) {
-            throw new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND);
-        }
-        return def.getId();
+        return tenantProfileDao.findDefault()
+                .map(TenantProfile::getId)
+                .orElseThrow(() -> new BizException(SystemErrorCode.TENANT_PROFILE_NOT_FOUND));
     }
 
     private String requireTenantId(String id) {
         return TenantIdSupport.requireValid(id);
-    }
-
-    private String writeJson(JsonNode value) {
-        return value == null || value.isNull() ? null : value.toString();
     }
 }

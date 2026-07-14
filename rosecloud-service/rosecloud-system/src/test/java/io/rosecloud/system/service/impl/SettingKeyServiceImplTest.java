@@ -6,18 +6,19 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import io.rosecloud.common.core.error.BizException;
 import io.rosecloud.common.core.model.PageQuery;
 import io.rosecloud.common.core.model.PagedData;
+import io.rosecloud.common.core.model.SortField;
 import io.rosecloud.common.security.model.SecurityUser;
 import io.rosecloud.common.security.model.UserPrincipal;
 import io.rosecloud.system.domain.SettingKey;
 import io.rosecloud.system.error.SystemErrorCode;
+import io.rosecloud.system.persistence.SettingKeyDao;
 import io.rosecloud.system.persistence.SettingKeyEntity;
-import io.rosecloud.system.persistence.SettingKeyMapper;
-import io.rosecloud.system.persistence.SystemSettingEntity;
-import io.rosecloud.system.persistence.SystemSettingMapper;
+import io.rosecloud.system.persistence.SystemSettingDao;
 import io.rosecloud.system.persistence.UserSettingEntity;
 import io.rosecloud.system.persistence.UserSettingMapper;
 import io.rosecloud.system.service.dto.SettingKeyCreateRequest;
 import io.rosecloud.system.service.dto.SettingKeyUpdateRequest;
+import io.rosecloud.system.service.validator.SettingKeyValidator;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,13 +31,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,9 +44,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SettingKeyServiceImplTest {
     @Mock
-    SettingKeyMapper settingKeyMapper;
+    SettingKeyDao settingKeyDao;
     @Mock
-    SystemSettingMapper systemSettingMapper;
+    SettingKeyValidator settingKeyValidator;
+    @Mock
+    SystemSettingDao systemSettingDao;
     @Mock
     UserSettingMapper userSettingMapper;
 
@@ -63,7 +65,7 @@ class SettingKeyServiceImplTest {
     }
 
     private SettingKeyServiceImpl service() {
-        return new SettingKeyServiceImpl(settingKeyMapper, systemSettingMapper, userSettingMapper);
+        return new SettingKeyServiceImpl(settingKeyDao, settingKeyValidator, userSettingMapper, systemSettingDao);
     }
 
     private static void setCurrentUser(Long userId, String username) {
@@ -75,28 +77,34 @@ class SettingKeyServiceImplTest {
 
     @Test
     void createRejectsDuplicateKey() {
-        when(settingKeyMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+        doThrow(new BizException(SystemErrorCode.SETTING_KEY_EXISTS))
+                .when(settingKeyValidator).validateCreate(any());
+
         BizException ex = assertThrows(BizException.class,
                 () -> service().create(new SettingKeyCreateRequest("ui.theme", "主题", "desc")));
         assertEquals(SystemErrorCode.SETTING_KEY_EXISTS, ex.getErrorCode());
-        verify(settingKeyMapper, never()).insert(any(SettingKeyEntity.class));
+        verify(settingKeyDao, never()).save(any());
     }
 
     @Test
     void createStoresMetadataFromCurrentUser() {
         setCurrentUser(7L, "alice");
-        when(settingKeyMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+        when(settingKeyDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
         service().create(new SettingKeyCreateRequest("ui.theme", "主题", "desc"));
-        ArgumentCaptor<SettingKeyEntity> captor = ArgumentCaptor.forClass(SettingKeyEntity.class);
-        verify(settingKeyMapper).insert(captor.capture());
-        assertEquals("ui.theme", captor.getValue().getKey());
-        assertEquals("主题", captor.getValue().getName());
-        assertEquals("desc", captor.getValue().getRemark());
+
+        ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
+        verify(settingKeyDao).save(captor.capture());
+        SettingKey saved = captor.getValue();
+        assertEquals("ui.theme", saved.getKey());
+        assertEquals("主题", saved.getName());
+        assertEquals("desc", saved.getRemark());
     }
 
     @Test
     void updateRejectsMissingKey() {
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(settingKeyDao.findByKey("ui.theme")).thenReturn(Optional.empty());
+
         BizException ex = assertThrows(BizException.class,
                 () -> service().update("ui.theme", new SettingKeyUpdateRequest("主题", "desc")));
         assertEquals(SystemErrorCode.SETTING_KEY_NOT_FOUND, ex.getErrorCode());
@@ -104,44 +112,38 @@ class SettingKeyServiceImplTest {
 
     @Test
     void updateUsesPersistentIdOfExistingKey() {
-        SettingKeyEntity existing = new SettingKeyEntity();
-        existing.setId(88L);
-        existing.setKey("ui.theme");
-        existing.setName("主题");
-        existing.setRemark("desc");
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(settingKeyDao.findByKey("ui.theme")).thenReturn(Optional.of(new SettingKey(88L, "ui.theme", "主题", "desc", null, null, null, null)));
+        when(settingKeyDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        setCurrentUser(7L, "alice");
+
         service().update("ui.theme", new SettingKeyUpdateRequest("主题2", "desc2"));
-        ArgumentCaptor<SettingKeyEntity> captor = ArgumentCaptor.forClass(SettingKeyEntity.class);
-        verify(settingKeyMapper).updateById(captor.capture());
-        assertEquals(88L, captor.getValue().getId());
-        assertEquals("ui.theme", captor.getValue().getKey());
-        assertEquals("主题2", captor.getValue().getName());
-        assertEquals("desc2", captor.getValue().getRemark());
+
+        ArgumentCaptor<SettingKey> captor = ArgumentCaptor.forClass(SettingKey.class);
+        verify(settingKeyDao).save(captor.capture());
+        SettingKey updated = captor.getValue();
+        assertEquals(88L, updated.getId());
+        assertEquals("ui.theme", updated.getKey());
+        assertEquals("主题2", updated.getName());
+        assertEquals("desc2", updated.getRemark());
     }
 
     @Test
     void deleteCascadesToSystemAndUserSettings() {
-        SettingKeyEntity existing = new SettingKeyEntity();
-        existing.setId(1L);
-        existing.setKey("ui.theme");
-        when(settingKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
+        when(settingKeyDao.findByKey("ui.theme")).thenReturn(Optional.of(new SettingKey(1L, "ui.theme", null, null, null, null, null, null)));
+
         service().delete("ui.theme");
-        verify(systemSettingMapper).deleteById("ui.theme");
+
+        verify(systemSettingDao).removeById("ui.theme");
         verify(userSettingMapper).delete(any(LambdaQueryWrapper.class));
-        verify(settingKeyMapper).deleteById(1L);
+        verify(settingKeyDao).removeById(1L);
     }
 
     @Test
-    void pageDelegatesToMapper() {
-        var page = mock(com.baomidou.mybatisplus.core.metadata.IPage.class);
-        SettingKeyEntity e = new SettingKeyEntity();
-        e.setId(1L);
-        e.setKey("ui.theme");
-        e.setName("主题");
-        e.setRemark("desc");
-        when(page.getRecords()).thenReturn(List.of(e, e, e, e, e));
-        when(page.getTotal()).thenReturn(5L);
-        when(settingKeyMapper.selectPage(any(), any(LambdaQueryWrapper.class))).thenReturn(page);
+    void pageDelegatesToDao() {
+        SettingKey sk = new SettingKey(1L, "ui.theme", "主题", "desc", null, null, null, null);
+        PagedData<SettingKey> paged = new PagedData<>(List.of(sk, sk, sk, sk, sk), 1, 5L, false);
+        when(settingKeyDao.page(any(), any(), any(), any())).thenReturn(paged);
 
         PagedData<SettingKey> result = service().page(new PageQuery(1, 10, "ui", List.of()));
         assertEquals(5L, result.getTotalElements());
